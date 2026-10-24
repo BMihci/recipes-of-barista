@@ -1,0 +1,5 @@
+out/
+build_cache/
+template.html
+firebase_config.json
+node_modules/
