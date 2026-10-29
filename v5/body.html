@@ -1,0 +1,411 @@
+<body data-mode="menu" data-screen="screen-menu">
+
+    <!-- ARKA PLANLAR -->
+    <div class="bg" aria-hidden="true">
+        <div id="bg-menu" class="bg-img on"></div>
+        <div id="bg-game" class="bg-img"></div>
+        <div class="bg-veil"></div>
+    </div>
+    <div id="deco" aria-hidden="true">
+        <img class="d1" data-sym="cupcake" alt="">
+        <img class="d2" data-sym="cake" alt="">
+        <img class="d3" data-sym="leaf" alt="">
+        <img class="d4" data-sym="bloom" alt="">
+    </div>
+    <div id="fx-layer" aria-hidden="true"></div>
+
+    <button id="mute-btn" onclick="toggleMute()" title="🔊" aria-label="Sound">🔊</button>
+
+    <div id="app">
+        <!-- ÜST BAR (sadece slot ekranında) -->
+        <header id="topbar" class="panel" style="border-radius:20px;">
+            <div class="who"><span>☕</span><span id="hud-player-name">Bearista</span><span id="hud-stage" class="stage-chip">AŞAMA 1</span></div>
+            <div class="acts">
+                <button class="btn btn-sm btn-soft" onclick="goMap()">🗺<span class="tx" data-i18n="top.mapT"> HARİTA</span></button>
+                <button class="btn btn-sm" onclick="openShop()">🛠<span class="tx" data-i18n="top.shopT"> ATÖLYE</span></button>
+                <button class="btn btn-sm btn-soft" onclick="openHub()" aria-label="Kupa">🏅<span class="tx" data-i18n="top.hubT"> KUPA</span></button>
+                <button class="btn btn-sm btn-soft" onclick="openSettings()" aria-label="Ayarlar">⚙<span class="tx" data-i18n="top.setT"> AYARLAR</span></button>
+                <button class="btn btn-sm btn-soft" onclick="returnToMenu()">🏠<span class="tx" data-i18n="top.menuT"> MENÜ</span></button>
+            </div>
+        </header>
+
+        <main id="stage">
+
+            <!-- 1. ANA MENÜ -->
+            <section id="screen-menu" class="screen active">
+                <button id="menu-profile" class="menu-profile" onclick="openProfile()"></button>
+                <div class="panel menu-card">
+                    <div class="menu-heroes">
+                        <img data-sym="barista" alt="Bearista">
+                        <img data-sym="book" alt="">
+                        <img data-sym="cozybear" alt="">
+                    </div>
+                    <h1 class="menu-title">Recipes of<br>Barista</h1>
+                    <p class="menu-sub" data-i18n="menu.sub">3D Deluxe Edition</p>
+                    <button id="menu-continue" class="btn hidden" data-i18n="menu.cont">▶ DEVAM ET</button>
+                    <small id="menu-cont-info" class="menu-cont-info hidden"></small>
+                    <button class="btn btn-soft" onclick="newGame()" data-i18n="menu.newGame">YENİ OYUN</button>
+                    <button id="menu-saves" class="btn btn-soft hidden" onclick="openSlots('load')" data-i18n="menu.saves">KAYITLI OYUNLAR</button>
+                    <div class="menu-row">
+                        <button class="btn btn-soft" onclick="openHub()" data-i18n="menu2.hub">🏅 KUPA ODASI</button>
+                        <button class="btn btn-soft" onclick="openSettings()" data-i18n="menu2.set">⚙ AYARLAR</button>
+                    </div>
+                    <button class="btn btn-soft btn-lang" onclick="toggleLang()" data-i18n="menu.lang">🌐 DİL</button>
+                </div>
+            </section>
+
+            <!-- 2. HİKÂYE (animasyonlu çizgi roman) -->
+            <section id="screen-story" class="screen">
+                <div class="story">
+                    <div class="comic-head">
+                        <h2 class="comic-title" id="st-title">HİKÂYE</h2>
+                        <span class="comic-issue" id="st-issue">SAYI #1</span>
+                    </div>
+                    <div class="st-stage" id="st-stage" onclick="StoryPlayer.tap()"></div>
+                    <div class="st-narr" id="st-narr"></div>
+                    <div class="st-nav">
+                        <div class="st-dots" id="st-dots"></div>
+                        <div style="display:flex;gap:10px">
+                            <button class="st-btn" id="st-skip" onclick="StoryPlayer.skip()">⏭</button>
+                            <button class="st-btn next" id="st-next" onclick="StoryPlayer.next()">▶</button>
+                        </div>
+                    </div>
+                    <div id="st-cta" class="hidden"></div>
+                </div>
+            </section>
+
+            <!-- 3. KASABA HARİTASI -->
+            <section id="screen-map" class="screen">
+                <div class="panel map-wrap">
+                    <div class="map-head">
+                        <h2 data-i18n="map.title">Kasaba Haritası</h2>
+                        <span class="map-who">☕ <b id="map-name"></b></span>
+                        <span id="map-bank" class="wallet-chip"></span>
+                    </div>
+                    <div id="map-holder"></div>
+                    <div class="map-foot">
+                        <div id="map-info"></div>
+                        <div class="map-btns">
+                            <button class="btn" id="map-play" onclick="enterStage()">▶ OYNA</button>
+                            <button class="btn btn-soft" onclick="openShop()" data-i18n="map.shop">🛠 ATÖLYE</button>
+                            <button class="btn btn-soft" onclick="openHub()" data-i18n="menu2.hub">🏅 KUPA ODASI</button>
+                            <button class="btn btn-soft" onclick="returnToMenu()" data-i18n="map.menu">🏠 MENÜ</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 4. SLOT -->
+            <section id="screen-game" class="screen">
+                <div id="bonus-banner">
+                    <img id="bn-img" data-sym="book" alt="">
+                    <span><span id="bn-a">FREE SPIN! Kalan:</span> <b class="bn-count"><span id="free-spins-count">0</span><span id="bn-tot">/10</span></b></span>
+                    <span class="bn-sep">·</span>
+                    <span><span id="bn-b">Genişleyen sembol:</span> <b id="expanding-symbol-name">---</b></span>
+                    <b id="bn-mult" class="bn-mult hidden"></b>
+                </div>
+
+                <div id="goal-bar" class="pill">
+                    <span class="gt" id="goal-title">☕</span>
+                    <div class="trackwrap">
+                        <div class="track"><div class="fill" id="goal-fill"></div></div>
+                        <div id="goal-marks"></div>
+                    </div>
+                    <span class="gp" id="goal-pct">%0</span>
+                    <span class="gn" id="goal-num">0 / 100.000</span>
+                    <span id="buy-wrap"><button id="buy-btn" class="buy-btn locked" onclick="buyClick()">🏪</button></span>
+                </div>
+
+                <div id="loyalty">
+                    <div class="lc-head"><img data-sym="stamp" alt=""><span id="lc-title">SADAKAT KARTI</span></div>
+                    <div class="slots" id="lc-slots"></div>
+                    <span class="lc-count" id="lc-count">0/10</span>
+                    <div id="lc-buffs"></div>
+                </div>
+
+                <div id="mwar">
+                    <span class="ov-h"><img data-sym="matcha" alt=""><b id="mw-title">MATCHA SAVAŞI</b></span>
+                    <div class="ov-track"><div id="mw-fill"></div></div>
+                    <b id="mw-count">0/15</b>
+                </div>
+
+                <div id="oven">
+                    <span class="ov-h"><img data-sym="cupcake" alt=""><b id="ov-title">FIRIN</b></span>
+                    <div class="ov-track"><div id="ov-fill"></div></div>
+                    <b id="ov-count">0/12</b>
+                </div>
+
+                <div id="reel-wrap">
+                    <div id="three-container"></div>
+                    <div id="tier-badge">⭐</div>
+                    <div id="dede" class="dede" aria-label="Kahve Dede"></div>
+                    <div id="orb-layer"></div>
+                    <div id="zap"></div>
+                    <div id="win-pop"><b id="wp-v">+0</b><span id="wp-x"></span></div>
+                    <div id="fs-badge"><span class="t" id="fs-t">FREE SPIN</span><span class="n" id="fs-left">0</span><span class="o" id="fs-of">0 / 10</span></div>
+                </div>
+
+                <div id="game-message" class="pill">☕</div>
+
+                <div id="controls" class="panel" style="border-radius:24px;">
+                    <div class="ctrl-row stats">
+                        <div class="stat pill">
+                            <span class="lbl" data-i18n="ctl.bet">BAHİS</span>
+                            <button id="bet-minus-btn" class="bet-btn" onclick="adjustBet(-1)" aria-label="-">−</button>
+                            <span id="hud-bet" class="val">10</span>
+                            <button id="bet-plus-btn" class="bet-btn" onclick="adjustBet(1)" aria-label="+">+</button>
+                        </div>
+                        <div class="stat pill">
+                            <span class="lbl" data-i18n="ctl.bank">KASA</span>
+                            <span id="hud-balance" class="val">5.000</span>
+                            <img data-sym="goldenbean" alt="">
+                        </div>
+                    </div>
+                    <div class="ctrl-row actions">
+                        <button id="info-btn" class="round" onclick="openInfoModal()" aria-label="Info">
+                            <img data-sym="book" alt="">
+                        </button>
+                        <button id="spin-btn" class="round" onclick="spinReels()" aria-label="Spin">
+                            <span class="sb-steam" aria-hidden="true"><i></i><i></i><i></i></span><img data-sym="espresso" alt=""><span id="spin-lbl" data-i18n="ctl.spin">SPİN</span>
+                        </button>
+                        <button id="auto-spin-btn" class="round" onclick="toggleAutoSpin()" aria-label="Auto">
+                            <span class="ic">🔄</span><span class="tx" data-i18n="ctl.auto">OTO</span>
+                        </button>
+                        <button id="turbo-btn" class="round" onclick="toggleTurbo()" aria-label="Turbo">
+                            <span class="ic">⚡</span><span class="tx" data-i18n="ctl.turbo">TURBO</span>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+        <footer class="foot">Recipes of Barista — 3D Deluxe Edition</footer>
+    </div>
+
+    <!-- MODALLER -->
+    <div id="modal-slots" class="modal">
+        <div class="panel">
+            <h3 id="slots-title">Kayıtlı Oyunlar</h3>
+            <div id="slot-list"></div>
+            <button id="slots-close" class="btn btn-soft btn-block" onclick="closeModal('modal-slots')">KAPAT</button>
+        </div>
+    </div>
+
+    <div id="modal-name" class="modal">
+        <div class="panel">
+            <div class="modal-art"><img data-sym="barista" alt=""></div>
+            <h3 data-i18n="name.title">Barista Adı</h3>
+            <p class="sp-note" data-i18n="name.hint"></p>
+            <input type="text" id="player-name-input" value="Bearista" maxlength="16" autocomplete="off" onkeydown="if(event.key==='Enter')startGameWithPlayer()">
+            <div class="row">
+                <button class="btn btn-soft" onclick="closeNameModal()" data-i18n="name.cancel">İPTAL</button>
+                <button class="btn" onclick="startGameWithPlayer()" data-i18n="name.ok">DEVAM ET</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-info" class="modal">
+        <div class="panel wide">
+            <div class="pay-head">
+                <h3 id="info-title">📖</h3>
+                <button class="btn btn-sm btn-soft" onclick="closeInfoModal()" aria-label="Close">✕</button>
+            </div>
+            <div class="rule-box">
+                <h4 id="info-keys-t"></h4>
+                <div id="info-keys" class="keys"></div>
+            </div>
+            <div class="rule-box">
+                <h4 id="info-rules-t"></h4>
+                <p id="info-rules"></p>
+            </div>
+            <div>
+                <h4 id="info-pays-t" style="margin:0 0 8px;font-family:'Baloo 2',sans-serif;color:var(--brown)"></h4>
+                <div id="pay-grid" class="pay-grid"></div>
+            </div>
+            <div id="pay-oven" class="rule-box hidden"><h4 id="po-t"></h4><p id="po-txt"></p></div>
+            <div id="pay-bag" class="rule-box hidden"><h4 id="pb-t"></h4><p id="pb-txt"></p></div>
+            <div id="pay-loyalty" class="rule-box hidden"><h4 id="pl-t"></h4><p id="pl-txt"></p></div>
+            <div id="pay-special" class="rule-box hidden">
+                <h4 id="ps-t"></h4>
+                <div class="pay-grid" style="margin:8px 0">
+                    <div class="pay-card" id="ps-pitcher"></div>
+                    <div class="pay-card" id="ps-matcha"></div>
+                </div>
+                <p class="sp-note" id="ps-note"></p>
+            </div>
+            <button class="btn btn-block" id="info-ok" onclick="closeInfoModal()">ANLADIM</button>
+        </div>
+    </div>
+
+    <div id="modal-chapter-intro" class="modal">
+        <div class="panel">
+            <div class="modal-art" id="ci-art"></div>
+            <h3 id="ci-title"></h3>
+            <p id="ci-text"></p>
+            <button class="btn btn-block" id="ci-ok" onclick="closeChapterIntro()">BAŞLA ☕</button>
+        </div>
+    </div>
+
+    <div id="modal-bonus-intro" class="modal">
+        <div class="panel">
+            <h3 id="nb-title">BARİSTA NOT DEFTERİ!</h3>
+            <p id="notebook-text"></p>
+            <div class="bk-scene" id="bk-scene">
+                <div class="bk-stage" id="nb-book">
+                    <div class="bk-shadow"></div>
+                    <div class="bk-back"></div>
+                    <div class="bk-page bk-left"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+                    <div class="bk-page bk-right"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+                    <div class="bk-gutter"></div>
+                    <div class="bk-cover">
+                        <div class="bk-face bk-front"><img data-sym="book" alt=""><div id="nb-cover">BARİSTA<br>NOT DEFTERİ</div></div>
+                        <div class="bk-face bk-inside"><b id="nb-back">✨</b></div>
+                    </div>
+                </div>
+                <div class="bk-holo" id="bk-holo">
+                    <div class="hl-beam"></div>
+                    <div class="hl-card" id="nb-card">
+                        <div class="hl-ring"></div>
+                        <img id="notebook-symbol-icon" alt="">
+                        <div class="hl-scan"></div>
+                    </div>
+                    <span class="hl-name" id="notebook-symbol-name">?</span>
+                </div>
+            </div>
+            <button id="bonus-start-btn" class="btn btn-block" onclick="startFreeSpinSequence()" disabled>🚀</button>
+        </div>
+    </div>
+
+    <div id="modal-shop" class="modal">
+        <div class="panel shop">
+            <div class="shop-head">
+                <h3 id="shop-title">🛠</h3>
+                <span class="wallet-chip" id="shop-bank" style="cursor:default"></span>
+                <button class="btn btn-sm btn-soft" onclick="closeShop()" aria-label="Close">✕</button>
+            </div>
+            <div id="shop-tabs" class="shop-tabs"></div>
+            <div id="shop-list"></div>
+            <div class="shop-foot"><span id="shop-progress"></span><span id="shop-foot"></span></div>
+        </div>
+    </div>
+
+    <div id="modal-drink" class="modal">
+        <div class="panel">
+            <div class="modal-art"><img data-sym="stamp" alt=""></div>
+            <h3 class="good-title" id="dr-title"></h3>
+            <p id="dr-pick"></p>
+            <div class="drinks" id="drink-list"></div>
+        </div>
+    </div>
+
+    <div id="modal-bust" class="modal">
+        <div class="panel">
+            <div class="modal-art sad"><img data-sym="cozybear" alt=""><img data-sym="goldenbean" alt=""></div>
+            <h3 class="bad-title" id="bust-title"></h3>
+            <p id="bust-text"></p>
+            <div class="bust-timer" id="bust-timer">24:00:00</div>
+            <button class="btn btn-block btn-green" id="bust-video" onclick="watchVideo()">🎬</button>
+            <button class="btn btn-soft btn-block" id="bust-wait" onclick="bustWait()">⏳</button>
+        </div>
+    </div>
+
+    <div id="modal-bigwin" class="modal" onclick="closeBigWin()">
+        <div id="bigwin-box" class="bigwin">
+            <div class="bw-rays"></div>
+            <div class="bw-title" id="bw-title">BÜYÜK KAZANÇ!</div>
+            <div class="bw-amount"><img data-sym="goldenbean" alt=""><span id="bw-amount">0</span></div>
+            <div class="bw-tap" id="bw-tap"></div>
+        </div>
+    </div>
+
+    <div id="modal-fsdone" class="modal">
+        <div class="panel">
+            <div class="modal-art"><img data-sym="book" alt=""><img id="fd-img" alt=""></div>
+            <h3 class="good-title" id="fd-title"></h3>
+            <p id="fd-sub"></p>
+            <div class="fd-amount"><img data-sym="goldenbean" alt=""><span id="fd-amount">0</span></div>
+            <b class="fd-mult" id="fd-mult"></b>
+            <button class="btn btn-block" id="fd-ok" onclick="closeModal('modal-fsdone')">☕</button>
+        </div>
+    </div>
+
+    <div id="modal-confirm" class="modal">
+        <div class="panel">
+            <div class="modal-art" id="cf-art"></div>
+            <h3 id="cf-title" class="bad-title"></h3>
+            <p id="cf-text"></p>
+            <div class="row">
+                <button class="btn btn-soft" id="cf-cancel" onclick="closeModal('modal-confirm')">VAZGEÇ</button>
+                <button class="btn" id="cf-ok">ONAYLA</button>
+            </div>
+        </div>
+    </div>
+
+
+    <div id="modal-diff" class="modal">
+        <div class="panel diff">
+            <h3 id="df-title"></h3>
+            <p id="df-sub" class="sp-note"></p>
+            <div id="df-list" class="df-list"></div>
+            <p id="df-note" class="sp-note"></p>
+            <button class="btn btn-soft btn-block" id="df-cancel" onclick="closeModal('modal-diff')"></button>
+        </div>
+    </div>
+
+    <div id="modal-hub" class="modal">
+        <div class="panel wide hub">
+            <div class="pay-head"><h3 id="hub-title">🏅</h3><button class="btn btn-sm btn-soft" onclick="closeHub()" aria-label="Close">✕</button></div>
+            <div id="hub-tabs" class="shop-tabs hub-tabs"></div>
+            <div id="hub-body" class="hub-body"></div>
+        </div>
+    </div>
+
+    <div id="modal-profile" class="modal">
+        <div class="panel profile">
+            <div class="pay-head"><h3 id="pf-title">👤</h3><button class="btn btn-sm btn-soft" onclick="closeModal('modal-profile')" aria-label="Close">✕</button></div>
+            <div class="pf-top">
+                <img id="pf-preview" alt="">
+                <div class="pf-nick"><label id="pf-nick-l" for="pf-nick"></label><input id="pf-nick" type="text" maxlength="16" autocomplete="nickname"></div>
+            </div>
+            <h4 id="pf-av-l" class="pf-h"></h4>
+            <div id="pf-avs" class="pf-avs"></div>
+            <label class="btn btn-sm btn-soft pf-up"><span id="pf-upload">📷</span><input type="file" accept="image/*" onchange="pickPhoto(this)" hidden></label>
+            <div class="row"><button class="btn btn-soft" id="pf-close" onclick="closeModal('modal-profile')">KAPAT</button><button class="btn" id="pf-save" onclick="saveProfileForm()">KAYDET</button></div>
+            <h4 id="pf-acc-t" class="pf-h"></h4>
+            <div id="pf-acc" class="pf-acc"></div>
+        </div>
+    </div>
+
+    <div id="modal-settings" class="modal">
+        <div class="panel settings">
+            <div class="pay-head"><h3 id="set-title">⚙</h3><button class="btn btn-sm btn-soft" onclick="closeModal('modal-settings')" aria-label="Close">✕</button></div>
+            <div id="set-body"></div>
+            <button class="btn btn-block" id="set-close" onclick="closeModal('modal-settings')">KAPAT</button>
+        </div>
+    </div>
+
+    <div id="modal-backup" class="modal">
+        <div class="panel">
+            <div class="modal-art"><img data-sym="book" alt=""><img data-sym="goldenbean" alt=""></div>
+            <h3 id="bk-title" class="good-title"></h3>
+            <p id="bk-info"></p>
+            <div class="row"><button class="btn btn-sm" id="bk-copy" onclick="backupCopy()"></button><button class="btn btn-sm btn-soft" id="bk-file" onclick="backupFile()"></button></div>
+            <textarea id="bk-in" rows="3" spellcheck="false"></textarea>
+            <button class="btn btn-block btn-green" id="bk-load" onclick="backupLoad()"></button>
+            <p id="bk-msg" class="pf-msg"></p>
+            <button class="btn btn-soft btn-block" id="bk-close" onclick="closeModal('modal-backup')">KAPAT</button>
+        </div>
+    </div>
+
+    <div id="ach-toast"><img id="ach-img" alt=""><div><b id="ach-t"></b><small id="ach-s"></small></div></div>
+
+    <div id="tutorial" aria-live="polite">
+        <div class="tut-ring" id="tut-ring-spin"></div>
+        <div class="tut-ring" id="tut-ring-book"></div>
+        <div class="tut-bub" id="tut-spin"></div>
+        <div class="tut-bub" id="tut-book"></div>
+        <button id="tut-ok" class="btn btn-sm" onclick="hideTutorial()">ANLADIM</button>
+    </div>
+
+    <div id="dialog-toast"><img id="dt-img" alt=""><div><b id="dt-name"></b><span id="dt-text"></span></div></div>
+

@@ -2,6 +2,13 @@
 
 V7 (“Filtre Kahve”) öncesi sürümler. Her sürüm bir git etiketiyle (tag) işaretlidir.
 
+## 5.3 — Americano (Americano)
+_2026-10-29_
+
+- ☕ Kasaba hikâyesi: 5 şube, SyruppoLab’a karşı mücadele.
+- 📖 Reçete Kitabı, free spin, genişleyen sembol ve Kahve Dede çarpanları.
+- 🛠 Atölye geliştirmeleri, görevler, rozetler ve albüm.
+
 ## 4.0 — 3D Deluxe ilk sürüm
 _2026-10-24_
 

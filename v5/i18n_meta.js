@@ -1,0 +1,207 @@
+        /* =====================================================
+           DİL: Profil · Bulut · Kupa Odası · Ayarlar · Turbo · Kahve Dede
+           ===================================================== */
+        (function () {
+            const TR = {
+                diff: { title: 'Oyun Modunu Seç', sub: 'Bu kayıt boyunca değişmez. Skorlar her mod için ayrı tutulur.',
+                    story: ['Hikâye Modu', 'Kolay', 'Kazançlar daha cömert, şans desteği güçlü, iflasta 10.000 çekirdek yardım. Hikâyenin tadını çıkar.'],
+                    std: ['Standart Mod', 'Orta · önerilen', 'Oyunun asıl dengesi.'],
+                    gambler: ['Kumarbaz Modu', 'Zor', 'Kazançlar düşük, şans desteği yok, ara durak ödülleri yarıda; ama Kahve Dede neredeyse iki kat sık çarpan atar. Yüksek risk, yüksek heyecan!'],
+                    note: 'Hikâye Modu yaklaşık %40 daha kısa, Kumarbaz Modu yaklaşık %40 daha uzun sürer.' },
+                dede: { name: 'Kahve Dede', lines: ['Al evladım, ×{v}!', 'Dede’den sana ×{v}!', 'Hadi bakalım torunum: ×{v}!', 'Bu demlik hakkını veriyor: ×{v}!', 'Cezvem taştı: ×{v}!'], big: 'DEDE ÇARPAN VERDİ! ×{v}', first: 'Ben Kahve Dede! Bearista’nın dedesiyim. Çatıdaki pencereden makaraları izliyorum; beğendiğim spinlere cezvemden çarpan fırlatırım. “Dede çarpan verdi!” diye bağırmayı unutma!', gift: 'Dede’nin hediyesi: bu spine ×5 çarpan!' },
+                turbo: { on: '⚡ TURBO açık: makaralar hızlı durur, kısa kazanç gösterisi.', off: 'Turbo kapalı.', label: 'TURBO' },
+                menu2: { hub: '🏅 KUPA ODASI', set: '⚙ AYARLAR', guest: 'Misafir', tapProfile: 'Profilini düzenle', cloudOn: '☁ Bulut: açık', cloudOff: '📱 Bu cihaza kayıtlı', cloudSync: '☁ Eşitleniyor…', cloudErr: '☁ Bağlantı yok — kayıt bu cihazda' },
+                prof: {
+                    title: 'Oyuncu Profili', nick: 'Oyuncu adı (nick)', nickPh: 'Nick yaz…', avatar: 'Profil resmi', upload: '📷 FOTOĞRAF YÜKLE', save: 'KAYDET', close: 'KAPAT',
+                    acc: 'Hesap ve bulut kaydı', accInfo: 'Giriş yaparsan kayıtların, rozetlerin ve albümün buluta yedeklenir; hangi cihazda giriş yaparsan oradan devam edersin.',
+                    google: 'Google ile giriş yap', email: 'E-posta', pass: 'Şifre (en az 6 karakter)', login: 'GİRİŞ YAP', register: 'HESAP AÇ', forgot: 'Şifremi unuttum',
+                    out: 'ÇIKIŞ YAP', del: 'Hesabımı sil', delT: 'HESAP SİLİNSİN Mİ?', delTxt: 'Bulut hesabın, buluttaki kayıtların ve skor tablosundaki satırın <b>kalıcı olarak</b> silinecek. Bu cihazdaki kayıtlar kalır.', delYes: 'EVET, HESABI SİL', delDone: 'Hesabın silindi.', relogin: 'Güvenlik için önce çıkış yapıp yeniden giriş yapman, sonra tekrar silmeyi denemen gerekiyor.', privacy: 'Gizlilik politikası', syncNow: '☁ ŞİMDİ EŞİTLE', signedAs: 'Giriş yapıldı: <b>{e}</b>', lastSync: 'Son eşitleme: {t}', never: 'henüz yok',
+                    nocfg: 'Bulut hesabı bu sürümde henüz bağlanmadı (oyun sahibi Firebase ayarlarını eklemeli). Şimdilik kayıt kodu ile yedekleyebilirsin.',
+                    offline: 'İnternet yok. Oyun çevrimdışı çalışmaya devam ediyor; bağlantı gelince giriş yapabilirsin.',
+                    loading: 'Bağlanıyor…', resetSent: 'Şifre sıfırlama e-postası gönderildi.', needMail: 'Önce e-posta adresini yaz.',
+                    merged: 'Bulut kaydı ile bu cihazdaki kayıtlar birleştirildi ✓', saved: 'Profil kaydedildi ✓', photoErr: 'Fotoğraf okunamadı.',
+                    errs: { 'auth/invalid-email': 'E-posta adresi geçersiz.', 'auth/user-not-found': 'Bu e-postayla hesap yok. “Hesap Aç”ı dene.', 'auth/wrong-password': 'Şifre yanlış.', 'auth/invalid-credential': 'E-posta ya da şifre yanlış.', 'auth/email-already-in-use': 'Bu e-postayla zaten hesap var. “Giriş Yap”ı dene.', 'auth/weak-password': 'Şifre en az 6 karakter olmalı.', 'auth/popup-closed-by-user': 'Giriş penceresi kapatıldı.', 'auth/network-request-failed': 'İnternet bağlantısı yok.', 'auth/unauthorized-domain': 'Google girişi için oyunun bir web adresinde açılması gerekir (dosyadan açınca çalışmaz).', 'auth/operation-not-supported-in-this-environment': 'Google girişi için oyunun bir web adresinde açılması gerekir (dosyadan açınca çalışmaz).', def: 'Bir sorun oldu: {c}' }
+                },
+                bak: {
+                    title: 'Kayıt Yedeği', info: 'Tüm kayıtların, profilin, rozetlerin ve albümün tek bir koda dönüşür. Kodu sakla; başka cihazda “Kodu Yükle” ile aynen devam edersin.',
+                    copy: '📋 KODU KOPYALA', file: '💾 DOSYA OLARAK İNDİR', load: '📥 KODU YÜKLE', paste: 'Yedek kodunu buraya yapıştır…', copied: 'Kod panoya kopyalandı ✓',
+                    bad: 'Kod geçersiz ya da eksik kopyalanmış.', okT: 'YEDEK YÜKLENSİN Mİ?', okTxt: 'Bu cihazdaki kayıtların yerine yedekteki <b>{n}</b> kayıt ve profil gelecek.', yes: 'EVET, YÜKLE', done: 'Yedek yüklendi ✓'
+                },
+                hub: {
+                    title: '🏅 Kupa Odası', tabs: { daily: '🎁 Günlük', badges: '🏅 Rozetler', album: '📔 Albüm', quests: '📋 Görevler', top: '🏆 Skorlar' },
+                    needSave: 'Ödülleri almak için önce bir kayıt yükle.'
+                },
+                daily: {
+                    title: 'Günlük Giriş Ödülü', day: '{n}. GÜN', claim: 'ÖDÜLÜ AL', claimed: 'Bugünün ödülü alındı ✓ Yarın tekrar gel!', streak: 'Giriş serisi: <b>{n} gün</b>',
+                    info: 'Her gün oyuna gir, ödül büyüsün! Bir gün kaçırırsan seri 1. günden başlar. 7. gün: büyük ödül + Kahve Dede’nin ×5 çarpan hediyesi.',
+                    got: '🎁 Günlük ödül: +{v} çekirdek!', got7: '🎁 7. GÜN! +{v} çekirdek + sonraki spinde Dede’den ×5!', later: 'Sonra'
+                },
+                badges: {
+                    got: '🏅 ROZET: {n}', reward: '+{v} çekirdek', locked: 'Kilitli', count: '{a}/{b} rozet', when: '{d} tarihinde kazanıldı',
+                    list: {
+                        first_win: ['İlk Demleme', 'İlk kazancını al.'], spins100: ['Isınma Turu', '100 spin at.'], spins1000: ['Makara Ustası', '1.000 spin at.'], spins5000: ['Durmak Yok', '5.000 spin at.'],
+                        fs1: ['Not Defteri Açıldı', 'Free spin bonusunu tetikle.'], fs25: ['Defter Kurdu', '25 kez free spin bonusu tetikle.'],
+                        big: ['Büyük Kazanç', 'Bahsinin 15 katını tek seferde kazan.'], mega: ['Mega Kazanç', 'Bahsinin 40 katını tek seferde kazan.'], epic: ['Epik Kazanç', 'Bahsinin 100 katını tek seferde kazan.'],
+                        dede1: ['Dede Çarpan Verdi', 'Kahve Dede’den ilk çarpanını al.'], dede25: ['Dedenin Gözdesi', '×25 veya üstü çarpanla kazan.'], dede100: ['Dede Çıldırdı', '100 çarpan çekirdeği topla.'],
+                        zafer: ['Kahve Zaferi', 'Matcha Savaşı’nda ilk zaferini kazan.'], rain: ['Pasta Yağmuru', 'Fırını doldurup Pasta Yağmuru başlat.'], harvest: ['Bereketli Hasat', 'Hasat ödemesi kazan.'], loy: ['Sadık Müşteri', 'Sadakat kartını doldur.'],
+                        st2: ['2. Şube', 'Matcha Caddesi’ni satın al.'], st3: ['3. Şube', 'Pastane Meydanı’nı satın al.'], st4: ['4. Şube', 'Hasat Tepesi’ni satın al.'], st5: ['Kale Kapısında', 'Şurup Kalesi’ne ulaş.'], hero: ['Kasabanın Kahramanı', 'SyruppoLab’ı satın alıp oyunu bitir.'],
+                        reel6: ['Altıncı Makara', '6. makarayı aç.'], fullpower: ['Tam Donanım', 'Atölyedeki tüm yükseltmeleri sonuna kadar al.'],
+                        rich1m: ['Milyoner Barista', 'Kasanda 1.000.000 çekirdek gör.'], rich100m: ['Kahve İmparatoru', 'Kasanda 100.000.000 çekirdek gör.'],
+                        daily7: ['Haftalık Müdavim', '7 gün üst üste giriş yap.'], album1: ['Koleksiyoncu', 'Albümdeki tüm kartları aç.'], album3: ['Efsane Koleksiyoncu', 'Albümdeki tüm kartları 3 yıldıza çıkar.'],
+                        turbo: ['Hız Tutkunu', 'Turbo ile 500 spin at.'], quest10: ['Görev Adamı', '10 günlük görev tamamla.']
+                    }
+                },
+                album: {
+                    title: 'Koleksiyon Albümü', info: 'Semboller kazandıran kombinasyonlarda yer aldıkça kartları açılır ve yıldız kazanır. Her yıldız kasana ödül verir!',
+                    count: '{a}/{b} kart · {s} yıldız', lockedName: '???', prog: '{a}/{b}', max: 'TAM ★★★', starGot: '📔 ALBÜM: {n} {s} +{v} çekirdek',
+                    bios: {
+                        book: 'Bearista’nın büyükannesinden kalma reçete kitabı. Sayfaları açıldığında free spin sihri başlar; free spinde her makarayı tek başına kaplayabilir.',
+                        barista: 'Hikâyemizin kahramanı. Sabah altıda kalkar, değirmeni ayarlar, ilk kahveyi daima MaviKuş için demler.',
+                        girlfriend: 'Mavi bereli, kalbi sıcak, kahvesi sütlü. Bearista’nın en büyük destekçisi ve kasabanın en tatlı gülümsemesi.',
+                        baking_bear: 'Pastane Meydanı’nın unlu yüzü. Kruvasan hamurunu 27 kat açar, kekleri asla yakmaz (neredeyse).',
+                        portafilter: 'Espresso makinesinin kalbi. Doğru tamper basıncını bilir ve bunu herkese anlatmaya bayılır.',
+                        v60: 'Sabırlı ve zarif. 3 dakikalık demlemeyi bir meditasyon gibi yaşar.',
+                        espresso: 'Küçük ama güçlü. Kasabada sabahları uyanmanın resmî yolu.',
+                        aeropress: 'Yolculukların vazgeçilmezi. Ters de çalışır, düz de; her hâliyle mutlu.',
+                        golden_bean: 'Efsaneye göre Hasat Tepesi’nde her yüz yılda bir yetişir. Şimdilik kasandaki her şeyin para birimi.',
+                        croissant: 'Kahvenin en yakın dostu. Tereyağlı, çıtır ve her zaman yanında bir fincan bekler.',
+                        pitcher: 'Süt köpürtme ustası. 1, 3 ve 5. makarada joker olur; üçü bir araya gelince Latte Art yapar.',
+                        matcha: 'SyruppoLab’ın yeşil istilası! Ama baristalarımız her matchayı gerçek kahveye çevirir.',
+                        cupcake: 'Fırından yeni çıkmış. Fırın dolunca gökten yağar ve joker olur.',
+                        coffeebag: 'Hasat Tepesi’nin bereketi. Üç çuval bir araya gelince hasat ödemesi verir.',
+                        stamp: 'Sadık müşterilerin işareti. On damga bir bedava içecek demek.',
+                        dede: 'Bearista’nın dedesi, kasabanın ilk kavurmacısı. Çatıdaki penceresinden izler, beğendiği spinlere cezvesinden çarpan fırlatır.'
+                    }
+                },
+                quests: {
+                    title: 'Günlük Görevler', locked: 'Günlük görevler oyunu bitirince (SyruppoLab’ı satın alınca) açılır. Sonra her gün 3 yeni görev ve sandık seni bekler!',
+                    info: 'Her gün 3 görev. Hepsini bitirince Usta Sandığı açılır. Görevler gece yarısı yenilenir.', claim: 'AL', done: 'ALINDI ✓', chest: '🎁 USTA SANDIĞI', chestTxt: '3 görevi de bitir: +{v}', chestGot: 'Sandık açıldı ✓',
+                    got: '📋 Görev tamamlandı: +{v} çekirdek!', btn: '📋 GÖREVLER {a}/{b}',
+                    list: { spins: '{n} spin at', winx: 'Tek spinde bahsinin {n} katını kazan', fs: 'Free spin bonusunu {n} kez tetikle', orbs: 'Kahve Dede’den {n} çarpan al', loy: 'Sadakat kartını {n} kez doldur', winsum: 'Toplamda bahsinin {n} katı kazan', big: '{n} kez Büyük Kazanç yap (×15+)' }
+                },
+                lb: { title: 'Usta Skor Tablosu', info: 'Oyunu bitirdikten sonra Usta Modu’nda kasanın ulaştığı en yüksek değer skorun olur. Amaç: her yükseltme sonuna kadar alınmışken en yüksek çekirdeği görmek!', me: 'Senin rekorun', none: 'Henüz skor yok. Oyunu bitir, Usta Modu’nda rekor kır!', local: 'Bu cihazdaki kayıtlar', world: 'Dünya sıralaması', login: 'Dünya sıralamasına katılmak için profilinden giriş yap.', loading: 'Yükleniyor…', err: 'Sıralama yüklenemedi (internet yok olabilir).', rank: 'Sıran: #{n}' },
+                usta: { title: '🏆 USTA MODU', rec: 'Rekor: {v}', newRec: '🏆 YENİ REKOR: {v}!' },
+                set: {
+                    title: '⚙ Ayarlar', lang: 'Dil', music: 'Müzik sesi', sfx: 'Efekt sesi', mute: 'Tüm sesler', turbo: 'Turbo spin (varsayılan)', vibe: 'Titreşim', fx: 'Hafif efekt modu (zayıf telefonlar için)',
+                    on: 'AÇIK', off: 'KAPALI', account: '👤 Profil ve hesap', backup: '💾 Kayıt yedeği (kod)', tut: '❔ Rehberi tekrar göster', reset: '🗑 Tüm verileri sil', resetT: 'HER ŞEY SİLİNSİN Mİ?', resetTxt: 'Bu cihazdaki <b>tüm kayıtlar, profil, rozetler ve albüm</b> silinecek. Bulut hesabındaki kayıt silinmez.', resetYes: 'EVET, SİL',
+                    install: '📲 Ana ekrana ekle', installed: 'Uygulama olarak yüklendi ✓', offline: '✈ Çevrimdışı çalışır', ver: 'Sürüm', close: 'KAPAT'
+                },
+                pwaInstall: 'Ana ekrana ekle'
+            };
+            const EN = {
+                diff: { title: 'Choose a Game Mode', sub: 'It stays the same for this save. Scores are kept separately for each mode.',
+                    story: ['Story Mode', 'Easy', 'More generous wins, strong luck boost, 10,000 beans of help when you go broke. Enjoy the story.'],
+                    std: ['Standard Mode', 'Medium · recommended', 'The game’s main balance.'],
+                    gambler: ['Gambler Mode', 'Hard', 'Lower wins, no luck boost, half checkpoint rewards; but Grandpa Brew tosses multipliers almost twice as often. High risk, high thrill!'],
+                    note: 'Story Mode is about 40% shorter, Gambler Mode about 40% longer.' },
+                dede: { name: 'Grandpa Brew', lines: ['Here you go, kiddo: ×{v}!', 'From Grandpa with love: ×{v}!', 'Come on, grandchild: ×{v}!', 'This brew deserves it: ×{v}!', 'My coffee pot overflowed: ×{v}!'], big: 'GRANDPA GAVE A MULTIPLIER! ×{v}', first: 'I’m Grandpa Brew, Bearista’s grandfather! I watch the reels from the rooftop window and toss multipliers from my coffee pot onto spins I like.', gift: 'Grandpa’s gift: ×5 on this spin!' },
+                turbo: { on: '⚡ TURBO on: reels stop fast, short win show.', off: 'Turbo off.', label: 'TURBO' },
+                menu2: { hub: '🏅 TROPHY ROOM', set: '⚙ SETTINGS', guest: 'Guest', tapProfile: 'Edit your profile', cloudOn: '☁ Cloud: on', cloudOff: '📱 Saved on this device', cloudSync: '☁ Syncing…', cloudErr: '☁ Offline — saved on this device' },
+                prof: {
+                    title: 'Player Profile', nick: 'Nickname', nickPh: 'Type a nick…', avatar: 'Profile picture', upload: '📷 UPLOAD PHOTO', save: 'SAVE', close: 'CLOSE',
+                    acc: 'Account & cloud save', accInfo: 'Sign in to back up your saves, badges and album to the cloud and continue on any device you sign in on.',
+                    google: 'Sign in with Google', email: 'E-mail', pass: 'Password (6+ characters)', login: 'SIGN IN', register: 'CREATE ACCOUNT', forgot: 'Forgot password',
+                    out: 'SIGN OUT', del: 'Delete my account', delT: 'DELETE ACCOUNT?', delTxt: 'Your cloud account, cloud saves and leaderboard entry will be deleted <b>permanently</b>. Saves on this device stay.', delYes: 'YES, DELETE ACCOUNT', delDone: 'Your account was deleted.', relogin: 'For security, sign out and sign in again, then try deleting once more.', privacy: 'Privacy policy', syncNow: '☁ SYNC NOW', signedAs: 'Signed in: <b>{e}</b>', lastSync: 'Last sync: {t}', never: 'not yet',
+                    nocfg: 'Cloud accounts aren’t connected in this build yet (the game owner must add the Firebase settings). For now, back up with a save code.',
+                    offline: 'No internet. The game keeps working offline; sign in when you’re back online.',
+                    loading: 'Connecting…', resetSent: 'Password reset e-mail sent.', needMail: 'Type your e-mail first.',
+                    merged: 'Cloud save and this device’s saves were merged ✓', saved: 'Profile saved ✓', photoErr: 'Couldn’t read the photo.',
+                    errs: { 'auth/invalid-email': 'Invalid e-mail address.', 'auth/user-not-found': 'No account with this e-mail. Try “Create account”.', 'auth/wrong-password': 'Wrong password.', 'auth/invalid-credential': 'Wrong e-mail or password.', 'auth/email-already-in-use': 'An account already exists. Try “Sign in”.', 'auth/weak-password': 'Password must be at least 6 characters.', 'auth/popup-closed-by-user': 'Sign-in window was closed.', 'auth/network-request-failed': 'No internet connection.', 'auth/unauthorized-domain': 'Google sign-in needs the game opened from a web address (not from a file).', 'auth/operation-not-supported-in-this-environment': 'Google sign-in needs the game opened from a web address (not from a file).', def: 'Something went wrong: {c}' }
+                },
+                bak: {
+                    title: 'Save Backup', info: 'All your saves, profile, badges and album become a single code. Keep it; on another device use “Load code” to continue exactly where you were.',
+                    copy: '📋 COPY CODE', file: '💾 DOWNLOAD AS FILE', load: '📥 LOAD CODE', paste: 'Paste your backup code here…', copied: 'Code copied ✓',
+                    bad: 'The code is invalid or incomplete.', okT: 'LOAD BACKUP?', okTxt: 'The <b>{n}</b> saves and profile in the backup will replace this device’s data.', yes: 'YES, LOAD', done: 'Backup loaded ✓'
+                },
+                hub: {
+                    title: '🏅 Trophy Room', tabs: { daily: '🎁 Daily', badges: '🏅 Badges', album: '📔 Album', quests: '📋 Quests', top: '🏆 Scores' },
+                    needSave: 'Load a save first to collect rewards.'
+                },
+                daily: {
+                    title: 'Daily Login Reward', day: 'DAY {n}', claim: 'CLAIM', claimed: 'Today’s reward claimed ✓ Come back tomorrow!', streak: 'Login streak: <b>{n} days</b>',
+                    info: 'Log in every day and the reward grows! Miss a day and the streak restarts at day 1. Day 7: big reward + Grandpa Brew’s ×5 multiplier gift.',
+                    got: '🎁 Daily reward: +{v} beans!', got7: '🎁 DAY 7! +{v} beans + ×5 from Grandpa on your next spin!', later: 'Later'
+                },
+                badges: {
+                    got: '🏅 BADGE: {n}', reward: '+{v} beans', locked: 'Locked', count: '{a}/{b} badges', when: 'Earned on {d}',
+                    list: {
+                        first_win: ['First Brew', 'Get your first win.'], spins100: ['Warm-up', 'Spin 100 times.'], spins1000: ['Reel Master', 'Spin 1,000 times.'], spins5000: ['Unstoppable', 'Spin 5,000 times.'],
+                        fs1: ['Notebook Opened', 'Trigger the free spin bonus.'], fs25: ['Bookworm', 'Trigger free spins 25 times.'],
+                        big: ['Big Win', 'Win 15× your bet at once.'], mega: ['Mega Win', 'Win 40× your bet at once.'], epic: ['Epic Win', 'Win 100× your bet at once.'],
+                        dede1: ['Grandpa’s Gift', 'Get your first multiplier from Grandpa Brew.'], dede25: ['Grandpa’s Favourite', 'Win with a ×25 or bigger multiplier.'], dede100: ['Grandpa Went Wild', 'Collect 100 multiplier beans.'],
+                        zafer: ['Coffee Victory', 'Win your first Matcha War victory.'], rain: ['Cake Rain', 'Fill the oven and start Cake Rain.'], harvest: ['Bountiful Harvest', 'Win a harvest payout.'], loy: ['Loyal Customer', 'Fill the loyalty card.'],
+                        st2: ['Branch 2', 'Buy Matcha Street.'], st3: ['Branch 3', 'Buy Bakery Square.'], st4: ['Branch 4', 'Buy Harvest Hill.'], st5: ['At the Castle Gate', 'Reach Syrup Castle.'], hero: ['Town Hero', 'Buy SyruppoLab and finish the game.'],
+                        reel6: ['Sixth Reel', 'Unlock the 6th reel.'], fullpower: ['Fully Equipped', 'Max out every Workshop upgrade.'],
+                        rich1m: ['Millionaire Barista', 'See 1,000,000 beans in your bank.'], rich100m: ['Coffee Emperor', 'See 100,000,000 beans in your bank.'],
+                        daily7: ['Weekly Regular', 'Log in 7 days in a row.'], album1: ['Collector', 'Unlock every album card.'], album3: ['Legendary Collector', 'Get every album card to 3 stars.'],
+                        turbo: ['Speed Lover', 'Spin 500 times in Turbo.'], quest10: ['Quest Hero', 'Finish 10 daily quests.']
+                    }
+                },
+                album: {
+                    title: 'Collection Album', info: 'Cards unlock and earn stars as symbols take part in winning combos. Every star pays beans into your bank!',
+                    count: '{a}/{b} cards · {s} stars', lockedName: '???', prog: '{a}/{b}', max: 'MAX ★★★', starGot: '📔 ALBUM: {n} {s} +{v} beans',
+                    bios: {
+                        book: 'Bearista’s grandmother’s recipe book. When it opens, free spin magic begins; in free spins it can cover whole reels on its own.',
+                        barista: 'Our hero. Up at six, tunes the grinder, and always brews the first coffee for BlueBird.',
+                        girlfriend: 'Blue beanie, warm heart, milky coffee. Bearista’s biggest supporter and the sweetest smile in town.',
+                        baking_bear: 'The floury face of Bakery Square. Laminates croissant dough 27 times and never burns a cake (almost).',
+                        portafilter: 'The heart of the espresso machine. Knows the perfect tamping pressure and loves telling everyone.',
+                        v60: 'Patient and elegant. Treats a 3-minute brew like meditation.',
+                        espresso: 'Small but mighty. The town’s official way to wake up.',
+                        aeropress: 'Every traveller’s friend. Works upright or inverted — happy either way.',
+                        golden_bean: 'Legend says it grows on Harvest Hill once a century. For now it’s the currency of everything in your bank.',
+                        croissant: 'Coffee’s best friend. Buttery, flaky and always waiting next to a cup.',
+                        pitcher: 'The milk-steaming master. A joker on reels 1, 3 and 5; three together make Latte Art.',
+                        matcha: 'SyruppoLab’s green invasion! But our baristas turn every matcha into real coffee.',
+                        cupcake: 'Fresh out of the oven. When the oven is full they rain from the sky as jokers.',
+                        coffeebag: 'The bounty of Harvest Hill. Three sacks together pay a harvest.',
+                        stamp: 'The mark of loyal customers. Ten stamps mean a free drink.',
+                        dede: 'Bearista’s grandfather and the town’s first roaster. Watches from the rooftop window and tosses multipliers from his coffee pot.'
+                    }
+                },
+                quests: {
+                    title: 'Daily Quests', locked: 'Daily quests unlock after you finish the game (buy SyruppoLab). Then 3 new quests and a chest await you every day!',
+                    info: '3 quests per day. Finish all three to open the Master Chest. Quests refresh at midnight.', claim: 'CLAIM', done: 'CLAIMED ✓', chest: '🎁 MASTER CHEST', chestTxt: 'Finish all 3 quests: +{v}', chestGot: 'Chest opened ✓',
+                    got: '📋 Quest complete: +{v} beans!', btn: '📋 QUESTS {a}/{b}',
+                    list: { spins: 'Spin {n} times', winx: 'Win {n}× your bet in one spin', fs: 'Trigger free spins {n} time(s)', orbs: 'Get {n} multipliers from Grandpa Brew', loy: 'Fill the loyalty card {n} time(s)', winsum: 'Win {n}× your bet in total', big: 'Land {n} Big Win(s) (×15+)' }
+                },
+                lb: { title: 'Master Leaderboard', info: 'After finishing the game, the highest bank you reach in Master Mode is your score. The goal: with every upgrade maxed, see the most beans ever!', me: 'Your record', none: 'No score yet. Finish the game and set a record in Master Mode!', local: 'Saves on this device', world: 'World ranking', login: 'Sign in from your profile to join the world ranking.', loading: 'Loading…', err: 'Couldn’t load the ranking (maybe no internet).', rank: 'Your rank: #{n}' },
+                usta: { title: '🏆 MASTER MODE', rec: 'Record: {v}', newRec: '🏆 NEW RECORD: {v}!' },
+                set: {
+                    title: '⚙ Settings', lang: 'Language', music: 'Music volume', sfx: 'Effects volume', mute: 'All sound', turbo: 'Turbo spin (default)', vibe: 'Vibration', fx: 'Light effects mode (for slower phones)',
+                    on: 'ON', off: 'OFF', account: '👤 Profile & account', backup: '💾 Save backup (code)', tut: '❔ Show the guide again', reset: '🗑 Delete all data', resetT: 'DELETE EVERYTHING?', resetTxt: '<b>All saves, profile, badges and album</b> on this device will be deleted. Your cloud save is not deleted.', resetYes: 'YES, DELETE',
+                    install: '📲 Add to home screen', installed: 'Installed as an app ✓', offline: '✈ Works offline', ver: 'Version', close: 'CLOSE'
+                },
+                pwaInstall: 'Add to home screen'
+            };
+            Object.assign(I18N.tr.top, { setT: ' AYARLAR', hubT: ' KUPA' });
+            Object.assign(I18N.tr.shop, { onlyAt: 'Yalnızca {place} şubesinde işe yarar' });
+            Object.assign(I18N.en.shop, { onlyAt: 'Only works at {place}' });
+            Object.assign(I18N.en.top, { setT: ' SETTINGS', hubT: ' TROPHY' });
+            Object.assign(I18N.tr.ctl, { turbo: 'TURBO', stop: 'DUR' });
+            Object.assign(I18N.en.ctl, { turbo: 'TURBO', stop: 'STOP' });
+            Object.assign(I18N.tr, TR);
+            Object.assign(I18N.en, EN);
+
+            // Kitap: tuş listesi güncellemesi
+            const patchKeys = (lang, rows, replace) => {
+                const keys = I18N[lang].info.keys;
+                Object.keys(replace).forEach(k => { const i = keys.findIndex(r => r[0] === k); if (i >= 0) keys[i] = replace[k]; });
+                const at = keys.findIndex(r => r[0] === (lang === 'tr' ? 'OTO' : 'AUTO'));
+                keys.splice(at + 1, 0, rows[0]);
+                rows.slice(1).forEach(r => keys.push(r));
+            };
+            patchKeys('tr', [
+                ['⚡ TURBO', 'Hızlı oyun: makaralar neredeyse anında durur, küçük kazanç gösterileri kısalır. Sonuçlar ve kazanma şansı değişmez. 2 Kitap düşünce kalan makaralar yine yavaşlar, heyecan kaçmaz. Dönerken SPİN’e tekrar basarsan makaraları hemen durdurursun.'],
+                ['⚙ AYARLAR', 'Dil, müzik ve efekt sesi, turbo, titreşim, hafif efekt modu, profil/hesap ve kayıt yedeği.'],
+                ['🏅 KUPA ODASI', 'Günlük giriş ödülü, rozetler, koleksiyon albümü, (oyun bitince) günlük görevler ve skor tablosu.'],
+                ['👤 PROFİL', 'Ana menüdeki profil kartı: nick, profil resmi, Google/e-posta ile giriş ve bulut kaydı.']
+            ], { '⚡ ÇARPAN ÇEKİRDEĞİ': ['👴 KAHVE DEDE', 'Makaraların üstündeki Kahve Dede bazen cezvesinden bir çarpan çekirdeği fırlatır (×2 – ×100). O spinde kazanç varsa kazancın çarpılır. Free spin’de çarpanlar birikir (en fazla ×25) ve sonraki her kazancı çarpar. “Dede çarpan verdi!”'] });
+            patchKeys('en', [
+                ['⚡ TURBO', 'Fast play: reels stop almost instantly and small win shows are shortened. Results and odds don’t change. When 2 Books land the remaining reels still slow down, so the thrill stays. Press SPIN again while spinning to stop the reels at once.'],
+                ['⚙ SETTINGS', 'Language, music and effects volume, turbo, vibration, light effects mode, profile/account and save backup.'],
+                ['🏅 TROPHY ROOM', 'Daily login reward, badges, collection album, (after the finale) daily quests and the leaderboard.'],
+                ['👤 PROFILE', 'The profile card on the main menu: nickname, picture, Google/e-mail sign-in and cloud save.']
+            ], { '⚡ MULTIPLIER BEAN': ['👴 GRANDPA BREW', 'Grandpa Brew sits above the reels and sometimes tosses a multiplier bean from his coffee pot (×2 – ×100). If that spin wins, the win is multiplied. In free spins multipliers add up (max ×25) and multiply every following win.'] });
+        })();
+

@@ -1,0 +1,1607 @@
+        /* =====================================================
+           EKRANLAR / MODALLAR
+           ===================================================== */
+        const $ = id => document.getElementById(id);
+        const ALL_SCREENS = ['screen-menu', 'screen-story', 'screen-map', 'screen-game'];
+        const ALL_MODALS = ['modal-bonus-intro', 'modal-info', 'modal-name', 'modal-chapter-intro', 'modal-shop', 'modal-slots', 'modal-confirm', 'modal-drink', 'modal-bust', 'modal-bigwin', 'modal-fsdone', 'modal-hub', 'modal-diff', 'modal-profile', 'modal-settings', 'modal-backup'];
+
+        function switchScreen(screenId) {
+            playSynthNote(650, 0.05);
+            ALL_SCREENS.forEach(id => { const el = $(id); if (el) el.classList.remove('active'); });
+            const target = $(screenId);
+            if (target) target.classList.add('active');
+
+            const isGame = screenId === 'screen-game';
+            document.body.dataset.screen = screenId;
+            document.body.dataset.mode = isGame ? 'game' : 'menu';
+            $('bg-menu').classList.toggle('on', !isGame);
+            $('bg-game').classList.toggle('on', isGame);
+            if (screenId !== 'screen-story' && typeof StoryPlayer !== 'undefined') StoryPlayer.stop();
+
+            if (isGame) {
+                startCasinoMusic();
+                requestAnimationFrame(() => requestAnimationFrame(() => {
+                    const go = () => initThreeJS();
+                    if (assetsReady) go(); else preloadPromise.then(go);
+                }));
+            } else {
+                stopCasinoMusic(); stopBonusMusic();
+                stopRender();
+                $('dialog-toast').classList.remove('show');
+                hideTutorial();
+            }
+            if (!isGame) $('fx-layer').innerHTML = '';
+            const stage = $('stage');
+            if (stage) stage.scrollTop = 0;
+        }
+
+        function openModal(id) { $(id).classList.add('open'); }
+        function closeModal(id) { $(id).classList.remove('open'); }
+        function anyModalOpen() { return !!document.querySelector('.modal.open'); }
+        function whenNoModal(fn) {
+            const go = () => { if (anyModalOpen()) { setTimeout(go, 350); return; } fn(); };
+            go();
+        }
+
+        function confirmBox(opts) {
+            $('cf-title').textContent = opts.title;
+            $('cf-text').innerHTML = opts.text;
+            $('cf-title').className = opts.good ? 'good-title' : 'bad-title';
+            const art = $('cf-art'); art.innerHTML = '';
+            (opts.art || []).forEach(k => { const im = document.createElement('img'); im.src = ASSETS.sym[k]; im.alt = ''; art.appendChild(im); });
+            const ok = $('cf-ok');
+            ok.textContent = opts.ok;
+            ok.onclick = () => { closeModal('modal-confirm'); opts.onOk(); };
+            $('cf-cancel').textContent = CUR_LANG() === 'en' ? 'CANCEL' : 'VAZGEÇ';
+            playSynthNote(420, 0.08, 'triangle', 0.05);
+            openModal('modal-confirm');
+        }
+
+        /* =====================================================
+           ANA MENÜ · KAYITLAR · DİL
+           ===================================================== */
+        function slotSummary(sv) {
+            return diffLabel(sv) + ' · ' + tf(L().slots.info, { stage: stageLabel(sv.stage), bal: fmt(sv.balance) });
+        }
+        function stageLabel(n) { return `${L().stageWord} ${n} · ${stageName(n)}`; }
+
+        function renderMenu() {
+            applyStaticI18n();
+            const last = Settings.last !== null && SLOTS[Settings.last] ? Settings.last : SLOTS.findIndex(s => s);
+            const btn = $('menu-continue');
+            if (last !== null && last >= 0 && SLOTS[last]) {
+                const sv = SLOTS[last];
+                btn.classList.remove('hidden');
+                btn.onclick = () => continueSlot(last);
+                $('menu-cont-info').textContent = tf(L().menu.contInfo, { name: slotLabel(last), stage: stageName(sv.stage), bal: fmt(sv.balance) });
+                $('menu-cont-info').classList.remove('hidden');
+            } else {
+                btn.classList.add('hidden');
+                $('menu-cont-info').classList.add('hidden');
+            }
+            $('menu-saves').classList.toggle('hidden', !SLOTS.some(s => s));
+            renderProfileChip();
+        }
+
+        function toggleLang() { setLang(_lang === 'tr' ? 'en' : 'tr'); }
+
+        let slotMode = 'load';
+        function openSlots(mode) {
+            slotMode = mode;
+            playSynthNote(500, 0.05);
+            $('slots-title').textContent = mode === 'new' ? L().slots.newTitle : L().slots.title;
+            const list = $('slot-list');
+            list.innerHTML = '';
+            SLOTS.forEach((sv, i) => {
+                const card = document.createElement('div');
+                card.className = 'slot-card' + (sv ? '' : ' empty');
+                const icon = sv ? (sv.finished ? '🏆' : ['☕', '🍵', '🧁', '🌾', '🏰'][sv.stage - 1]) : '➕';
+                const date = sv ? new Date(sv.updated).toLocaleDateString(CUR_LANG() === 'en' ? 'en-US' : 'tr-TR') : '';
+                card.innerHTML = `<div class="si">${icon}</div><div class="sb"><b>${sv ? slotLabel(i) : L().slots.empty}</b><small>${sv ? (sv.finished ? L().slots.fin + ' · ' : '') + slotSummary(sv) + ' · ' + date : ''}</small></div>`;
+                const acts = document.createElement('div');
+                acts.className = 'sa';
+                if (mode === 'new') {
+                    const b = document.createElement('button');
+                    b.className = 'btn btn-sm';
+                    b.textContent = L().slots.start;
+                    b.onclick = () => {
+                        if (sv) confirmBox({ title: L().slots.overwriteT, text: tf(L().slots.overwrite, { name: slotLabel(i) }), art: ['book'], ok: L().slots.yesNew, onOk: () => askName(i) });
+                        else askName(i);
+                    };
+                    acts.appendChild(b);
+                } else if (sv) {
+                    const b = document.createElement('button');
+                    b.className = 'btn btn-sm';
+                    b.textContent = L().slots.load;
+                    b.onclick = () => { closeModal('modal-slots'); continueSlot(i); };
+                    const d = document.createElement('button');
+                    d.className = 'btn btn-sm btn-soft';
+                    d.textContent = L().slots.del;
+                    d.onclick = () => confirmBox({ title: L().slots.delT, text: tf(L().slots.delTxt, { name: slotLabel(i) }), art: ['cozybear'], ok: L().slots.yesDel, onOk: () => { SLOTS[i] = null; writeSlots(); if (Settings.last === i) { Settings.last = null; saveSettings(); } openSlots(slotMode); renderMenu(); } });
+                    acts.append(b, d);
+                }
+                card.appendChild(acts);
+                list.appendChild(card);
+            });
+            $('slots-close').textContent = L().slots.close;
+            openModal('modal-slots');
+        }
+        function newGame() {
+            const free = SLOTS.findIndex(s => !s);
+            if (free >= 0 && !SLOTS.some(s => s)) askName(free);
+            else openSlots('new');
+        }
+        function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+
+        let pendingSlot = 0;
+        function slotLabel(i) { return tf(L().slots.slotN, { n: i + 1 }); }
+        function guestName() { return (CUR_LANG() === 'en' ? 'Barista' : 'Barista') + String(Math.floor(1000 + Math.random() * 9000)); }
+        /* Oyuncu adı profilde tutulur: yalnızca ilk kez (profil adı yoksa) sorulur */
+        function askName(slot) {
+            pendingSlot = slot;
+            closeModal('modal-slots');
+            playSynthNote(500, 0.05);
+            if (Profile.nick) { openDiff(Profile.nick); return; }
+            $('player-name-input').value = guestName();
+            openModal('modal-name');
+            setTimeout(() => { try { $('player-name-input').select(); } catch (e) {} }, 50);
+        }
+        function closeNameModal() { closeModal('modal-name'); }
+        function startGameWithPlayer() {
+            const name = ($('player-name-input').value.trim() || guestName()).slice(0, 16);
+            closeNameModal();
+            Profile.nick = name; saveProfile();
+            renderProfileChip();
+            openDiff(name);
+        }
+        /* ---------- ZORLUK SEÇİMİ (yeni oyunda bir kez) ---------- */
+        const DIFF_ICON = { story: '📖', std: '☕', gambler: '🎲' };
+        let pendingName = '';
+        function openDiff(name) {
+            pendingName = name;
+            const D = L().diff;
+            $('df-title').textContent = D.title;
+            $('df-sub').textContent = D.sub;
+            const list = $('df-list'); list.innerHTML = '';
+            ['story', 'std', 'gambler'].forEach(k => {
+                const b = document.createElement('button');
+                b.className = 'df-card df-' + k + (k === 'std' ? ' rec' : '');
+                b.innerHTML = `<span class="di">${DIFF_ICON[k]}</span><span class="db"><b>${D[k][0]}</b><small>${D[k][1]}</small><em>${D[k][2]}</em></span>`;
+                b.onclick = () => { playSynthNote(k === 'gambler' ? 330 : 660, 0.12, 'triangle', 0.05); closeModal('modal-diff'); beginNewSave(pendingName, k); };
+                list.appendChild(b);
+            });
+            $('df-note').textContent = D.note;
+            $('df-cancel').textContent = L().name.cancel;
+            openModal('modal-diff');
+        }
+        function diffLabel(sv) { const k = (sv && sv.diff) || 'std'; return DIFF_ICON[k] + ' ' + L().diff[k][0]; }
+        function beginNewSave(name, diff) {
+            Game.slot = pendingSlot;
+            Game.save = newSave(name, diff);
+            loadIntoState(Game.save);
+            persist();
+            $('hud-player-name').textContent = nickOf();
+            playStory(1);
+        }
+        function continueSlot(i) {
+            const sv = SLOTS[i];
+            if (!sv) return;
+            Game.slot = i;
+            Game.save = sv;
+            sv.phases = sv.phases || {}; sv.seen = sv.seen || {}; sv.ups = sv.ups || {};
+            loadIntoState(sv);
+            Settings.last = i; saveSettings();
+            $('hud-player-name').textContent = nickOf();
+            openMap();
+        }
+
+        /* =====================================================
+           KASABA HARİTASI
+           ===================================================== */
+        const MAP_NODES = [
+            { x: 170, y: 492, color: '#F2B84B', img: 'espresso' },
+            { x: 390, y: 400, color: '#8FCB6B', img: 'matcha' },
+            { x: 590, y: 470, color: '#FF9FBF', img: 'cupcake' },
+            { x: 760, y: 300, color: '#B7D96A', img: 'coffeebag' },
+            { x: 880, y: 138, color: '#9A7BC9', img: 'book' }
+        ];
+        function mapSVG() {
+            const sv = Game.save, cur = sv.stage, fin = sv.finished;
+            const S = (k) => ASSETS.sym[k];
+            let h = `<svg viewBox="0 0 1000 620" class="map-svg" role="img" aria-label="${L().map.title}">
+              <defs>
+                <pattern id="mp-dots" width="14" height="14" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.4" fill="#E9D4AE"/></pattern>
+                <filter id="mp-sh" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#5a3412" flood-opacity=".35"/></filter>
+              </defs>
+              <rect width="1000" height="620" rx="34" fill="#FBEFD8"/><rect width="1000" height="620" rx="34" fill="url(#mp-dots)"/>
+              <path d="M-20 250 C120 230 170 330 300 300 S480 200 560 260 S720 380 1020 330" fill="none" stroke="#A9DDF0" stroke-width="46" stroke-linecap="round" opacity=".9"/>
+              <path d="M-20 250 C120 230 170 330 300 300 S480 200 560 260 S720 380 1020 330" fill="none" stroke="#D6F1FA" stroke-width="14" stroke-linecap="round" stroke-dasharray="2 26" class="map-water"/>
+              <g fill="#BFE3A4" stroke="#8DBB6B" stroke-width="3"><path d="M600 620 Q700 360 1000 300 V620Z"/><path d="M0 620 Q120 520 340 560 T700 620Z" fill="#CDEBB4"/></g>
+              <g class="map-castle-hill"><path d="M760 230 Q880 40 1000 120 V250 Q880 210 760 230Z" fill="#CDB4E6" stroke="#9A7BC9" stroke-width="3"/></g>`;
+            // ağaçlar ve evler
+            const trees = [[70, 380], [110, 420], [260, 560], [300, 470], [470, 560], [500, 330], [660, 560], [700, 420], [930, 470], [860, 560], [640, 190], [560, 140], [240, 140], [120, 120]];
+            trees.forEach(([x, y], i) => { h += `<g class="map-tree" style="animation-delay:${(i % 5) * 0.4}s"><rect x="${x - 4}" y="${y}" width="8" height="18" fill="#9A6236"/><circle cx="${x}" cy="${y - 6}" r="20" fill="${i % 3 ? '#7FBF6A' : '#93CC79'}" stroke="#5E8C61" stroke-width="3"/></g>`; });
+            const houses = [[300, 150, '#FF9FBF'], [360, 120, '#F2B84B'], [420, 160, '#A9DDF0'], [110, 300, '#FFD27A'], [470, 420, '#F7C6A3']];
+            houses.forEach(([x, y, c]) => { h += `<g stroke="#7A4B2A" stroke-width="3" stroke-linejoin="round"><rect x="${x - 18}" y="${y}" width="36" height="28" fill="#FFF6EA"/><polygon points="${x - 24},${y + 2} ${x},${y - 20} ${x + 24},${y + 2}" fill="${c}"/><rect x="${x - 5}" y="${y + 12}" width="10" height="16" fill="#C99A66"/></g>`; });
+            // bulutlar
+            h += `<g class="map-cloud" fill="#fff" opacity=".9"><ellipse cx="180" cy="60" rx="46" ry="18"/><ellipse cx="210" cy="48" rx="30" ry="16"/></g><g class="map-cloud c2" fill="#fff" opacity=".85"><ellipse cx="600" cy="80" rx="52" ry="18"/><ellipse cx="630" cy="66" rx="32" ry="16"/></g>`;
+            // yol
+            const d = MAP_NODES.map((n, i) => (i ? 'L' : 'M') + n.x + ' ' + n.y).join(' ');
+            h += `<path d="${d}" fill="none" stroke="#C99A66" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" opacity=".55"/>`;
+            h += `<path d="${d}" fill="none" stroke="#FFF6EA" stroke-width="5" stroke-dasharray="14 14" stroke-linecap="round"/>`;
+            // düğümler
+            MAP_NODES.forEach((n, i) => {
+                const st = i + 1;
+                const done = st < cur || (st === 5 && fin);
+                const here = st === cur;
+                const locked = st > cur;
+                h += `<g class="map-node ${done ? 'done' : ''} ${here ? 'here' : ''} ${locked ? 'locked' : ''}" data-stage="${st}" tabindex="0" filter="url(#mp-sh)">`;
+                if (here) h += `<circle cx="${n.x}" cy="${n.y}" r="70" class="map-glow" fill="none" stroke="#FFD27A" stroke-width="10"/>`;
+                h += `<circle cx="${n.x}" cy="${n.y}" r="56" fill="${locked ? '#D8CBB8' : n.color}" stroke="#FFF6EA" stroke-width="8"/>
+                      <circle cx="${n.x}" cy="${n.y}" r="56" fill="none" stroke="#7A4B2A" stroke-width="3"/>
+                      <image href="${S(n.img)}" x="${n.x - 38}" y="${n.y - 40}" width="76" height="76" ${locked ? 'opacity=".45"' : ''}/>
+                      <circle cx="${n.x + 42}" cy="${n.y - 42}" r="17" fill="${done ? '#5E8C61' : here ? '#E63946' : '#9C8B74'}" stroke="#fff" stroke-width="4"/>
+                      <text x="${n.x + 42}" y="${n.y - 36}" text-anchor="middle" font-size="18" font-weight="800" fill="#fff" font-family="Baloo 2, Nunito, sans-serif">${done ? '✓' : locked ? '🔒' : st}</text>
+                      <g transform="translate(${n.x},${n.y + 78})"><rect x="-92" y="-17" width="184" height="34" rx="17" fill="#FFF6EA" stroke="#C99A66" stroke-width="3"/>
+                      <text y="7" text-anchor="middle" font-size="18" font-weight="700" fill="#6B4226" font-family="Baloo 2, Nunito, sans-serif">${escapeHtml(L().stage[st].place)}</text></g>
+                    </g>`;
+            });
+            // oyuncu jetonu
+            const cn = MAP_NODES[Math.min(cur, 5) - 1];
+            h += `<g class="map-token"><image href="${S('barista')}" x="${cn.x - 34}" y="${cn.y - 150}" width="68" height="68"/><polygon points="${cn.x - 9},${cn.y - 84} ${cn.x + 9},${cn.y - 84} ${cn.x},${cn.y - 70}" fill="#E63946"/></g>`;
+            h += `</svg>`;
+            return h;
+        }
+        function openMap() {
+            if (!Game.save) { switchScreen('screen-menu'); renderMenu(); return; }
+            persist();
+            applyStaticI18n();
+            $('map-name').textContent = nickOf();
+            checkDailyGift();
+            $('map-bank').innerHTML = `${beanIc()} ${fmt(gameState.balance)}`;
+            $('map-holder').innerHTML = mapSVG();
+            $('map-holder').querySelectorAll('.map-node').forEach(g => {
+                const st = +g.dataset.stage;
+                const go = () => mapClick(st);
+                g.addEventListener('click', go);
+                g.addEventListener('keydown', e => { if (e.key === 'Enter') go(); });
+            });
+            const cur = Game.save.stage;
+            $('map-info').innerHTML = `<b>${stageLabel(cur)}</b> · ${L().map.here}`;
+            $('map-play').textContent = L().map.play;
+            switchScreen('screen-map');
+            maybeAutoDaily();
+        }
+        function mapClick(st) {
+            const sv = Game.save;
+            playSynthNote(600, 0.05);
+            if (st === sv.stage) { enterStage(st); return; }
+            if (st < sv.stage || (st === 5 && sv.finished)) {
+                $('map-info').innerHTML = `<b>${stageLabel(st)}</b> · ${L().map.done} <button class="btn btn-sm btn-soft" onclick="playStory(${st})">${L().map.story}</button>`;
+                return;
+            }
+            const prev = CHAPTERS[st - 1];
+            $('map-info').innerHTML = `<b>${stageLabel(st)}</b> · ${L().map.locked} — ${tf(L().map.needs, { at: fmt(prev.unlockAt) })}`;
+        }
+
+        /* =====================================================
+           AŞAMAYA GİRİŞ
+           ===================================================== */
+        function enterStage(n) {
+            const sv = Game.save;
+            if (!sv) return;
+            n = sv.stage;
+            const c = CHAPTERS[n];
+            gameState.chapter = n;
+            gameState.phasesShown = {};
+            if (!sv.seen['stage' + n]) {
+                // yeni aşama: sadakat/fırın sıfırlanır
+                gameState.loy = newLoyalty();
+                gameState.oven = 0;
+                gameState.mwar = 0;
+            }
+            refreshEff();
+            if (!gameState.bet || gameState.bet < c.minBet || gameState.bet > c.maxBet) gameState.bet = recommendedBet(n, gameState.balance);
+            clampBet();
+            document.body.dataset.chapter = n;
+            gameState.autoSpinActive = false;
+            gameState.isSpinning = false;
+            gameState.reelsPending = false;
+            gameState.bonusLock = false;
+            gameState.goalAnnounced = false;
+            gameState.rainMode = gameState.rainRemaining > 0;
+            $('bonus-banner').classList.toggle('show', gameState.freeSpinsRemaining > 0 || gameState.rainRemaining > 0);
+            updateBanner();
+            updateFsBadge();
+            buildGoalTicks();
+            updateLoyaltyUI();
+            updateOvenUI();
+            updateMatchaUI();
+            updateTurboUI();
+            Dede.mount();
+            setMessage(L().msg.welcome);
+            updateAutoSpinButtonUI();
+            updateHUD();
+            applyStaticI18n();
+            switchScreen('screen-game');
+            if (!sv.seen['stage' + n]) {
+                sv.seen['stage' + n] = true;
+                persist();
+                showChapterIntro(n);
+            } else if (n === 1 && !sv.tut) {
+                setTimeout(showTutorial, 600);
+            }
+            // kayıttan devam: yarım kalan free spin / pasta yağmuru
+            if (gameState.rainPending || freeActive()) {
+                if (gameState.expandingSymbolId && gameState.freeSpinsRemaining > 0) startBonusMusic();
+                setTimeout(() => whenNoModal(() => {
+                    if (document.body.dataset.mode !== 'game') return;
+                    if (gameState.rainPending && !freeActive()) startCakeRain(); else scheduleNextSpin();
+                }), 1600);
+            }
+        }
+
+        function showChapterIntro(n) {
+            const art = $('ci-art');
+            art.innerHTML = '';
+            const arts = { 1: ['barista', 'cozybear'], 2: ['matcha', 'pitcher'], 3: ['bakingbear', 'cupcake'], 4: ['coffeebag', 'cozybear'], 5: ['barista', 'stamp', 'cozybear'] }[n];
+            arts.forEach(k => { const im = document.createElement('img'); im.src = ASSETS.sym[k]; im.alt = ''; art.appendChild(im); });
+            const c = CHAPTERS[n];
+            $('ci-title').textContent = `${L().stageWord} ${n}: ${stageName(n).toLocaleUpperCase(CUR_LANG() === 'en' ? 'en-US' : 'tr-TR')}`;
+            $('ci-text').innerHTML = tf(L().intro[n], { bal: fmt(gameState.balance), at: fmt(c.unlockAt), price: fmt(c.price), full: RUN_EFF.ovenFull, spins: RUN_EFF.ovenSpins });
+            $('ci-ok').textContent = L().intro.btn;
+            openModal('modal-chapter-intro');
+        }
+        function closeChapterIntro() {
+            closeModal('modal-chapter-intro');
+            const n = gameState.chapter;
+            if (n === 1 && Game.save && !Game.save.tut) setTimeout(showTutorial, 350);
+            const ns = L().newStage[n];
+            if (ns) setTimeout(() => showDialog(ns[0], ns[1], ns[2]), 600);
+        }
+
+        /* ---------- İLK SEVİYE REHBERİ ---------- */
+        function showTutorial() {
+            if (document.body.dataset.mode !== 'game' || anyModalOpen()) return;
+            const t = $('tutorial');
+            $('tut-spin').innerHTML = L().tut.spin;
+            $('tut-book').innerHTML = L().tut.book;
+            $('tut-ok').textContent = L().tut.ok;
+            t.classList.add('show');
+            positionTutorial();
+        }
+        function positionTutorial() {
+            const t = $('tutorial');
+            if (!t.classList.contains('show')) return;
+            const sr = $('spin-btn').getBoundingClientRect(), ir = $('info-btn').getBoundingClientRect();
+            const bs = $('tut-spin'), bb = $('tut-book');
+            const W = window.innerWidth;
+            const sw = bs.offsetWidth, sh = bs.offsetHeight, bw = bb.offsetWidth, bh = bb.offsetHeight;
+            // SPİN balonu: düğmenin hemen üstünde
+            let sx = Math.max(8, Math.min(W - sw - 8, sr.left + sr.width / 2 - sw / 2));
+            let sy = Math.max(8, sr.top - sh - 16);
+            // KİTAP balonu: SPİN balonunun da üstünde (çakışmasın)
+            let bx = Math.max(8, Math.min(W - bw - 8, ir.left + ir.width / 2 - bw / 2));
+            let by = Math.max(8, sy - bh - 14);
+            bs.style.left = sx + 'px'; bs.style.top = sy + 'px';
+            bs.style.setProperty('--ax', (sr.left + sr.width / 2 - sx) + 'px');
+            bb.style.left = bx + 'px'; bb.style.top = by + 'px';
+            bb.style.setProperty('--ax', Math.max(14, Math.min(bw - 14, ir.left + ir.width / 2 - bx)) + 'px');
+            $('tut-ring-spin').style.cssText = `left:${sr.left - 8}px;top:${sr.top - 8}px;width:${sr.width + 16}px;height:${sr.height + 16}px`;
+            $('tut-ring-book').style.cssText = `left:${ir.left - 8}px;top:${ir.top - 8}px;width:${ir.width + 16}px;height:${ir.height + 16}px`;
+            const ok = $('tut-ok');
+            ok.style.top = Math.max(8, by - 56) + 'px';
+        }
+        function hideTutorial(done) {
+            const t = $('tutorial');
+            if (!t) return;
+            const wasOpen = t.classList.contains('show');
+            t.classList.remove('show');
+            if (wasOpen && done !== false && Game.save && !Game.save.tut) { Game.save.tut = true; persist(); }
+        }
+        window.addEventListener('resize', () => positionTutorial());
+
+        function returnToMenu() {
+            nbClear();
+            if (Game.save) persist();
+            stopCasinoMusic();
+            stopBonusMusic();
+            gameState.autoSpinActive = false;
+            gameState.isSpinning = false;
+            clearTease();
+            updateAutoSpinButtonUI();
+            ALL_MODALS.forEach(closeModal);
+            switchScreen('screen-menu');
+            renderMenu();
+        }
+        function goMap() {
+            if (gameState.isSpinning) return;
+            gameState.autoSpinActive = false;
+            updateAutoSpinButtonUI();
+            nbClear();
+            openMap();
+        }
+
+        function setMessage(text, isWin) {
+            const el = $('game-message');
+            el.textContent = text;
+            el.classList.toggle('win', isWin === true);
+            el.classList.toggle('lose', isWin === 'lose');
+        }
+
+        /* ---------- ÖDEME TABLOSU + KİTAP ---------- */
+        function buildPayTable() {
+            const grid = $('pay-grid');
+            if (!grid) return;
+            grid.innerHTML = '';
+            const ch = CHAPTERS[gameState.chapter] || CHAPTERS[1];
+            const E = RUN_EFF, I = L().info;
+            SYMBOLS.forEach(sym => {
+                const card = document.createElement('div');
+                card.className = 'pay-card';
+                const im = document.createElement('img');
+                im.src = ASSETS.sym[sym.img];
+                im.alt = symName(sym.id);
+                const nm = document.createElement('div');
+                nm.className = 'nm';
+                nm.textContent = symName(sym.id) + (sym.isScatter ? ' (Wild)' : '');
+                const vals = document.createElement('div');
+                vals.className = 'vals';
+                const mult = E.symMult[sym.id] * ch.payScale * (ch.boost[sym.id] || 1) * (E.payBonus || 1);
+                const counts = (E.reels === 6 ? [6, 5, 4, 3, 2] : [5, 4, 3, 2]);
+                vals.innerHTML = counts.map(n => {
+                    const v = n === 6 ? (sym.values[5] || 0) * 2.5 : sym.values[n];
+                    return v ? `${n}x: ${fmtX(v * mult)}` : '';
+                }).filter(Boolean).join('<br>');
+                if (E.symMult[sym.id] > 1) vals.innerHTML += `<br><span class="up">⬆ ×${fmtX(E.symMult[sym.id])}</span>`;
+                card.append(im, nm, vals);
+                grid.appendChild(card);
+            });
+            $('info-title').textContent = I.title;
+            $('info-ok').textContent = I.ok;
+            $('info-rules-t').textContent = I.rulesT;
+            $('info-rules').innerHTML = I.rules(E, gameState.chapter);
+            $('info-pays-t').textContent = I.paysT;
+            $('info-keys-t').textContent = I.keysT;
+            $('info-keys').innerHTML = I.keys.map(k => `<div class="key-row"><span class="kk">${k[0]}</span><span>${k[1]}</span></div>`).join('');
+            const st = gameState.chapter;
+            $('pay-special').classList.toggle('hidden', st !== 2);
+            $('ps-t').textContent = I.specialT;
+            $('ps-pitcher').innerHTML = `<img src="${ASSETS.sym.pitcher}" alt=""><div class="nm">${symName('pitcher')} · ${L().badge.wild}</div><div class="vals">${I.pitcher(E)}</div>`;
+            $('ps-matcha').innerHTML = `<img src="${ASSETS.sym.matcha}" alt=""><div class="nm">${symName('matcha')} · ${L().badge.foam}</div><div class="vals">${I.matcha(E)}</div>`;
+            $('ps-note').textContent = I.specialNote;
+            $('pay-oven').classList.toggle('hidden', st !== 3);
+            $('po-t').textContent = I.ovenT; $('po-txt').innerHTML = I.oven(E);
+            $('pay-bag').classList.toggle('hidden', st !== 4);
+            $('pb-t').textContent = I.bagT; $('pb-txt').innerHTML = I.bag(E);
+            $('pay-loyalty').classList.toggle('hidden', st !== 5);
+            $('pl-t').textContent = I.loyT; $('pl-txt').innerHTML = I.loy;
+        }
+        function openInfoModal() {
+            playSynthNote(500, 0.05);
+            hideTutorial();
+            buildPayTable();
+            openModal('modal-info');
+        }
+        function closeInfoModal() { closeModal('modal-info'); }
+
+        /* ---------- BAHİS ---------- */
+        function clampBet() {
+            const ch = CHAPTERS[gameState.chapter];
+            const opts = Engine.betOptions(gameState.chapter, gameState.balance);
+            if (!opts.length) { gameState.bet = ch.minBet; return; }
+            let b = opts[0];
+            opts.forEach(o => { if (o <= gameState.bet) b = o; });
+            gameState.bet = b;
+        }
+        function recommendedBet(chapter, balance) {
+            const opts = Engine.betOptions(chapter, balance);
+            if (!opts.length) return CHAPTERS[chapter].minBet;
+            let b = opts[0];
+            opts.forEach(o => { if (o <= balance * 0.03) b = o; });
+            return b;
+        }
+        function freeActive() { return gameState.freeSpinsRemaining > 0 || gameState.rainRemaining > 0; }
+        function adjustBet(direction) {
+            if (freeActive() || gameState.autoSpinActive) { setMessage(L().msg.betLock); return; }
+            playSynthNote(480, 0.05);
+            const opts = Engine.betOptions(gameState.chapter, gameState.balance);
+            if (!opts.length) return;
+            let idx = 0;
+            opts.forEach((o, i) => { if (o <= gameState.bet) idx = i; });
+            idx = Math.max(0, Math.min(opts.length - 1, idx + direction));
+            gameState.bet = opts[idx];
+            updateHUD();
+        }
+
+        /* ---------- HEDEF ÇUBUĞU + ŞUBE SATIN ALMA ---------- */
+        const GOAL_ICON = { 1: '☕', 2: '🍵', 3: '🧁', 4: '🌾', 5: '🏰' };
+        function goalProgress() {
+            const c = CHAPTERS[gameState.chapter];
+            if (Game.save && Game.save.finished) return 1;
+            return Math.max(0, Math.min(1, gameState.balance / c.unlockAt));
+        }
+        function phaseReward(stage) { return Math.round(CHAPTERS[stage].unlockAt * 0.025 * (RUN_EFF.diff ? RUN_EFF.diff.phase : 1)); }
+        function buildGoalTicks() {
+            const marks = $('goal-marks');
+            marks.innerHTML = '';
+            const c = CHAPTERS[gameState.chapter];
+            if (Game.save && Game.save.finished) return;
+            c.phases.forEach((p, i) => {
+                const got = Game.save && Game.save.phases[c.id + ':' + i];
+                const t = document.createElement('button');
+                t.className = 'gm' + (got ? ' got' : '');
+                t.style.left = (p * 100) + '%';
+                const tip = got ? L().goal.phaseGot : tf(L().goal.phaseTip, { at: fmt(c.unlockAt * p), pct: pctS(Math.round(p * 100)), r: fmt(phaseReward(c.id)) });
+                t.title = tip;
+                t.textContent = got ? '✓' : '🎁';
+                t.setAttribute('aria-label', tip);
+                t.onclick = () => showDialog('cozybear', CUR_LANG() === 'en' ? 'BlueBird' : 'MaviKuş', tip);
+                marks.appendChild(t);
+            });
+        }
+        function updateGoalBar() {
+            const bar = $('goal-bar');
+            if (!bar || !Game.save) return;
+            const n = gameState.chapter, c = CHAPTERS[n], sv = Game.save;
+            const p = goalProgress();
+            $('goal-fill').style.width = (p * 100) + '%';
+            bar.classList.toggle('done', !!sv.finished);
+            $('goal-title').textContent = GOAL_ICON[n] + ' ' + stageName(n);
+            const pct = p * 100;
+            $('goal-num').textContent = sv.finished ? '' : fmt(gameState.balance) + ' / ' + fmt(c.unlockAt);
+            $('goal-pct').textContent = sv.finished ? '🏆' : pctS(pct < 10 ? fx(Math.floor(pct * 10) / 10) : Math.floor(pct));
+            const btn = $('buy-btn'), wrap = $('buy-wrap');
+            if (sv.finished) {
+                $('goal-title').textContent = L().usta.title;
+                wrap.title = L().quests.title;
+                wrap.dataset.tip = L().quests.title;
+                updateUstaUI();
+                return;
+            }
+            const ready = gameState.balance >= c.unlockAt && !freeActive();
+            const shortN = n < 5 ? L().stage[n + 1].short : '';
+            btn.textContent = n < 5 ? tf(L().goal.buyNext, { short: shortN, price: fmt(c.price) }) : tf(L().goal.buyFinal, { price: fmt(c.price) });
+            btn.classList.toggle('locked', !ready);
+            btn.classList.toggle('ready', ready);
+            const place = n < 5 ? L().stage[n + 1].place : 'SyruppoLab';
+            const tip = n === 5 ? tf(L().goal.lockedTipFinal, { at: fmt(c.unlockAt), price: fmt(c.price) })
+                : ready ? tf(L().goal.readyTip, { place, price: fmt(c.price) })
+                : tf(L().goal.lockedTip, { at: fmt(c.unlockAt), place, price: fmt(c.price) });
+            wrap.title = tip;
+            btn.setAttribute('aria-label', tip);
+            wrap.dataset.tip = tip;
+        }
+        function buyClick() {
+            const n = gameState.chapter, c = CHAPTERS[n];
+            if (Game.save.finished) { openHub('quests'); return; }
+            if (gameState.isSpinning || freeActive() || gameState.balance < c.unlockAt) {
+                showDialog('barista', 'Bearista', $('buy-wrap').dataset.tip || '');
+                return;
+            }
+            gameState.autoSpinActive = false; updateAutoSpinButtonUI();
+            const left = fmt(gameState.balance - c.price);
+            if (n < 5) {
+                const nx = L().stage[n + 1];
+                confirmBox({ title: tf(L().buy.t, { short: nx.short.toLocaleUpperCase(CUR_LANG() === 'en' ? 'en-US' : 'tr-TR') }), text: tf(L().buy.txt, { place: nx.place, price: fmt(c.price), left }), art: ['barista', 'coffeebag', 'cozybear'], ok: L().buy.ok, good: true, onOk: () => doBuy() });
+            } else {
+                confirmBox({ title: L().buy.tF, text: tf(L().buy.txtF, { price: fmt(c.price), left }), art: ['barista', 'book', 'cozybear'], ok: L().buy.okF, good: true, onOk: () => doBuy() });
+            }
+        }
+        function doBuy() {
+            const n = gameState.chapter, c = CHAPTERS[n], sv = Game.save;
+            gameState.balance -= c.price;
+            [523, 659, 784, 1047, 1319].forEach((f, i) => setTimeout(() => playSynthNote(f, 0.3, 'sine', 0.07), i * 130));
+            celebrate(gameState.bet * 100);
+            if (n < 5) {
+                gameState.chapter = n + 1;
+                sv.stage = n + 1;
+                gameState.loy = newLoyalty();
+                gameState.oven = 0;
+                gameState.bet = 0;
+                refreshEff();
+                persist();
+                metaEvent('stage', n + 1);
+                setTimeout(() => playStory(n + 1), 900);
+            } else {
+                sv.finished = true;
+                sv.peak = Math.floor(gameState.balance);
+                persist();
+                metaEvent('finish');
+                setTimeout(() => playStory(6), 900);
+            }
+        }
+
+        function updateFsBadge() {
+            const b = $('fs-badge');
+            const fs = gameState.freeSpinsTotal > 0 && gameState.expandingSymbolId;
+            const rain = gameState.rainTotal > 0 && gameState.rainRemaining >= 0 && gameState.rainMode;
+            b.classList.toggle('show', !!(fs || rain));
+            b.classList.toggle('rain', !!rain && !fs);
+            if (!(fs || rain)) return;
+            const rem = fs ? gameState.freeSpinsRemaining : gameState.rainRemaining;
+            const tot = fs ? gameState.freeSpinsTotal : gameState.rainTotal;
+            $('fs-t').textContent = fs ? L().banner.badgeFs : L().banner.badgeRain;
+            $('fs-left').textContent = rem;
+            $('fs-of').textContent = `${Math.min(tot - rem, tot)} / ${tot}`;
+            b.classList.remove('bump'); void b.offsetWidth; b.classList.add('bump');
+            updateBanner();
+        }
+        function updateBanner() {
+            const fs = gameState.freeSpinsRemaining > 0 || (gameState.expandingSymbolId && gameState.freeSpinsTotal > 0);
+            const B = L().banner;
+            if (fs) {
+                $('bn-a').textContent = B.fs;
+                $('free-spins-count').textContent = gameState.freeSpinsRemaining;
+                $('bn-tot').textContent = '/' + gameState.freeSpinsTotal;
+                $('bn-b').textContent = B.exp;
+                $('expanding-symbol-name').textContent = symName(gameState.expandingSymbolId);
+                $('bn-img').src = ASSETS.sym.book;
+                const fm = gameState.fsMult || 0;
+                $('bn-mult').textContent = fm > 0 ? tf(B.mult, { v: fm }) : '';
+                $('bn-mult').classList.toggle('hidden', !(fm > 0));
+            } else {
+                $('bn-mult').classList.add('hidden');
+                $('bn-a').textContent = B.rain;
+                $('free-spins-count').textContent = gameState.rainRemaining;
+                $('bn-tot').textContent = '/' + gameState.rainTotal;
+                $('bn-b').textContent = '';
+                $('expanding-symbol-name').textContent = B.rainInfo;
+                $('bn-img').src = ASSETS.sym.cupcake;
+            }
+        }
+
+        function updateHUD() {
+            $('hud-balance').textContent = fmt(gameState.balance);
+            updateGoalBar();
+            $('hud-bet').textContent = fmt(gameState.bet);
+            const tier = Engine.tierOf(gameState.bet);
+            const tb = $('tier-badge');
+            tb.textContent = L().tier(tier);
+            tb.classList.toggle('hi', tier > 0);
+            const isLocked = (freeActive() || gameState.autoSpinActive);
+            $('bet-minus-btn').disabled = isLocked;
+            $('bet-plus-btn').disabled = isLocked;
+            $('hud-stage').textContent = `${DIFF_ICON[(Game.save && Game.save.diff) || 'std']} ${L().stageWord} ${gameState.chapter}`;
+        }
+
+        function toggleAutoSpin() {
+            if (freeActive() || gameState.bonusLock || (gameState.isSpinning && gameState.spinFree)) {
+                gameState.autoSpinActive = false; updateAutoSpinButtonUI();
+                setMessage(L().msg.autoLock); return;
+            }
+            gameState.autoSpinActive = !gameState.autoSpinActive;
+            playSynthNote(520, 0.08);
+            hideTutorial();
+            updateAutoSpinButtonUI();
+            updateHUD();
+            if (gameState.autoSpinActive) {
+                setMessage(L().msg.autoOn);
+                if (!gameState.isSpinning) spinReels();
+            } else {
+                setMessage(L().msg.autoOff);
+            }
+        }
+        function updateAutoSpinButtonUI() { $('auto-spin-btn').classList.toggle('on', gameState.autoSpinActive); }
+
+        /* ---------- DİYALOG ---------- */
+        let dialogTimer = null;
+        function showDialog(imgKey, name, text) {
+            const t = $('dialog-toast');
+            if (imgKey && ASSETS.sym[imgKey]) { $('dt-img').src = ASSETS.sym[imgKey]; $('dt-img').style.display = ''; }
+            else $('dt-img').style.display = 'none';
+            $('dt-name').textContent = name;
+            $('dt-text').textContent = text;
+            t.classList.add('show');
+            clearTimeout(dialogTimer);
+            dialogTimer = setTimeout(() => t.classList.remove('show'), 5600);
+        }
+
+        function checkPhases() {
+            const sv = Game.save;
+            if (!sv || sv.finished) return;
+            const c = CHAPTERS[gameState.chapter];
+            const p = goalProgress();
+            let changed = false;
+            c.phases.forEach((ph, i) => {
+                if (p < ph || gameState.phasesShown[i]) return;
+                gameState.phasesShown[i] = true;
+                const key = c.id + ':' + i;
+                const talk = L().phase[c.id][i];
+                let extra = '';
+                if (!sv.phases[key]) {
+                    sv.phases[key] = true;
+                    const r = phaseReward(c.id);
+                    gameState.balance += r;
+                    changed = true;
+                    extra = tf(L().phaseReward, { v: fmt(r) });
+                }
+                showDialog(talk[0], talk[1], talk[2] + extra);
+                [659, 784, 988].forEach((f, k) => setTimeout(() => playSynthNote(f, 0.18, 'sine', 0.06), k * 110));
+            });
+            if (changed) { buildGoalTicks(); updateHUD(); }
+        }
+
+        /* =====================================================
+           SADAKAT KARTI (Final) · FIRIN (Aşama 3)
+           ===================================================== */
+        function updateLoyaltyUI(popIdx) {
+            const Lo = gameState.loy, per = Engine.STAMPS_PER_CARD, T = L().loy;
+            const slots = $('lc-slots');
+            if (slots.children.length !== per) {
+                slots.innerHTML = '';
+                for (let i = 0; i < per; i++) {
+                    const s = document.createElement('span');
+                    s.className = 'slot';
+                    s.innerHTML = `<img src="${ASSETS.sym.stamp}" alt="">`;
+                    slots.appendChild(s);
+                }
+            }
+            [...slots.children].forEach((s, i) => {
+                s.classList.toggle('on', i < Lo.stamps);
+                if (popIdx !== undefined && i >= popIdx && i < Lo.stamps) { s.classList.remove('pop'); void s.offsetWidth; s.classList.add('pop'); }
+            });
+            $('lc-title').textContent = T.title;
+            $('loyalty').title = T.tip;
+            $('lc-count').textContent = `${Math.min(Lo.stamps, per)}/${per}`;
+            const buffs = [];
+            if (Lo.filtre) buffs.push(`<span class="buff">${T.filtreB}</span>`);
+            if (Lo.americano > 0) buffs.push(`<span class="buff hot">${tf(T.americanoB, { n: Lo.americano })}</span>`);
+            if (Lo.latte > 0) buffs.push(`<span class="buff">${tf(T.latteB, { n: Lo.latte * 10 })}</span>`);
+            $('lc-buffs').innerHTML = buffs.join('') || `<span class="buff off">${T.empty}</span>`;
+        }
+        function addStamps(n) {
+            if (!n || gameState.chapter !== 5) return false;
+            const before = gameState.loy.stamps;
+            gameState.loy.stamps += n;
+            [0, 1].forEach(k => setTimeout(() => { playSynthNote(180 - k * 30, 0.1, 'square', 0.05); }, k * 90));
+            updateLoyaltyUI(before);
+            return gameState.loy.stamps >= Engine.STAMPS_PER_CARD;
+        }
+        const DRINKS = [{ id: 'filtre', img: 'v60' }, { id: 'americano', img: 'portafilter' }, { id: 'latte', img: 'espresso' }];
+        function openDrinkChoice() {
+            metaEvent('loy');
+            const list = $('drink-list'), T = L().loy;
+            $('dr-title').textContent = T.full;
+            $('dr-pick').textContent = T.pick;
+            list.innerHTML = '';
+            DRINKS.forEach(d => {
+                const maxed = d.id === 'latte' && gameState.loy.latte >= Engine.LATTE_MAX;
+                const b = document.createElement('button');
+                b.className = 'drink' + (maxed ? ' maxed' : '');
+                b.disabled = maxed;
+                const tx = T.drinks[d.id];
+                b.innerHTML = `<img src="${ASSETS.sym[d.img]}" alt=""><b>${tx[0]}</b><small>${maxed ? tf(T.maxed, { n: Engine.LATTE_MAX }) : tx[1]}</small>`;
+                b.onclick = () => chooseDrink(d.id);
+                list.appendChild(b);
+            });
+            [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => playSynthNote(f, 0.22, 'sine', 0.06), i * 100));
+            openModal('modal-drink');
+        }
+        function chooseDrink(id) {
+            const Lo = gameState.loy, T = L().loy;
+            Lo.stamps = Math.max(0, Lo.stamps - Engine.STAMPS_PER_CARD);
+            if (id === 'filtre') Lo.filtre = true;
+            else if (id === 'americano') Lo.americano += 10;
+            else if (id === 'latte') { Lo.latte = Math.min(Engine.LATTE_MAX, Lo.latte + 1); refreshEff(); }
+            closeModal('modal-drink');
+            [784, 988, 1319].forEach((f, i) => setTimeout(() => playSynthNote(f, 0.16, 'sine', 0.06), i * 80));
+            const d = DRINKS.find(x => x.id === id);
+            showDialog(d.img, tf(T.ready, { d: T.drinks[id][0] }), T.said[id]);
+            updateLoyaltyUI();
+            persist();
+            celebrate(gameState.bet * 10);
+            if (gameState.loy.stamps >= Engine.STAMPS_PER_CARD) setTimeout(openDrinkChoice, 600);
+        }
+
+        /* ---------- MATCHA → KAHVE dönüşümü + Matcha Savaşı sayacı (Aşama 2) ---------- */
+        function animateConvert(pending) {
+            const cv = pending.conv, layer = $('orb-layer');
+            setMessage(tf(L().msg.convert, { n: cv.cells.length, s: symName(cv.sym.id) }), true);
+            cv.cells.forEach(([r, row], i) => {
+                setTimeout(() => {
+                    const pos = cellScreenPos(r, row);
+                    const sp = document.createElement('div');
+                    sp.className = 'splash';
+                    sp.style.left = pos.x + '%'; sp.style.top = pos.y + '%';
+                    sp.innerHTML = '<i></i><i></i><i></i><i></i><i></i><i></i>';
+                    layer.appendChild(sp);
+                    setTimeout(() => sp.remove(), 900);
+                    const m = meshAt(r, row);
+                    if (m) { setFace(m, cv.sym, false, false); m.userData.popStart = Date.now(); if (winningMeshRefs.indexOf(m) === -1) winningMeshRefs.push(m); }
+                    gameState.grid[r][row] = cv.sym;
+                    playSynthNote(523 + i * 90, 0.12, 'triangle', 0.06);
+                    playSynthNote(180, 0.08, 'sine', 0.05);
+                }, 120 + i * 140);
+            });
+            return 120 + cv.cells.length * 140 + 450;
+        }
+        function updateMatchaUI(pop) {
+            const W = Engine.MATCHA_WAR, n = Math.min(gameState.mwar || 0, W);
+            $('mw-title').textContent = L().mwar.title;
+            $('mwar').title = L().mwar.tip;
+            $('mw-count').textContent = `${n}/${W}`;
+            $('mw-fill').style.width = (n / W * 100) + '%';
+            if (pop) { const o = $('mwar'); o.classList.remove('pop'); void o.offsetWidth; o.classList.add('pop'); }
+        }
+        function addMatchaWar(n) {
+            if (!n || gameState.chapter !== 2) return;
+            gameState.mwar = (gameState.mwar || 0) + n;
+            updateMatchaUI(true);
+            while (gameState.mwar >= Engine.MATCHA_WAR) {
+                gameState.mwar -= Engine.MATCHA_WAR;
+                const bonus = gameState.bet * Engine.ZAFER_MULT;
+                gameState.balance += bonus;
+                metaEvent('zafer');
+                if (gameState.spinFree && gameState.freeSpinsRemaining >= 0 && gameState.expandingSymbolId) gameState.fsWin = (gameState.fsWin || 0) + bonus;
+                setTimeout(() => {
+                    showDialog('barista', 'Bearista', tf(L().mwar.win, { v: fmt(bonus) }));
+                    [659, 784, 988, 1319, 1568].forEach((f, i) => setTimeout(() => playSynthNote(f, 0.22, 'sine', 0.07), i * 110));
+                    celebrate(bonus * 2);
+                    flashLights();
+                    updateHUD();
+                    updateMatchaUI(true);
+                }, 300);
+            }
+            updateHUD();
+        }
+
+        function updateOvenUI(pop) {
+            const full = RUN_EFF.ovenFull;
+            $('ov-title').textContent = L().oven.title;
+            $('oven').title = L().oven.tip;
+            $('ov-count').textContent = `${Math.min(gameState.oven, full)}/${full}`;
+            $('ov-fill').style.width = Math.min(100, gameState.oven / full * 100) + '%';
+            if (pop) { const o = $('oven'); o.classList.remove('pop'); void o.offsetWidth; o.classList.add('pop'); }
+        }
+        function addCupcakes(n) {
+            if (!n || gameState.chapter !== 3 || gameState.rainRemaining > 0) return false;
+            gameState.oven += n;
+            playSynthNote(988, 0.1, 'triangle', 0.05);
+            updateOvenUI(true);
+            if (gameState.oven >= RUN_EFF.ovenFull) { gameState.oven = 0; gameState.rainPending = true; return true; }
+            return false;
+        }
+        function startCakeRain() {
+            gameState.rainPending = false;
+            gameState.rainRemaining = RUN_EFF.ovenSpins;
+            gameState.rainTotal = RUN_EFF.ovenSpins;
+            gameState.rainMode = true;
+            metaEvent('rain');
+            updateOvenUI();
+            $('bonus-banner').classList.add('show');
+            updateFsBadge();
+            setMessage(tf(L().msg.rainStart, { n: gameState.rainTotal }), true);
+            [784, 988, 1175, 1568, 1976].forEach((f, i) => setTimeout(() => playSynthNote(f, 0.25, 'sine', 0.07), i * 120));
+            celebrate(gameState.bet * 30);
+            startBonusMusic();
+            persist();
+            scheduleNextSpin(900);
+        }
+
+        /* =====================================================
+           SPIN MANTIĞI (matematik: Engine)
+           ===================================================== */
+        let teaseTimer = null;
+        function teaseMusic(on) {
+            clearInterval(teaseTimer); teaseTimer = null;
+            if (!on) return;
+            let k = 0;
+            const up = [57, 60, 64, 69, 72, 76, 81, 84].map(n => 440 * Math.pow(2, (n - 69) / 12));
+            teaseTimer = setInterval(() => { playSynthNote(up[k % up.length], 0.16, 'sine', 0.035); if (k % 4 === 0) { playSynthNote(65, 0.18, 'sine', 0.09); setTimeout(() => playSynthNote(62, 0.16, 'sine', 0.07), 140); } k++; }, 150);
+        }
+        function syncReels() {
+            if (builtReels && builtReels !== reelCount()) {
+                if (gameState.isSpinning || freeActive()) { gameState.reelsPending = true; return; }
+                gameState.reelsPending = false;
+                initThreeJS();
+            }
+        }
+
+        let curSpin = null;
+        function spinReels() {
+            if (gameState.isSpinning) { if (curSpin && curSpin.slam) curSpin.slam(); return; }
+            if (gameState.bonusLock) return;          // 3 kitap → not defteri / free spin bitişi arasında spin yok
+            if (!threeReady) return;
+            if (anyModalOpen()) return;
+            hideTutorial();
+            const c = CHAPTERS[gameState.chapter];
+            const fsSpin = gameState.freeSpinsRemaining > 0;
+            const rainSpin = !fsSpin && gameState.rainRemaining > 0;
+            const free = fsSpin || rainSpin;
+            if (!free && gameState.reelsPending) syncReels();
+            if (!free) {
+                clampBet();
+                if (gameState.balance < c.minBet) {
+                    gameState.autoSpinActive = false;
+                    updateAutoSpinButtonUI();
+                    showBust();
+                    return;
+                }
+            }
+
+            winningMeshRefs = [];
+
+            gameState.spinFree = free;
+            if (fsSpin) gameState.freeSpinsRemaining--;
+            else if (rainSpin) gameState.rainRemaining--;
+            else gameState.balance -= gameState.bet;
+
+            let mult = 1;
+            if (gameState.loy.americano > 0) { mult = 2; gameState.loy.americano--; updateLoyaltyUI(); }
+
+            const ctx = { chapter: gameState.chapter, bet: gameState.bet, tier: Engine.tierOf(gameState.bet), eff: RUN_EFF, expandingSymbolId: fsSpin ? gameState.expandingSymbolId : null, ovenRain: rainSpin, mult,
+                          inFS: fsSpin, fsMult: fsSpin ? (gameState.fsMult || 0) : 0, orbs: Engine.rollOrbs(fsSpin, Math.random, RUN_EFF.orbMul),
+                          luck: free ? 0 : Engine.luckFor(gameState.streak || 0, RUN_EFF.diff) };
+            clearOrbs();
+            const pending = { g: Engine.genGrid(ctx, Math.random), ctx };
+            pending.conv = Engine.convertMatcha(pending.g, ctx, Math.random);   // matcha → kahve (gizemli sembol)
+            const N = pending.g.length;
+            // 7. gün hediyesi: Dede'nin ×5'i ilk KAZANAN spine
+            if (!free && Game.save && Game.save.dedeGift) {
+                const testG = pending.conv.cells.length ? pending.conv.grid : pending.g;
+                if (Engine.evaluate(testG, Object.assign({}, ctx, { orbs: [] })).total > 0) { ctx.orbs.push(5); Game.save.dedeGift = false; pending.gift = true; }
+            }
+            const fast = turboOn();
+
+            updateFsBadge();
+            updateHUD();
+            gameState.isSpinning = true;
+            $('spin-btn').classList.add('spinning');
+            $('spin-lbl').textContent = L().ctl.stop;
+            setMessage(fsSpin ? L().msg.freeSpinning : rainSpin ? L().msg.rainSpinning : (mult > 1 ? L().msg.americanoSpin : L().msg.spinning));
+            playSpinSound();
+
+            Reels.startAll(fast);
+
+            // durma zamanları; 2 Kitap düşecekse kalan makaralar geç ve yavaş durur (heyecan — turboda da)
+            /* Değişken dönüş süresi (turbo kapalıyken): gerçek makinelerdeki gibi her spin aynı sürede bitmez.
+               Sonuçtan bağımsızdır; sadece ritmi canlandırır. */
+            const stopAt = [];
+            let spinProfile = 'n';
+            if (!fast) { const q = Math.random(); spinProfile = q < 0.58 ? 'n' : q < 0.86 ? 'l' : 'x'; }
+            const P = { n: [520, 200, 0], l: [760, 255, 0], x: [980, 300, 520] }[spinProfile];
+            for (let r = 0; r < N; r++) stopAt.push(fast ? 90 + r * 40 : P[0] + r * P[1] + Math.round((Math.random() - 0.5) * 70) + (r === N - 1 ? P[2] : 0));
+            for (let r = 1; r < N; r++) if (stopAt[r] < stopAt[r - 1] + 90) stopAt[r] = stopAt[r - 1] + 90;
+            let teaseFrom = -1;
+            if (!rainSpin) {
+                let books = 0;
+                for (let r = 0; r < N - 1; r++) {
+                    books += pending.g[r].filter(s => s.id === 'book').length;
+                    if (books >= 2) { teaseFrom = r; break; }
+                }
+            }
+            if (teaseFrom >= 0) for (let k = teaseFrom + 1; k < N; k++) stopAt[k] = stopAt[teaseFrom] + (fast ? 500 : 650) + (k - teaseFrom) * (fast ? 700 : 850);
+            const requested = new Array(N).fill(false);
+            let landed = 0, teasing = false, elapsed = 0;
+            orbsDropped = false;
+
+            const onLand = (r) => {
+                setTease(r, false);
+                for (let row = 0; row < 3; row++) gameState.grid[r][row] = pending.g[r][row];
+                const hasBook = pending.g[r].some(s => s.id === 'book');
+                playSynthNote(300 + r * 60, 0.07, 'triangle', 0.06);
+                playSynthNote(120, 0.08, 'sine', 0.05);
+                if (hasBook) {
+                    playSynthNote(teasing ? 1175 : 880, 0.18, 'sine', 0.07);
+                    for (let row = 0; row < 3; row++) if (pending.g[r][row].id === 'book') { const m = meshAt(r, row); if (m) { setFace(m, pending.g[r][row], true, false); m.userData.popStart = Date.now(); winningMeshRefs.push(m); } }
+                }
+                if (r === teaseFrom) {
+                    teasing = true;
+                    for (let k = r + 1; k < N; k++) { setTease(k, true); Reels.setSpeed(k, 0.55); }
+                    $('reel-wrap').classList.add('tease');
+                    setMessage(L().msg.tease);
+                    teaseMusic(true);
+                }
+                landed++;
+                if (landed === N && !orbsDropped && pending.ctx.orbs.length) dropOrbs(pending);
+                if (landed === N) {
+                    clearInterval(spinInterval);
+                    curSpin = null;
+                    $('spin-lbl').textContent = L().ctl.spin;
+                    if (teasing) { teaseMusic(false); clearTease(); }
+                    setTimeout(() => finalizeSpin(pending), fast ? 40 : 120);
+                }
+            };
+            if (spinProfile === 'x' && teaseFrom < 0) {   // en uzun dönüşte son makara ağırlaşır, hafif bir uğultu yükselir
+                setTimeout(() => { if (!requested[N - 1]) { Reels.setSpeed(N - 1, 0.72); playSynthNote(196, 0.5, 'sine', 0.03); playSynthNote(294, 0.5, 'sine', 0.025); } }, stopAt[N - 2]);
+            }
+            curSpin = { slam: () => {   // dönerken SPİN'e tekrar basınca: makaraları hemen durdur (heyecan makaraları hariç)
+                for (let r = 0; r < N; r++) if (!requested[r] && (teaseFrom < 0 || r <= teaseFrom)) stopAt[r] = Math.min(stopAt[r], elapsed);
+                Reels.fast = true;
+            } };
+            const spinInterval = setInterval(() => {
+                elapsed += 40;
+                for (let r = 0; r < N; r++) {
+                    if (!requested[r] && elapsed >= stopAt[r]) {
+                        requested[r] = true;
+                        Reels.requestStop(r, pending.g[r], () => onLand(r));
+                    }
+                }
+            }, 40);
+        }
+
+        function scheduleNextSpin(extraDelay) {
+            if (!(freeActive() || gameState.autoSpinActive || gameState.rainPending)) return;
+            const tryGo = () => {
+                if (document.body.dataset.mode !== 'game') return;
+                if (gameState.isSpinning) return;
+                if (anyModalOpen()) { setTimeout(tryGo, 500); return; }
+                if (gameState.rainPending && gameState.freeSpinsRemaining === 0 && !gameState.expandingSymbolId) { startCakeRain(); return; }
+                if (!(freeActive() || gameState.autoSpinActive)) return;
+                spinReels();
+            };
+            setTimeout(tryGo, (turboOn() ? 260 : 850) + (extraDelay || 0));
+        }
+
+        function finalizeSpin(pending) {
+            if (pending.conv && pending.conv.cells.length && !pending.converted) {
+                pending.converted = true;
+                const ms = animateConvert(pending);
+                setTimeout(() => finalizeSpin(pending), ms);
+                return;
+            }
+            if (pending.conv && pending.conv.cells.length) pending.g = pending.conv.grid;
+            const res = evaluateWins(pending);
+            res.p = pending;
+            if (pending.conv) res.matchaConv = pending.conv.cells.length;
+            if (res.animMs) setTimeout(() => afterSpin(res), res.animMs);
+            else afterSpin(res);
+        }
+
+        function afterSpin(res) {
+            gameState.isSpinning = false;
+            $('spin-btn').disabled = false;
+            $('spin-btn').classList.remove('spinning');
+            $('spin-lbl').textContent = L().ctl.spin;
+            if (res.p) metaOnSpin(res, res.p);
+
+            if (addStamps(res.stamps)) setTimeout(() => { if (!$('modal-drink').classList.contains('open')) openDrinkChoice(); }, 450);
+            addCupcakes(res.cupcakes);
+            addMatchaWar(res.matchaConv || 0);
+
+            // 3+ Reçete Kitabı (normal ya da pasta yağmuru spini): not defteri
+            if (res.scatter >= 3 && !gameState.expandingSymbolId) {
+                playSynthNote(950, 0.35);
+                gameState.bonusLock = true;
+                gameState.autoSpinActive = false; updateAutoSpinButtonUI();
+                $('spin-btn').disabled = true;
+                persist();
+                setTimeout(() => whenNoModal(() => {
+                    $('spin-btn').disabled = false;
+                    triggerBonusGameIntro();
+                }), res.total > 0 ? 1400 : 700);
+                return;
+            }
+            let extra = 0;
+            if (res.scatter >= 3 && gameState.expandingSymbolId) {
+                gameState.freeSpinsRemaining += res.scatter;
+                gameState.freeSpinsTotal += res.scatter;
+                updateFsBadge();
+                [988, 1175, 1319, 1568].forEach((f, i) => setTimeout(() => playSynthNote(f, 0.2, 'sine', 0.07), i * 110));
+                setMessage(tf(L().msg.retrig, { n: res.scatter }), true);
+                celebrate(gameState.bet * 20);
+                extra = 900;
+            }
+
+            if (gameState.freeSpinsRemaining === 0 && (gameState.expandingSymbolId || gameState.freeSpinsTotal > 0)) {
+                const fsWin = gameState.fsWin || 0, fsMult = gameState.fsMult || 0, fsSym = gameState.expandingSymbolId || 'espresso';
+                gameState.bonusLock = true;
+                gameState.autoSpinActive = false; updateAutoSpinButtonUI();
+                setTimeout(() => whenNoModal(() => { gameState.bonusLock = false; showFsDone(fsWin, fsMult, fsSym); }), 300);
+                gameState.fsMult = 0; gameState.fsWin = 0;
+                gameState.expandingSymbolId = null;
+                gameState.freeSpinsTotal = 0;
+                if (gameState.rainRemaining <= 0) { $('bonus-banner').classList.remove('show'); stopBonusMusic(); }
+                updateFsBadge();
+                updateHUD();
+            }
+            if (gameState.rainMode && gameState.rainRemaining === 0 && gameState.freeSpinsRemaining === 0) {
+                gameState.rainMode = false;
+                gameState.rainTotal = 0;
+                $('bonus-banner').classList.remove('show');
+                stopBonusMusic();
+                updateFsBadge();
+            }
+
+            checkPhases();
+            persist();
+            updateHUD();
+
+            if (!freeActive() && !gameState.rainPending) {
+                if (gameState.balance < CHAPTERS[gameState.chapter].minBet) {
+                    gameState.autoSpinActive = false;
+                    updateAutoSpinButtonUI();
+                    whenNoModal(showBust);
+                    return;
+                }
+                if (!Game.save.finished && gameState.balance >= CHAPTERS[gameState.chapter].unlockAt && !gameState.goalAnnounced) {
+                    gameState.goalAnnounced = true;
+                    gameState.autoSpinActive = false;
+                    updateAutoSpinButtonUI();
+                    const b = $('buy-btn');
+                    b.classList.remove('flash'); void b.offsetWidth; b.classList.add('flash');
+                    showDialog('cozybear', CUR_LANG() === 'en' ? 'BlueBird' : 'MaviKuş', $('buy-wrap').dataset.tip || '');
+                    [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => playSynthNote(f, 0.25, 'sine', 0.07), i * 120));
+                    return;
+                }
+                if (gameState.balance < CHAPTERS[gameState.chapter].unlockAt) gameState.goalAnnounced = false;
+            }
+            scheduleNextSpin(extra);
+        }
+
+        function evaluateWins(p) {
+            const res = Engine.evaluate(p.g, p.ctx);
+            const gain = res.total + res.cashback;
+            gameState.balance += gain;
+            if (p.ctx.inFS) { gameState.fsMult = res.fsMult; gameState.fsWin = (gameState.fsWin || 0) + gain; }
+            if (!gameState.spinFree) gameState.streak = res.total > 0 ? 0 : (gameState.streak || 0) + 1;   // şans desteği serisi
+
+            winningMeshRefs = [];
+            const seen = new Set();
+            const expanded = res.expanded || [];
+            const markCell = (r, row, sym) => {
+                const key = r + ',' + row;
+                if (seen.has(key)) return;
+                seen.add(key);
+                const mesh = meshAt(r, row);
+                if (!mesh) return;
+                setFace(mesh, sym, true, false);
+                winningMeshRefs.push(mesh);
+            };
+            res.marks.forEach(m => { if (expanded.indexOf(m.r) === -1) markCell(m.r, m.row, p.g[m.r][m.row]); });
+            for (let r = 0; r < p.g.length; r++) for (let row = 0; row < 3; row++) {
+                const id = p.g[r][row].id;
+                if (id === 'stamp' || (id === 'cupcake' && gameState.chapter === 3)) markCell(r, row, p.g[r][row]);
+            }
+
+            res.animMs = 0;
+            if (expanded.length) {
+                const sym = SYMBOLS.find(s => s.id === p.ctx.expandingSymbolId);
+                expanded.forEach((r, i) => {
+                    setTimeout(() => {
+                        for (let row = 0; row < 3; row++) {
+                            gameState.grid[r][row] = sym;
+                            const mesh = meshAt(r, row);
+                            if (!mesh) continue;
+                            setFace(mesh, sym, true, false);
+                            mesh.userData = mesh.userData || {};
+                            mesh.userData.popStart = Date.now() + row * 60;
+                            if (winningMeshRefs.indexOf(mesh) === -1) winningMeshRefs.push(mesh);
+                        }
+                        playSynthNote(523 + i * 110, 0.2, 'triangle', 0.06);
+                        playSynthNote(1046 + i * 220, 0.12, 'sine', 0.035);
+                        setTease(r, true); flashLights();
+                        setTimeout(() => setTease(r, false), 900);
+                    }, (350 + i * 380) * (turboOn() ? 0.6 : 1));
+                });
+                res.animMs = (350 + expanded.length * 380 + 300) * (turboOn() ? 0.6 : 1);
+                setMessage(tf(L().msg.expandTitle, { s: symName(sym.id) }), true);
+            }
+
+            updateHUD();
+            const M = L().msg;
+            const parts = [];
+            if (res.mult > 1 && res.total > 0) parts.push(M.americano);
+            if (res.lineTotal > 0) parts.push(tf(M.win, { v: fmt(res.lineTotal) }));
+            if (res.expandPay > 0) parts.push(tf(M.expand, { n: expanded.length, v: fmt(res.expandPay) }));
+            if (res.foamMult > 1) parts.push(tf(M.foam, { v: fmtX(res.foamMult) }));
+            if (res.latte > 0) parts.push(tf(M.latte, { v: fmt(res.latte) }));
+            if (res.harvest > 0) parts.push(tf(M.harvest, { n: res.bags, v: fmt(res.harvest) }));
+            const extras = [];
+            if (res.cashback > 0) extras.push(tf(M.cash, { v: fmt(res.cashback) }));
+            if (res.stamps > 0 && gameState.chapter === 5) extras.push(tf(M.stamps, { n: res.stamps }));
+            if (res.cupcakes > 0 && gameState.chapter === 3 && !p.ctx.ovenRain) extras.push(tf(M.cupcakes, { n: res.cupcakes }));
+
+            const show = () => {
+                if (res.total > 0) {
+                    playSynthNote(850, 0.35);
+                    if (res.foamMult > 1 || res.latte > 0 || res.expandPay > 0 || res.harvest > 0) [988, 1319].forEach((f, i) => setTimeout(() => playSynthNote(f, 0.2, 'sine', 0.06), 120 + i * 120));
+                    let msg = parts.join('  ·  ') + ' ' + M.beans;
+                    if (extras.length) msg += '  ·  ' + extras.join('  ·  ');
+                    if (res.matcha > 0 && res.pitcher === 0 && res.foamMult === 1) msg += '  ' + M.matchaHint;
+                    setMessage(msg, true);
+                    celebrate(res.total);
+                } else if (extras.length) {
+                    setMessage(extras.join('  ·  '));
+                } else if (res.matcha > 0 && res.pitcher === 0) {
+                    setMessage(M.matchaAlone);
+                } else {
+                    setMessage(M.brewed);
+                }
+            };
+            if (res.animMs) setTimeout(show, res.animMs - 200); else show();
+            // kazanç sayacı + çarpan çekirdekleri + büyük kazanç
+            res.animMs = presentWin(res, p, res.animMs);
+            return res;
+        }
+
+        /* ---------- KASA BİTTİ: 24 saat bekle ya da video izle ---------- */
+        const GIFT_MS = 24 * 3600 * 1000;
+        function giftAmt() { return (RUN_EFF.diff && RUN_EFF.diff.gift) || 5000; }
+        let bustTimer = null;
+        function giftLeft() { const sv = Game.save; if (!sv) return GIFT_MS; return Math.max(0, (sv.lastGift || sv.created || Date.now()) + GIFT_MS - Date.now()); }
+        function fmtTime(ms) { const t = Math.ceil(ms / 1000), h = Math.floor(t / 3600), m = Math.floor(t % 3600 / 60), sec = t % 60; return [h, m, sec].map(v => String(v).padStart(2, '0')).join(':'); }
+        function checkDailyGift() {
+            const sv = Game.save;
+            if (!sv || gameState.isSpinning) return;
+            if (giftLeft() > 0) return;
+            gameState.balance += giftAmt();
+            sv.lastGift = Date.now();
+            persist();
+            if (document.body.dataset.mode === 'game') updateHUD();
+            if (document.body.dataset.screen === 'screen-map') $('map-bank').innerHTML = `${beanIc()} ${fmt(gameState.balance)}`;
+            showDialog('cozybear', CUR_LANG() === 'en' ? 'BlueBird' : 'MaviKuş', tf(L().gift.got, { v: fmt(giftAmt()) }));
+            if ($('modal-bust').classList.contains('open') && gameState.balance >= CHAPTERS[gameState.chapter].minBet) closeBust();
+        }
+        function showBust() {
+            const B = L().bust;
+            $('bust-title').textContent = B.t;
+            $('bust-text').innerHTML = tf(B.txt, { v: fmt(giftAmt()) });
+            $('bust-video').textContent = tf(B.video, { v: fmt(giftAmt()) });
+            $('bust-wait').textContent = B.wait;
+            const tick = () => { $('bust-timer').textContent = fmtTime(giftLeft()); if (giftLeft() === 0) checkDailyGift(); };
+            tick();
+            clearInterval(bustTimer); bustTimer = setInterval(tick, 1000);
+            openModal('modal-bust');
+            [330, 262, 196].forEach((f, i) => setTimeout(() => playSynthNote(f, 0.25, 'triangle', 0.05), i * 140));
+        }
+        function closeBust() { clearInterval(bustTimer); bustTimer = null; closeModal('modal-bust'); }
+        function watchVideo() {
+            // Şimdilik gerçek reklam yok: tuşa her basışta anında 5.000 çekirdek
+            gameState.balance += giftAmt();
+            if (Game.save) { Game.save.busts = (Game.save.busts || 0) + 1; Game.save.videos = (Game.save.videos || 0) + 1; }
+            gameState.bet = recommendedBet(gameState.chapter, gameState.balance);
+            closeBust();
+            persist();
+            updateHUD();
+            [523, 659, 784].forEach((f, i) => setTimeout(() => playSynthNote(f, 0.2, 'sine', 0.06), i * 100));
+            setMessage(tf(L().gift.video, { v: fmt(giftAmt()) }), true);
+            celebrate(gameState.bet * 10);
+        }
+        function bustWait() {
+            closeBust();
+            setMessage(tf(L().bust.waitMsg, { t: fmtTime(giftLeft()) }));
+        }
+
+        /* ---------- ÇARPAN ÇEKİRDEKLERİ (Gates of Olympus tarzı) ---------- */
+        let orbsDropped = false;
+        function orbTier(v) { return v >= 50 ? 'o4' : v >= 25 ? 'o3' : v >= 5 ? 'o2' : 'o1'; }
+        function clearOrbs() { const l = $('orb-layer'); if (l) l.innerHTML = ''; }
+        let orbsReadyAt = 0;
+        function dropOrbs(pending) {
+            if (orbsDropped) return;
+            orbsDropped = true;
+            const layer = $('orb-layer');
+            const N = pending.g.length, used = new Set();
+            const fast = turboOn();
+            Dede.mount();
+            Dede.intro();
+            let last = 0;
+            pending.ctx.orbs.forEach((v, i) => {
+                let r, row, k = 0;
+                do { r = Math.floor(Math.random() * N); row = Math.floor(Math.random() * 3); k++; } while (used.has(r + ',' + row) && k < 20);
+                used.add(r + ',' + row);
+                const pos = cellScreenPos(r, row);
+                const el = document.createElement('div');
+                el.className = 'orb ' + orbTier(v);
+                el.style.left = pos.x + '%'; el.style.top = pos.y + '%';
+                el.innerHTML = cupSVG(orbTier(v)) + `<span>×${v}</span>`;
+                el.dataset.v = v;
+                last = Dede.cast(i, v, pos, el, fast);   // Kahve Dede cezvesinden fırlatır
+                layer.appendChild(el);
+            });
+            if (pending.gift) setTimeout(() => Dede.say(L().dede.gift, 1800), 200);
+            orbsReadyAt = performance.now() + last + 450;
+        }
+        /* Kazanç sunumu: sayaç → (varsa) çarpanlar sayaca uçar → büyük kazanç penceresi. Toplam süreyi döndürür. */
+        function presentWin(res, p, startMs) {
+            const pop = $('win-pop'), orbsEls = [...$('orb-layer').querySelectorAll('.orb')];
+            const bet = p.ctx.bet, fast = turboOn(), k = fast ? 0.45 : 1;
+            const orbWait = () => Math.max(0, orbsReadyAt - performance.now());
+            if (res.total <= 0) {
+                if (orbsEls.length) setTimeout(() => orbsEls.forEach(o => o.classList.add('fade')), Math.max(startMs + 500 * k, orbWait() + 300));
+                return startMs;
+            }
+            let t = startMs;
+            const count = (from, to, ms, el) => {
+                const t0 = performance.now();
+                const step = () => {
+                    const u = Math.min(1, (performance.now() - t0) / ms);
+                    el.textContent = '+' + fmt(from + (to - from) * (1 - Math.pow(1 - u, 2)));
+                    if (u < 1) requestAnimationFrame(step);
+                };
+                step();
+            };
+            const showMul = res.orbX > 1;
+            const ratio = res.total / Math.max(1, bet);
+            setTimeout(() => {
+                pop.classList.remove('show', 'mul'); void pop.offsetWidth;
+                pop.classList.add('show');
+                $('wp-x').textContent = '';
+                count(0, showMul ? res.baseWin : res.total, 650 * k, $('wp-v'));
+                playSynthNote(784, 0.12, 'sine', 0.05);
+            }, t);
+            t += 750 * k;
+            if (showMul) {
+                t = Math.max(t, orbWait() + 150);
+                setTimeout(() => {
+                    orbsEls.forEach(o => { o.classList.add('fly'); });
+                    playSynthNote(1319, 0.15, 'sine', 0.06);
+                    Dede.give(res.orbX, res.orbX >= 10 || ratio >= 15);
+                }, t);
+                t += 650 * Math.max(k, 0.6);
+                setTimeout(() => {
+                    pop.classList.add('mul');
+                    $('wp-x').textContent = '×' + res.orbX;
+                    const z = $('zap'); z.classList.remove('on'); void z.offsetWidth; z.classList.add('on');
+                    [988, 1319, 1760].forEach((f, i) => setTimeout(() => playSynthNote(f, 0.18, 'sine', 0.07), i * 90));
+                    count(res.baseWin, res.total, 900 * k, $('wp-v'));
+                    clearOrbs();
+                    if (p.ctx.inFS) updateBanner();
+                }, t);
+                t += 1100 * k;
+            } else if (orbsEls.length) setTimeout(() => orbsEls.forEach(o => o.classList.add('fade')), Math.max(t, orbWait() + 300));
+            setTimeout(() => pop.classList.remove('show'), t + 1300 * k);
+            if (ratio >= 15) setTimeout(() => showBigWin(res.total, ratio), t + 200 * k);
+            return t + 300 * k;
+        }
+        function showBigWin(amount, ratio) {
+            const tiers = L().bigwin;
+            const tier = ratio >= 100 ? 2 : ratio >= 40 ? 1 : 0;
+            $('bw-title').textContent = tiers[tier];
+            $('bigwin-box').className = 'bigwin t' + tier;
+            const el = $('bw-amount');
+            el.textContent = '0';
+            $('bw-tap').textContent = L().bigwinTap;
+            openModal('modal-bigwin');
+            const dur = (1800 + tier * 900) * (turboOn() ? 0.5 : 1), t0 = performance.now();
+            buzz(tier ? [40, 60, 80] : 50);
+            let lastTick = 0, done = false;
+            const step = () => {
+                if (!$('modal-bigwin').classList.contains('open')) return;
+                const u = Math.min(1, (performance.now() - t0) / dur);
+                el.textContent = fmt(amount * (1 - Math.pow(1 - u, 3)));
+                if (performance.now() - lastTick > 90 && u < 1) { lastTick = performance.now(); playSynthNote(700 + u * 900, 0.05, 'triangle', 0.04); }
+                if (u < 1) requestAnimationFrame(step);
+                else if (!done) { done = true; [784, 988, 1175, 1568].forEach((f, i) => setTimeout(() => playSynthNote(f, 0.25, 'sine', 0.07), i * 110)); bigWinTimer = setTimeout(closeBigWin, turboOn() ? 1000 : 2200); }
+            };
+            step();
+            celebrate(amount * 3);
+            setTimeout(() => celebrate(amount * 3), 700);
+            bigWinAmount = amount;
+        }
+        let bigWinTimer = null, bigWinAmount = 0;
+        function closeBigWin() {
+            const el = $('bw-amount');
+            if ($('modal-bigwin').classList.contains('open') && el.textContent !== fmt(bigWinAmount)) { el.textContent = fmt(bigWinAmount); return; }
+            clearTimeout(bigWinTimer);
+            closeModal('modal-bigwin');
+        }
+        function showFsDone(win, mult, sym) {
+            const F = L().fsdone;
+            $('fd-title').textContent = F.t;
+            $('fd-sub').textContent = F.txt;
+            $('fd-mult').textContent = mult > 0 ? tf(F.mult, { v: mult }) : '';
+            $('fd-ok').textContent = F.ok;
+            $('fd-img').src = ASSETS.sym[(SYMBOLS.find(s => s.id === sym) || SYMBOLS[0]).img];
+            const el = $('fd-amount'); el.textContent = '0';
+            openModal('modal-fsdone');
+            const t0 = performance.now();
+            const step = () => { const u = Math.min(1, (performance.now() - t0) / 1500); el.textContent = fmt(win * (1 - Math.pow(1 - u, 3))); if (u < 1) requestAnimationFrame(step); };
+            step();
+            [659, 784, 988, 1319].forEach((f, i) => setTimeout(() => playSynthNote(f, 0.22, 'sine', 0.06), i * 120));
+            if (win > 0) celebrate(win);
+        }
+
+        function celebrate(amount) {
+            if (document.body.dataset.mode !== 'game') return;
+            if (typeof flashLights === 'function') flashLights();
+            const layer = $('fx-layer');
+            const ratio = amount / Math.max(1, gameState.bet);
+            let count = ratio >= 20 ? 34 : ratio >= 5 ? 20 : 9;
+            if (lowFx()) count = Math.ceil(count / 3);
+            const pool = ['cupcake', 'croissant', 'cake', 'goldenbean', 'bloom', 'leaf', 'coffeebag', 'espresso'];
+            while (layer.children.length > 70) layer.removeChild(layer.firstChild);
+            for (let i = 0; i < count; i++) {
+                const im = document.createElement('img');
+                im.className = 'fall';
+                im.src = ASSETS.sym[pool[Math.floor(Math.random() * pool.length)]];
+                const size = 34 + Math.random() * 38;
+                im.style.width = size + 'px';
+                im.style.left = (Math.random() * 96) + '%';
+                const dur = 1.8 + Math.random() * 1.6;
+                im.style.animationDuration = dur + 's';
+                im.style.animationDelay = (Math.random() * 0.7) + 's';
+                layer.appendChild(im);
+                setTimeout(() => im.remove(), (dur + 0.9) * 1000);
+            }
+        }
+
+        /* =====================================================
+           BONUS (not defteri)
+           ===================================================== */
+        let nbTimers = [];
+        function nbLater(fn, ms) { const t = setTimeout(fn, ms); nbTimers.push(t); return t; }
+        function nbClear() { nbTimers.forEach(clearTimeout); nbTimers = []; }
+
+        function triggerBonusGameIntro() {
+            metaEvent('fs');
+            const eligibleSymbols = SYMBOLS.filter(s => s.id !== 'book');
+            const randomSym = eligibleSymbols[Math.floor(Math.random() * eligibleSymbols.length)];
+            gameState.expandingSymbolId = randomSym.id;
+            $('nb-title').textContent = L().nb.title;
+            $('nb-cover').innerHTML = L().nb.cover;
+            $('nb-back').textContent = L().nb.back;
+            $('bonus-start-btn').textContent = L().nb.start;
+            openModal('modal-bonus-intro');
+            runNotebookReveal(randomSym, eligibleSymbols);
+        }
+
+        function runNotebookReveal(finalSym, pool) {
+            nbClear();
+            const book = $('nb-book'), card = $('nb-card'), icon = $('notebook-symbol-icon'), name = $('notebook-symbol-name'), text = $('notebook-text'), btn = $('bonus-start-btn');
+            book.classList.remove('open');
+            card.classList.remove('landed', 'shuffling', 'tick');
+            card.querySelectorAll('.nb-spark').forEach(n => n.remove());
+            icon.src = ASSETS.sym.book;
+            name.textContent = '?';
+            text.textContent = L().nb.found;
+            btn.disabled = true;
+            nbLater(() => { playPageFlip(); book.classList.add('open'); }, 650);
+            nbLater(() => playBell(1568, 0, 0.03, 1.6), 1500);
+            nbLater(() => {
+                text.textContent = L().nb.picking;
+                card.classList.add('shuffling');
+                let delay = 60, step = 0, last = null;
+                const total = 20;
+                const tick = () => {
+                    step++;
+                    let sym;
+                    if (step >= total) sym = finalSym;
+                    else { do { sym = pool[Math.floor(Math.random() * pool.length)]; } while (sym === last || (step === total - 1 && sym === finalSym)); }
+                    last = sym;
+                    icon.src = ASSETS.sym[sym.img];
+                    name.textContent = step >= total ? symName(finalSym.id) : '...';
+                    card.classList.remove('tick'); void card.offsetWidth; card.classList.add('tick');
+                    playHoloTick(step);
+                    if (step >= total) { landed(); return; }
+                    delay = step > 12 ? delay * 1.28 : delay * 1.06;
+                    nbLater(tick, delay);
+                };
+                tick();
+            }, 650 + 1750);
+            function landed() {
+                card.classList.remove('shuffling');
+                card.classList.add('landed');
+                playBellCelebration();
+                flashLights();
+                ['✨', '⭐', '🤎', '✨', '⭐', '✨', '🤎', '✨', '⭐', '✨'].forEach((st, i, arr) => {
+                    const sp = document.createElement('span');
+                    sp.className = 'nb-spark';
+                    sp.textContent = st;
+                    const ang = (i / arr.length) * Math.PI * 2 + Math.random() * 0.4;
+                    const dist = 70 + Math.random() * 40;
+                    sp.style.setProperty('--dx', Math.cos(ang) * dist + 'px');
+                    sp.style.setProperty('--dy', Math.sin(ang) * dist + 'px');
+                    card.appendChild(sp);
+                    setTimeout(() => sp.remove(), 1100);
+                });
+                celebrate(gameState.bet * 25);
+                text.innerHTML = tf(L().nb.result, { s: symName(finalSym.id), n: nextFreeSpins(), f: gameState.loy.filtre ? L().nb.filtre : '', min: Engine.expandMin(finalSym) });
+                nbLater(() => { btn.disabled = false; }, 500);
+            }
+        }
+
+        function startFreeSpinSequence() {
+            if (gameState.freeSpinsRemaining > 0 && gameState.freeSpinsTotal > 0 && gameState.expandingSymbolId) return;   // çift tıklama
+            nbClear();
+            closeModal('modal-bonus-intro');
+            gameState.bonusLock = false;
+            if (!gameState.expandingSymbolId) gameState.expandingSymbolId = SYMBOLS.filter(s => s.id !== 'book')[0].id;
+            const n = nextFreeSpins();
+            if (gameState.loy.filtre) { gameState.loy.filtre = false; updateLoyaltyUI(); }
+            gameState.freeSpinsRemaining = n;
+            gameState.freeSpinsTotal = n;
+            gameState.fsMult = 0;
+            gameState.fsWin = 0;
+            $('bonus-banner').classList.add('show');
+            updateFsBadge();
+            updateHUD();
+            startBonusMusic();
+            persist();
+            setTimeout(() => { spinReels(); }, 300);
+        }
+
+        /* =====================================================
+           BARİSTA ATÖLYESİ (kasadaki çekirdekle)
+           ===================================================== */
+        let shopTab = 'symbol';
+        function openShop() {
+            if (!Game.save) return;
+            playSynthNote(560, 0.08);
+            hideTutorial();
+            buildShop();
+            openModal('modal-shop');
+        }
+        function closeShop() {
+            closeModal('modal-shop');
+            if ($('modal-info').classList.contains('open')) buildPayTable();
+            if (document.body.dataset.mode === 'game') syncReels();
+            if (document.body.dataset.screen === 'screen-map') $('map-bank').innerHTML = `${beanIc()} ${fmt(gameState.balance)}`;
+            if (Game.save) updateHUD();
+        }
+        function setShopTab(id) { shopTab = id; playSynthNote(520, 0.04); buildShop(); }
+
+        function buildShop() {
+            const S = L().shop;
+            $('shop-title').textContent = S.title;
+            $('shop-bank').innerHTML = `${S.bank}: ${beanIc()} ${fmt(gameState.balance)}`;
+            const tabs = $('shop-tabs');
+            tabs.innerHTML = '';
+            ['symbol', 'skill', 'special', 'late'].forEach(id => {
+                const b = document.createElement('button');
+                b.className = 'tab' + (id === shopTab ? ' on' : '');
+                b.textContent = S.tabs[id];
+                b.onclick = () => setShopTab(id);
+                tabs.appendChild(b);
+            });
+            const list = $('shop-list');
+            list.innerHTML = '';
+            const ups = Engine.UPGRADES.filter(u => u.group === shopTab).sort((a, b) => (a.unlock || 0) - (b.unlock || 0) || (a.group === 'symbol' ? a.baseCost - b.baseCost : 0));
+            const note = (txt) => { const p = document.createElement('p'); p.className = 'shop-lock'; p.textContent = txt; list.appendChild(p); };
+            if (gameState.isSpinning) note(S.spinWait);
+            if (shopTab === 'special' && ups.some(u => !stageUnlocked(u.unlock || 1))) note(S.lockSpecial);
+            if (shopTab === 'late') note(stageUnlocked(4) ? S.lateInfo : S.lockLate);
+            ups.forEach(u => {
+                const lvl = upLevel(u.id);
+                const locked = u.unlock && !stageUnlocked(u.unlock);
+                const maxed = lvl >= u.max;
+                const cost = maxed ? 0 : Engine.upgradeCost(u, lvl);
+                const card = document.createElement('div');
+                card.className = 'up-card' + (locked ? ' locked' : '') + (maxed ? ' maxed' : '') + (u.id === 'lx_reel6' ? ' big' : '');
+                const im = document.createElement('img');
+                im.src = ASSETS.sym[u.icon]; im.alt = '';
+                const body = document.createElement('div');
+                body.className = 'ub';
+                let pips = '';
+                for (let i = 0; i < u.max; i++) pips += `<i class="${i < lvl ? 'on' : ''}"></i>`;
+                const only = { sp_pitcher: 2, sp_latte: 2, sp_foam: 2, sp_matcha: 2, sp_oven: 3, sp_rain: 3, sp_bag: 4, sp_bagrate: 4 }[u.id];
+                if (only && !maxed && Game.save && Game.save.stage > only) card.classList.add('stale');
+                body.innerHTML = `<b>${upName(u)}</b><span class="pips">${pips}</span>` + (only ? `<small class="only">📍 ${tf(L().shop.onlyAt, { place: L().stage[only].place })}</small>` : '') +
+                    `<small class="cur">${upDesc(u, lvl)}</small>` +
+                    (maxed ? `<small class="nxt">${S.maxed}</small>` : `<small class="nxt">➜ ${upDesc(u, lvl + 1)}</small>`);
+                const btn = document.createElement('button');
+                btn.className = 'btn btn-sm' + (maxed ? ' btn-green' : '');
+                if (locked) { btn.textContent = `🔒 ${L().stageWord} ${u.unlock}`; btn.disabled = true; }
+                else if (maxed) { btn.textContent = S.max; btn.disabled = true; }
+                else {
+                    btn.innerHTML = `${fmt(cost)} ${beanIc()}`;
+                    btn.disabled = gameState.balance < cost || gameState.isSpinning;
+                    btn.onclick = () => buyUpgrade(u.id);
+                }
+                card.append(im, body, btn);
+                list.appendChild(card);
+            });
+            let total = 0, have = 0;
+            Engine.UPGRADES.forEach(u => { total += u.max; have += upLevel(u.id); });
+            $('shop-progress').textContent = tf(S.power, { have, total });
+            $('shop-foot').textContent = S.foot;
+        }
+
+        function buyUpgrade(id) {
+            const u = Engine.UPGRADES.find(x => x.id === id);
+            const lvl = upLevel(id);
+            if (!u || lvl >= u.max || gameState.isSpinning) return;
+            const cost = Engine.upgradeCost(u, lvl);
+            if (gameState.balance < cost) return;
+            gameState.balance -= cost;
+            Game.save.ups[id] = lvl + 1;
+            refreshEff();
+            persist();
+            [784, 988, 1319].forEach((f, i) => setTimeout(() => playSynthNote(f, 0.16, 'sine', 0.06), i * 80));
+            if (id === 'lx_reel6') showDialog('barista', 'Bearista', L().reel6Said);
+            checkBadges();
+            buildShop();
+            if (document.body.dataset.mode === 'game') { updateHUD(); updateOvenUI(); }
+        }

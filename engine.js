@@ -1,5 +1,5 @@
 /* =====================================================================
-   RECIPES OF BARISTA — MATEMATİK MOTORU
+   RECIPES OF BARISTA — MATEMATİK MOTORU (v5: 5 aşama, tek kasa)
    Saf JavaScript: DOM yok, global durum yok. Oyun (tarayıcı) ve
    simülasyon (Node) AYNI dosyayı kullanır; böylece denge testleri
    gerçek oyun matematiğini ölçer.
@@ -8,7 +8,7 @@ const Engine = (function () {
     'use strict';
 
     /* ---------------- Temel sabitler ---------------- */
-    const REELS = 5, ROWS = 3;
+    const ROWS = 3;
     const PAYLINES = [
         [1, 1, 1, 1, 1], [0, 0, 0, 0, 0], [2, 2, 2, 2, 2], [0, 1, 2, 1, 0], [2, 1, 0, 1, 2],
         [0, 0, 1, 2, 2], [2, 2, 1, 0, 0], [1, 0, 1, 2, 1], [1, 2, 1, 0, 1], [0, 1, 1, 1, 2]
@@ -16,110 +16,144 @@ const Engine = (function () {
     // 6. makara için hatlar: ilk 5 aynı; 6. durak = 5. makaranın satırı (4. ile aynıysa o, değilse orta satır)
     const PAYLINES6 = PAYLINES.map(l => l.concat([l[4] === l[3] ? l[4] : 1]));
     function lines(ctx) { return (ctx.eff.reels || 5) === 6 ? PAYLINES6 : PAYLINES; }
-    const EXPAND_K = 10;                          // genişleyen sembol: değer × çizgi bahsi × EXPAND_K (ekranın neresinde olursa olsun)
+    const EXPAND_K = 10;                        // genişleyen sembol: 10 hattın hepsinde öder
     const SPECIAL_REELS = [0, 2, 4];            // Matcha / Pitcher yalnızca 1., 3., 5. makarada
     const BASE_SCATTER = 0.05;                  // hücre başına Reçete Kitabı ihtimali (taban)
     const BASE_FREE_SPINS = 10;
 
-    /* Bahis merdiveni (1-2-5 dizisi). Her 3 basamak = 1 "bahis kademesi".
-       Kademe yükseldikçe: kazanç bonusu, free spin şansı ve atölye çekirdeği artar. */
-    const LADDER = [10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000, 100000, 200000, 500000, 1000000];
+    /* Bahis merdiveni (1-2-5 dizisi). Her 3 basamak = 1 "bahis kademesi". */
+    const LADDER = [10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000, 100000, 200000, 500000, 1000000, 2000000, 5000000];
     const MAX_TIER = 5;
-    const TIER_PAY = 0.04;       // kademe başına +%4 hat kazancı
-    const TIER_SCATTER = 0.05;   // kademe başına +%5 (göreli) kitap şansı
-    const TIER_BEAN = 0.10;      // kademe başına +%10 atölye çekirdeği
+    const TIER_PAY = 0.04;       // kademe başına +%4 kazanç
+    const TIER_SCATTER = 0.02;   // kademe başına +%5 (göreli) kitap şansı
 
     /* ---------------- Semboller ---------------- */
-    // weight: makarada çıkma ağırlığı (kitap ve özel semboller ayrı hesaplanır)
     const SYMBOLS = [
-        { id: 'book',        img: 'book',        name: 'Reçete Kitabı',    values: { 5: 2000, 4: 500, 3: 100, 2: 10 }, weight: 0,  isScatter: true },
-        { id: 'barista',     img: 'barista',     name: 'Bearista',         values: { 5: 1000, 4: 200, 3: 50, 2: 10 },  weight: 5 },
-        { id: 'girlfriend',  img: 'cozybear',    name: 'MaviKuş',          values: { 5: 500, 4: 100, 3: 30, 2: 5 },    weight: 6 },
-        { id: 'baking_bear', img: 'bakingbear',  name: 'Fırıncı Ayı',      values: { 5: 400, 4: 80, 3: 25, 2: 5 },     weight: 7 },
-        { id: 'portafilter', img: 'portafilter', name: 'Portafiltre',      values: { 5: 300, 4: 60, 3: 20, 2: 5 },     weight: 8 },
-        { id: 'v60',         img: 'v60',         name: 'V60 Dripper',      values: { 5: 100, 4: 30, 3: 10 },           weight: 10 },
-        { id: 'espresso',    img: 'espresso',    name: 'Espresso Fincanı', values: { 5: 80, 4: 25, 3: 10 },            weight: 12 },
-        { id: 'aeropress',   img: 'aeropress',   name: 'AeroPress',        values: { 5: 70, 4: 20, 3: 5 },             weight: 12 },
-        { id: 'golden_bean', img: 'goldenbean',  name: 'Altın Çekirdek',   values: { 5: 50, 4: 15, 3: 5 },             weight: 12 },
-        { id: 'croissant',   img: 'croissant',   name: 'Kruvasan',         values: { 5: 30, 4: 10, 3: 5 },             weight: 14 }
+        { id: 'book',        img: 'book',        values: { 5: 2000, 4: 500, 3: 100, 2: 10 }, weight: 0,  isScatter: true },
+        { id: 'barista',     img: 'barista',     values: { 5: 1000, 4: 200, 3: 50, 2: 10 },  weight: 5 },
+        { id: 'girlfriend',  img: 'cozybear',    values: { 5: 500, 4: 100, 3: 30, 2: 5 },    weight: 6 },
+        { id: 'baking_bear', img: 'bakingbear',  values: { 5: 400, 4: 80, 3: 25, 2: 5 },     weight: 7 },
+        { id: 'portafilter', img: 'portafilter', values: { 5: 300, 4: 60, 3: 20, 2: 5 },     weight: 8 },
+        { id: 'v60',         img: 'v60',         values: { 5: 100, 4: 30, 3: 10 },           weight: 10 },
+        { id: 'espresso',    img: 'espresso',    values: { 5: 80, 4: 25, 3: 10 },            weight: 12 },
+        { id: 'aeropress',   img: 'aeropress',   values: { 5: 70, 4: 20, 3: 5 },             weight: 12 },
+        { id: 'golden_bean', img: 'goldenbean',  values: { 5: 50, 4: 15, 3: 5 },             weight: 12 },
+        { id: 'croissant',   img: 'croissant',   values: { 5: 30, 4: 10, 3: 5 },             weight: 14 }
     ];
     const BOOK = SYMBOLS[0];
     const NORMALS = SYMBOLS.filter(s => !s.isScatter);
     const TOTAL_W = NORMALS.reduce((a, s) => a + s.weight, 0);
 
     const SPECIALS = {
-        // Pitcher: JOKER. Hatlarda diğer sembollerin yerine geçer; ekranda 3 tane = Latte Art Bonusu.
-        pitcher: { id: 'pitcher', img: 'pitcher', name: 'Pitcher', special: 'wild' },
-        // Matcha: KÖPÜK. Ekranda Pitcher ile birlikte gelirse "Matcha Latte" kombosu; hat kazancını çarpar.
-        matcha:  { id: 'matcha',  img: 'matcha',  name: 'Matcha',  special: 'foam' },
-        // Damga: Bölüm 3 sadakat kartı sembolü. Hat ödemez; ekrandaki her damga karta 1 damga ekler.
-        stamp:   { id: 'stamp',   img: 'stamp',   name: 'Damga',   special: 'stamp' }
+        pitcher: { id: 'pitcher', img: 'pitcher', special: 'wild' },      // JOKER; 3 tane = Latte Art bonusu
+        matcha:  { id: 'matcha',  img: 'matcha',  special: 'foam' },      // SyruppoLab'ın matchası: düşünce baristalarımız hepsini AYNI kahve sembolüne çevirir (sadece kazandırır)
+        cupcake: { id: 'cupcake', img: 'cupcake', special: 'oven' },      // Aşama 3: fırın sayacı; Pasta Yağmuru'nda JOKER
+        coffeebag: { id: 'coffeebag', img: 'coffeebag', special: 'bag' }, // Aşama 4: 3+ çuval = hasat ödemesi (her yerde)
+        stamp:   { id: 'stamp',   img: 'stamp',   special: 'stamp' }      // Aşama 5: sadakat kartı damgası
     };
-    const STAMP_RATE = 0.012;                    // hücre başına damga ihtimali (yalnız loyalty bölümü)
-    const STAMPS_PER_CARD = 10;
+    const STAMP_RATE = 0.012, STAMPS_PER_CARD = 10, LATTE_MAX = 2;
+    const OVEN_RATE = 0.03, OVEN_RAIN_RATE = 0.10, OVEN_FULL = 12, OVEN_SPINS = 6;
+    const BAG_RATE = 0.035, BAG_PAY = { 3: 2, 4: 6, 5: 20, 6: 60, 7: 150 };   // bahsin katı
 
-    /* ---------------- Bölümler ----------------
-       payScale: o bölümün taban RTP'sini hedefe çeken kalibrasyon katsayısı (simülasyonla bulundu). */
+    /* Çarpan çekirdekleri (Gates of Olympus tarzı): spin başına şansla düşer; kazanç varsa çarpar.
+       Free spin'de çarpanlar birikir ve sonraki her kazancı çarpar. */
+    const ORB_P = 0.04, ORB_P_FS = 0.08, FS_MULT_CAP = 25;
+    const ORB_TABLE = [[2, 46], [3, 26], [5, 15], [10, 8], [25, 3.5], [50, 1.1], [100, 0.4]];
+    const ORB_TW = ORB_TABLE.reduce((a, o) => a + o[1], 0);
+    /* Şans desteği: art arda boş geçen her spin, sonraki spinde bir hattın tamamlanma ihtimalini artırır
+       (en fazla %LUCK_MAX). Kazanınca sıfırlanır. Oyuncunun uzun kuru serilere düşmesini engeller. */
+    const LUCK_STEP = 0.07, LUCK_MAX = 0.49;
+    /* Zorluk modları (yeni oyunda seçilir; kayıtta saklanır)
+       pay: tüm kazançların katsayısı · luck: şans desteği adımı/üst sınırı · orb: Dede çarpanı sıklığı
+       gift: iflas/24 saat hediyesi · phase: ara durak ödülü katsayısı */
+    const DIFFS = {
+        story:   { pay: 1.251, luckStep: 0.10, luckMax: 0.60, orb: 1.0, gift: 10000, phase: 1.5 },
+        std:     { pay: 1.0, luckStep: LUCK_STEP, luckMax: LUCK_MAX, orb: 1.0, gift: 5000, phase: 1.0 },
+        gambler: { pay: 0.657, luckStep: 0, luckMax: 0, orb: 1.8, gift: 5000, phase: 0.5 }
+    };
+    function diffOf(d) { return DIFFS[d] || DIFFS.std; }
+    function luckFor(streak, diff) { const D = typeof diff === 'object' && diff ? diff : diffOf(diff); return Math.min(D.luckMax, D.luckStep * (streak || 0)); }
+    function rollOrbs(inFS, rng, orbMul) {
+        if (rng() >= (inFS ? ORB_P_FS : ORB_P) * (orbMul || 1)) return [];
+        const n = rng() < 0.12 ? 2 : 1, out = [];
+        for (let i = 0; i < n; i++) {
+            let x = rng() * ORB_TW;
+            for (const [v, w] of ORB_TABLE) { x -= w; if (x < 0) { out.push(v); break; } }
+            if (out.length < i + 1) out.push(2);
+        }
+        return out;
+    }
+
+    /* ---------------- Aşamalar (şubeler) ----------------
+       seed: aşamanın taban sermayesi (kasa tükenirse mahalle desteği bu kadar koyar)
+       unlockAt: kasada bu kadar görülünce sonraki şube satın alınabilir; price: satın alma bedeli
+       payScale: o aşamanın taban RTP'sini hedefe çeken kalibrasyon katsayısı (simülasyonla bulundu). */
     const CHAPTERS = {
-        1: { id: 1, name: 'BÖLÜM 1', title: 'Huzurlu Dem',        start: 5000,   goal: 100000,   minBet: 10,    maxBet: 10000,    payScale: 0.4551, specials: false, boost: {},
-             phases: [0.5], bonus: 5000, beanRate: 0.02 },
-        2: { id: 2, name: 'BÖLÜM 2', title: 'Matcha Savaşı',      start: 20000,  goal: 1000000,  minBet: 100,   maxBet: 100000,   payScale: 0.3079, specials: true,  boost: {},
-             phases: [0.5], bonus: 50000, beanRate: 0.012 },
-        3: { id: 3, name: 'BÖLÜM 3', title: 'Büyük Final',        start: 100000,  goal: 10000000, minBet: 1000,  maxBet: 1000000,  payScale: 0.1512, specials: true,  boost: { book: 1.5, barista: 1.5, girlfriend: 1.25 },
-             phases: [0.25, 0.5, 0.75], bonus: 500000, loyalty: true, beanRate: 0.008 }
+        1: { id: 1, key: 'cafe',    seed: 5000,    unlockAt: 100000,   price: 80000,    minBet: 10,    maxBet: 10000,   payScale: 0.4434, specials: false, boost: {}, phases: [0.5] },
+        2: { id: 2, key: 'matcha',  seed: 20000,   unlockAt: 500000,   price: 400000,   minBet: 100,   maxBet: 50000,   payScale: 0.2615,   specials: true,  boost: {}, phases: [0.5] },
+        3: { id: 3, key: 'bakery',  seed: 100000,  unlockAt: 2500000,  price: 2000000,  minBet: 500,   maxBet: 200000,  payScale: 0.2225,   specials: false,  boost: {}, phases: [0.5], oven: true },
+        4: { id: 4, key: 'harvest', seed: 500000,  unlockAt: 10000000, price: 8000000,  minBet: 1000,  maxBet: 1000000, payScale: 0.1729,   specials: false,  boost: {}, phases: [0.5], harvest: true },
+        5: { id: 5, key: 'castle',  seed: 2000000, unlockAt: 50000000, price: 50000000, minBet: 2000,  maxBet: 5000000, payScale: 0.0493,   specials: false,  boost: { book: 1.5, barista: 1.5, girlfriend: 1.25 }, phases: [0.25, 0.5, 0.75], loyalty: true, final: true }
     };
+    const STAGE_COUNT = 5;
 
-    /* ---------------- Yükseltmeler (Barista Atölyesi) ---------------- */
-    const SYMBOL_UP_COST = { croissant: 600, golden_bean: 800, aeropress: 1000, espresso: 1250, v60: 1600, portafilter: 2500, baking_bear: 4000, girlfriend: 6000, barista: 10000, book: 20000 };
+    /* ---------------- Yükseltmeler (Barista Atölyesi) — kasadaki çekirdekle alınır ----------------
+       unlock: o aşamaya ulaşınca açılır. Metinler arayüz katmanında (dil dosyası) tutulur. */
+    const SYMBOL_UP_COST = { croissant: 1500, golden_bean: 2000, aeropress: 2500, espresso: 3000, v60: 4000, portafilter: 6000, baking_bear: 10000, girlfriend: 15000, barista: 25000, book: 50000 };
     const UPGRADES = [];
-    SYMBOLS.forEach(s => UPGRADES.push({
-        id: 'sym_' + s.id, group: 'symbol', icon: s.img, name: s.name + ' Çarpanı', max: 6,
-        baseCost: SYMBOL_UP_COST[s.id], growth: 1.7,
-        desc: l => `Ödemeleri ×${(1 + 0.25 * l).toFixed(2).replace(/\.?0+$/, '')}`
-    }));
+    SYMBOLS.forEach(s => UPGRADES.push({ id: 'sym_' + s.id, group: 'symbol', sym: s.id, icon: s.img, max: 8, baseCost: SYMBOL_UP_COST[s.id], growth: 2.2 }));
     UPGRADES.push(
-        { id: 'sk_scatter', group: 'skill', icon: 'book',       name: 'Kitap İlhamı',      max: 5, baseCost: 3000, growth: 1.8, desc: l => `Kitap şansı %${(5 + 0.15 * l).toFixed(2).replace(/\.?0+$/, '')} (hücre başına)` },
-        { id: 'sk_assist',  group: 'skill', icon: 'espresso',   name: 'Kombo Ustası',      max: 5, baseCost: 4000, growth: 1.8, desc: l => `Her spinde %${l * 2} ihtimalle bir hat 1 sembol uzar` },
-        { id: 'sk_free',    group: 'skill', icon: 'cozybear',   name: 'Uzun Mola',         max: 3, baseCost: 7500, growth: 2.0, desc: l => `Free spin sayısı ${BASE_FREE_SPINS + l}` },
-        { id: 'sk_expand',  group: 'skill', icon: 'portafilter',name: 'Not Defteri Gücü',  max: 5, baseCost: 6000, growth: 1.8, desc: l => `Free spinde her hücrenin genişleyen sembol olma şansı +%${l}` },
-        { id: 'sk_cash',    group: 'skill', icon: 'cupcake',    name: 'Sadık Müşteriler',  max: 5, baseCost: 3500, growth: 1.8, desc: l => `Boş spinde bahsin %${2 * l} kadarı geri döner` },
-        { id: 'sk_bean',    group: 'skill', icon: 'goldenbean', name: 'Çırak Eğitimi',     max: 5, baseCost: 2000, growth: 1.6, desc: l => `Atölye çekirdeği kazancı +%${15 * l}` },
-        { id: 'sp_pitcher', group: 'special', icon: 'pitcher',  name: 'Pitcher Şansı',     max: 4, baseCost: 4500, growth: 1.9, unlock: 2, desc: l => `Pitcher şansı %${(7 + 0.5 * l).toFixed(1).replace('.0', '')} (1-3-5. makara)` },
-        { id: 'sp_latte',   group: 'special', icon: 'pitcher',  name: 'Latte Art Bonusu',  max: 4, baseCost: 5500, growth: 1.9, unlock: 2, desc: l => `3 Pitcher bonusu: bahsin ${2 + 0.5 * l} katı` },
-        { id: 'sp_foam',    group: 'special', icon: 'matcha',   name: 'Matcha Köpüğü',     max: 4, baseCost: 5000, growth: 1.9, unlock: 2, desc: l => `Matcha Latte çarpanı +%${50 + 10 * l} (çift başına)` },
-        { id: 'sp_matcha',  group: 'special', icon: 'matcha',   name: 'Matcha Şansı',      max: 3, baseCost: 4000, growth: 1.9, unlock: 2, desc: l => `Matcha şansı %${7 + l} (1-3-5. makara)` }
+        { id: 'sk_scatter', group: 'skill', icon: 'book',        max: 5, baseCost: 8000,    growth: 2.3 },
+        { id: 'sk_assist',  group: 'skill', icon: 'espresso',    max: 5, baseCost: 10000,   growth: 2.3 },
+        { id: 'sk_free',    group: 'skill', icon: 'cozybear',    max: 3, baseCost: 30000,   growth: 3.0 },
+        { id: 'sk_expand',  group: 'skill', icon: 'portafilter', max: 5, baseCost: 20000,   growth: 2.4 },
+        { id: 'sk_cash',    group: 'skill', icon: 'cake',        max: 5, baseCost: 8000,    growth: 2.3 },
+        { id: 'sp_pitcher', group: 'special', icon: 'pitcher',   max: 4, baseCost: 30000,   growth: 2.3, unlock: 2 },
+        { id: 'sp_latte',   group: 'special', icon: 'pitcher',   max: 4, baseCost: 40000,   growth: 2.3, unlock: 2 },
+        { id: 'sp_foam',    group: 'special', icon: 'matcha',    max: 4, baseCost: 35000,   growth: 2.3, unlock: 2 },
+        { id: 'sp_matcha',  group: 'special', icon: 'matcha',    max: 3, baseCost: 25000,   growth: 2.3, unlock: 2 },
+        { id: 'sp_oven',    group: 'special', icon: 'cupcake',   max: 3, baseCost: 250000,  growth: 2.4, unlock: 3 },
+        { id: 'sp_rain',    group: 'special', icon: 'cake',      max: 3, baseCost: 350000,  growth: 2.4, unlock: 3 },
+        { id: 'sp_bag',     group: 'special', icon: 'coffeebag', max: 4, baseCost: 1200000, growth: 2.3, unlock: 4 },
+        { id: 'sp_bagrate', group: 'special', icon: 'leaf',      max: 3, baseCost: 900000,  growth: 2.3, unlock: 4 },
+        { id: 'lx_pay',     group: 'late', icon: 'goldenbean',   max: 8, baseCost: 2500000, growth: 1.7, unlock: 4 },
+        { id: 'lx_book',    group: 'late', icon: 'book',         max: 8, baseCost: 2000000, growth: 1.7, unlock: 4 },
+        { id: 'lx_free',    group: 'late', icon: 'bakingbear',   max: 3, baseCost: 5000000, growth: 2.0, unlock: 5 },
+        { id: 'lx_expand',  group: 'late', icon: 'portafilter',  max: 5, baseCost: 4000000, growth: 1.9, unlock: 5 },
+        { id: 'lx_stamp',   group: 'late', icon: 'stamp',        max: 5, baseCost: 3000000, growth: 1.9, unlock: 5 },
+        { id: 'lx_reel6',   group: 'late', icon: 'espresso',     max: 1, baseCost: 25000000, growth: 1,  unlock: 5 }
     );
-    UPGRADES.push(
-        { id: 'lx_pay',    group: 'late', icon: 'goldenbean', name: 'Usta Barista',    max: 8, baseCost: 20000,   growth: 1.55, unlock: 3, desc: l => `Tüm hat kazançları +%${5 * l}` },
-        { id: 'lx_book',   group: 'late', icon: 'book',       name: 'Şanslı Kitap',    max: 8, baseCost: 15000,   growth: 1.55, unlock: 3, desc: l => `Kitap (Wild) şansı +%${3 * l}` },
-        { id: 'lx_free',   group: 'late', icon: 'bakingbear', name: 'Ekstra Mola',     max: 5, baseCost: 50000,   growth: 2.0,  unlock: 3, desc: l => `Free spin'e +${l} ek tur` },
-        { id: 'lx_expand', group: 'late', icon: 'portafilter',name: 'Defter Ustası',   max: 5, baseCost: 40000,   growth: 1.8,  unlock: 3, desc: l => `Genişleyen sembol ödemesi +%${10 * l}` },
-        { id: 'lx_stamp',  group: 'late', icon: 'stamp',      name: 'Damga Ustası',    max: 5, baseCost: 30000,   growth: 1.8,  unlock: 3, desc: l => `Damga şansı %${(1.2 + 0.2 * l).toFixed(1).replace('.0', '')} (Bölüm 3)` },
-        { id: 'lx_reel6',  group: 'late', icon: 'espresso',   name: '6. Makara',       max: 1, baseCost: 1000000, growth: 1,    unlock: 3, desc: l => l ? 'Makara sayısı: 6 (6 eşleşme = süper ödül)' : 'Makara sayısı: 5' }
-    );
-    function upgradeCost(up, lvl) { return Math.round(up.baseCost * Math.pow(up.growth, lvl)); }
+    function upgradeCost(up, lvl) { return Math.round(up.baseCost * Math.pow(up.growth, lvl) / 10) * 10; }
 
     function effects(ups, extra) {
         const L = id => (ups && ups[id]) || 0;
         const e = {
             symMult: {},
-            scatterAdd: 0.0015 * L('sk_scatter'),
+            scatterAdd: 0.0008 * L('sk_scatter'),
             assist: 0.02 * L('sk_assist'),
             freeSpins: BASE_FREE_SPINS + L('sk_free') + L('lx_free'),
             reels: L('lx_reel6') ? 6 : 5,
-            payBonus: 1 + 0.05 * L('lx_pay'),
-            expandMul: 1 + 0.10 * L('lx_expand'),
+            payBonus: 1 + 0.04 * L('lx_pay'),
+            expandMul: 1 + 0.05 * L('lx_expand'),
             stampAdd: 0.002 * L('lx_stamp'),
-            expandChance: 0.01 * L('sk_expand'),
+            expandChance: 0.0015 * L('sk_expand'),
             cashback: 0.02 * L('sk_cash'),
-            beanMult: 1 + 0.15 * L('sk_bean'),
             pitcherRate: 0.07 + 0.005 * L('sp_pitcher'),
-            matchaRate: 0.07 + 0.01 * L('sp_matcha'),
-            latteMult: 2 + 0.5 * L('sp_latte'),
-            foam: 0.5 + 0.10 * L('sp_foam'),
-            bookMult: (1 + 0.03 * L('lx_book')) * (1 + 0.10 * ((extra && extra.latte) || 0))      // Sadakat kartı: Latte (kalıcı Wild/Kitap şansı)
+            matchaRate: 0.05 + 0.01 * L('sp_matcha'),
+            convBias: 0.35 * L('sp_foam'),
+            latteMult: 2 + 0.4 * L('sp_latte'),
+            foam: 0.5 + 0.08 * L('sp_foam'),
+            ovenFull: OVEN_FULL - L('sp_oven'),
+            ovenSpins: OVEN_SPINS + 2 * L('sp_rain'),
+            bagMult: 1 + 0.25 * L('sp_bag'),
+            bagRate: BAG_RATE + 0.005 * L('sp_bagrate'),
+            bookMult: (1 + 0.015 * L('lx_book')) * (1 + 0.10 * ((extra && extra.latte) || 0))
         };
-        SYMBOLS.forEach(s => { e.symMult[s.id] = 1 + 0.25 * L('sym_' + s.id); });
+        e.diffKey = (extra && extra.diff) || 'std';
+        e.diff = diffOf(e.diffKey);
+        e.diffPay = e.diff.pay;
+        e.orbMul = e.diff.orb;
+        SYMBOLS.forEach(s => { e.symMult[s.id] = 1 + 0.06 * L('sym_' + s.id); });
         return e;
     }
 
@@ -130,22 +164,22 @@ const Engine = (function () {
         return idx;
     }
     function tierOf(bet) { return Math.min(MAX_TIER, Math.floor(ladderIndex(bet) / 3)); }
-    /** Bölümde ve bakiyede geçerli bahis basamakları */
     function betOptions(chapter, balance) {
         const ch = CHAPTERS[chapter];
         return LADDER.filter(b => b >= ch.minBet && b <= ch.maxBet && b <= balance);
     }
 
     /* ---------------- Makara ---------------- */
-    function isWild(s) { return s.id === 'book' || s.special === 'wild'; }
+    function isWild(s, ctx) { return s.id === 'book' || s.special === 'wild' || (s.special === 'oven' && ctx && ctx.ovenRain); }
 
     function pickSymbol(ctx, reel, rng) {
         const ch = CHAPTERS[ctx.chapter], e = ctx.eff;
         if (ch.loyalty && rng() < STAMP_RATE + (e.stampAdd || 0)) return SPECIALS.stamp;
-        if (ch.specials && SPECIAL_REELS.indexOf(reel) !== -1) {
-            const q = rng();
-            if (q < e.matchaRate) return SPECIALS.matcha;
-            if (q < e.matchaRate + e.pitcherRate) return SPECIALS.pitcher;
+        if (ch.oven && rng() < (ctx.ovenRain ? OVEN_RAIN_RATE : OVEN_RATE)) return SPECIALS.cupcake;
+        if (ch.harvest && rng() < (e.bagRate || BAG_RATE)) return SPECIALS.coffeebag;
+        if (ch.specials) {
+            if (rng() < e.matchaRate) return SPECIALS.matcha;                                   // her makarada
+            if (SPECIAL_REELS.indexOf(reel) !== -1 && rng() < e.pitcherRate) return SPECIALS.pitcher;   // 1-3-5
         }
         const scatter = (BASE_SCATTER + e.scatterAdd) * (1 + TIER_SCATTER * ctx.tier) * (e.bookMult || 1);
         if (rng() < scatter) return BOOK;
@@ -154,22 +188,22 @@ const Engine = (function () {
         return NORMALS[NORMALS.length - 1];
     }
 
-    /** Kombo Ustası: rastgele bir hatta, zinciri kıran ilk sembolü eşleşmeye çevirir (özel sembollere dokunmaz). */
+    /** Kombo Ustası: rastgele bir hatta, zinciri kıran ilk sembolü eşleşmeye çevirir. */
     function applyAssist(grid, ctx, rng) {
-        if (rng() >= ctx.eff.assist) return false;
-        const LN = lines(ctx), R = ctx.eff.reels || 5;
+        if (rng() >= ctx.eff.assist + (ctx.luck || 0)) return false;
+        const LN = lines(ctx), R = grid.length;
         const line = LN[Math.floor(rng() * LN.length)];
         let base = null;
         for (let r = 0; r < R; r++) {
             const s = grid[r][line[r]];
-            if (isWild(s)) continue;
+            if (isWild(s, ctx)) continue;
             if (s.special || !s.values) return false;
             base = s; break;
         }
         if (!base) return false;
         for (let r = 0; r < R; r++) {
             const s = grid[r][line[r]];
-            if (s.id === base.id || isWild(s)) continue;
+            if (s.id === base.id || isWild(s, ctx)) continue;
             if (s.special) return false;
             grid[r][line[r]] = base;
             return true;
@@ -177,7 +211,7 @@ const Engine = (function () {
         return false;
     }
 
-    /** ctx: { chapter, bet, tier, eff, expandingSymbolId } */
+    /** ctx: { chapter, bet, tier, eff, expandingSymbolId, ovenRain, mult } */
     function genGrid(ctx, rng) {
         const grid = [];
         const expSym = ctx.expandingSymbolId ? SYMBOLS.find(s => s.id === ctx.expandingSymbolId) : null;
@@ -194,8 +228,7 @@ const Engine = (function () {
         return grid;
     }
 
-    /** Genişleyen sembol: ekranda (hat dışı da olsa) en az 2 (yüksek semboller) / 3 (düşük semboller) adet varsa,
-        o sembolü içeren her makara tamamen o sembolle dolar. Saf fonksiyon: yeni ızgara döndürür. */
+    /** Genişleyen sembol: ekranda en az 2 (yüksek semboller) / 3 (diğerleri) adet varsa o makaraları kaplar. */
     function expandMin(sym) { return sym.values && sym.values[2] ? 2 : 3; }
     function expandGrid(grid, ctx) {
         if (!ctx.expandingSymbolId) return { grid, reels: [], count: 0 };
@@ -211,11 +244,29 @@ const Engine = (function () {
         return { grid: g, reels, count, sym };
     }
 
-    function countScatter(grid) {
+    /* Matcha → Kahve: ekrandaki tüm matchalar tek bir rastgele kahve sembolüne dönüşür (gizemli sembol).
+       Matcha hiçbir zaman hattı bozmaz; sadece ek kazanç getirir. convBias yüksek sembollere eğilim verir. */
+    const MATCHA_WAR = 15, ZAFER_MULT = 10;
+    function convertMatcha(grid, ctx, rng) {
+        const cells = [];
+        for (let r = 0; r < grid.length; r++) for (let row = 0; row < ROWS; row++) if (grid[r][row].id === 'matcha') cells.push([r, row]);
+        if (!cells.length) return { grid, cells, sym: null };
+        const bias = (ctx.eff && ctx.eff.convBias) || 0;
+        const ws = NORMALS.map((s, i) => s.weight * (1 + bias * (NORMALS.length - i) / NORMALS.length * 2));
+        let x = rng() * ws.reduce((a, b) => a + b, 0), sym = NORMALS[NORMALS.length - 1];
+        for (let i = 0; i < NORMALS.length; i++) { x -= ws[i]; if (x < 0) { sym = NORMALS[i]; break; } }
+        const g = grid.map(col => col.slice());
+        cells.forEach(([r, row]) => { g[r][row] = sym; });
+        return { grid: g, cells, sym };
+    }
+
+    function countId(grid, id) {
         let n = 0;
-        for (let r = 0; r < grid.length; r++) for (let row = 0; row < ROWS; row++) if (grid[r][row].id === 'book') n++;
+        for (let r = 0; r < grid.length; r++) for (let row = 0; row < ROWS; row++) if (grid[r][row].id === id) n++;
         return n;
     }
+    function countScatter(grid) { return countId(grid, 'book'); }
+    function stampCount(grid) { return countId(grid, 'stamp'); }
 
     /* ---------------- Değerlendirme ---------------- */
     function symPay(sym, count, ctx) {
@@ -226,31 +277,23 @@ const Engine = (function () {
         return v * ctx.eff.symMult[sym.id] * ch.payScale * (ch.boost[sym.id] || 1);
     }
 
-    function stampCount(grid) {
-        let n = 0;
-        for (let r = 0; r < grid.length; r++) for (let row = 0; row < ROWS; row++) if (grid[r][row].id === 'stamp') n++;
-        return n;
-    }
-
     function evaluate(grid, ctx) {
-        const ch = CHAPTERS[ctx.chapter], e = ctx.eff;
+        const e = ctx.eff;
         const lineBet = ctx.bet / 10;
         const marks = [];
         const R = grid.length;
         let lineTotal = 0;
 
         lines(ctx).forEach(line => {
-            // 1) saf kitap hattı
             let bookRun = 0;
             while (bookRun < R && grid[bookRun][line[bookRun]].id === 'book') bookRun++;
             let best = { pay: 0, n: 0 };
             if (bookRun >= 2) best = { pay: symPay(BOOK, bookRun, ctx), n: bookRun };
 
-            // 2) joker (kitap/pitcher) destekli hat
             let base = null, count = 0;
             for (let r = 0; r < R; r++) {
                 const s = grid[r][line[r]];
-                if (isWild(s)) { count++; continue; }
+                if (isWild(s, ctx)) { count++; continue; }
                 if (!base) {
                     if (s.special || !s.values) break;
                     base = s; count++; continue;
@@ -262,22 +305,21 @@ const Engine = (function () {
                 const p = symPay(base, count, ctx);
                 if (p > best.pay) best = { pay: p, n: count };
             }
-
             if (best.pay > 0) {
                 lineTotal += best.pay * lineBet;
                 for (let r = 0; r < best.n; r++) marks.push({ r, row: line[r], mode: 'win' });
             }
         });
 
-        // Bölüm 2+: Matcha Latte kombosu ve Latte Art bonusu
+        // Matcha Latte kombosu ve Latte Art bonusu
         let matcha = 0, pitcher = 0;
-        const matchaCells = [], pitcherCells = [];
-        if (ch.specials) {
-            for (let r = 0; r < R; r++) for (let row = 0; row < ROWS; row++) {
-                const id = grid[r][row].id;
-                if (id === 'matcha') { matcha++; matchaCells.push([r, row]); }
-                else if (id === 'pitcher') { pitcher++; pitcherCells.push([r, row]); }
-            }
+        const matchaCells = [], pitcherCells = [], cupCells = [], bagCells = [];
+        for (let r = 0; r < R; r++) for (let row = 0; row < ROWS; row++) {
+            const id = grid[r][row].id;
+            if (id === 'matcha') { matcha++; matchaCells.push([r, row]); }
+            else if (id === 'pitcher') { pitcher++; pitcherCells.push([r, row]); }
+            else if (id === 'cupcake') cupCells.push([r, row]);
+            else if (id === 'coffeebag') bagCells.push([r, row]);
         }
         const pairs = Math.min(matcha, pitcher);
         let foamMult = 1;
@@ -291,8 +333,15 @@ const Engine = (function () {
             pitcherCells.forEach(c => marks.push({ r: c[0], row: c[1], mode: 'win' }));
         }
 
-        // Genişleyen sembol (free spin): ekranda yeterli sayıda varsa o makaralar tamamen dolar ve
-        // sembol HER YERDE ödeme yapar (değer = kaç makarada olduğu)
+        // Hasat (Aşama 4): 3+ kahve çuvalı ekranın neresinde olursa olsun öder
+        let harvest = 0;
+        const bags = bagCells.length;
+        if (bags >= 3) {
+            harvest = ctx.bet * (BAG_PAY[Math.min(bags, 7)] || 0) * (e.bagMult || 1);
+            bagCells.forEach(c => marks.push({ r: c[0], row: c[1], mode: 'win' }));
+        }
+
+        // Genişleyen sembol (free spin)
         let expandPay = 0, expanded = [];
         if (ctx.expandingSymbolId) {
             const ex = expandGrid(grid, ctx);
@@ -306,33 +355,41 @@ const Engine = (function () {
         const tierBonus = 1 + TIER_PAY * ctx.tier;
         const mult = ctx.mult || 1;                       // Americano: geçici x2
         lineTotal *= (e.payBonus || 1);
-        const total = Math.round(((lineTotal * foamMult + expandPay) * tierBonus + latte) * mult);
+        let total = Math.round(((lineTotal * foamMult + expandPay) * tierBonus + latte + harvest) * mult * (e.diffPay || 1));
+        // çarpan çekirdekleri
+        const orbs = ctx.orbs || [];
+        const orbSum = orbs.reduce((a, v) => a + v, 0);
+        let fsMult = ctx.fsMult || 0, orbX = 1;
+        if (total > 0) {
+            if (ctx.inFS) {
+                if (orbSum > 0) fsMult = Math.min(FS_MULT_CAP, fsMult + orbSum);
+                if (fsMult > 0) orbX = fsMult;
+            } else if (orbSum > 0) orbX = orbSum;
+        }
+        const baseWin = total;
+        total = Math.round(total * orbX);
         const cashback = total === 0 ? Math.round(ctx.bet * e.cashback) : 0;
 
         return {
             total, cashback, lineTotal: Math.round(lineTotal * foamMult * tierBonus * mult), latte: Math.round(latte * mult), mult,
-            expandPay: Math.round(expandPay * tierBonus * mult), expanded,
+            expandPay: Math.round(expandPay * tierBonus * mult), expanded, harvest: Math.round(harvest * mult), bags,
             foamMult, pairs, tierBonus, matcha, pitcher, marks,
-            scatter: countScatter(grid),
+            cupcakes: cupCells.length, cupCells,
+            scatter: countScatter(grid), orbs, orbSum, orbX, fsMult, baseWin,
             stamps: stampCount(grid)
         };
     }
 
-    /* ---------------- Atölye çekirdeği kazancı ---------------- */
-    function workshopEarn(bet, win, tier, eff, isFree, chapter) {
-        const k = (CHAPTERS[chapter] && CHAPTERS[chapter].beanRate) || 0.02;
-        return ((isFree ? 0 : bet * k) + win * k) * (1 + TIER_BEAN * tier) * eff.beanMult;
-    }
-    const LATTE_MAX = 2;                         // Latte (kalıcı wild +%10) bir bölüm boyunca en fazla 2 kez birikir
-
     /* ---------------- Simülasyon yardımcıları (Node) ----------------
-       Tek "spin turu": normal spin + tetiklenirse tüm free spin zinciri. */
+       Tek "spin turu": normal spin + tetiklenirse tüm free spin / pasta yağmuru zinciri. */
     function playRound(st, rng) {
-        // st: { chapter, bet, eff, balance, [ups], [loy] }  → balance'ı günceller, ayrıntı döndürür
+        // st: { chapter, bet, eff, ups, balance, [loy], [oven] }
         const tier = st.tier !== undefined ? st.tier : tierOf(st.bet);
         const ch = CHAPTERS[st.chapter];
         const L = st.loy || (st.loy = { stamps: 0, americano: 0, filtre: false, latte: 0, pick: 0 });
-        const eff = L.latte && st.ups ? effects(st.ups, { latte: L.latte }) : st.eff;
+        if (st.oven === undefined) st.oven = 0;
+        const eff = L.latte && st.ups ? effects(st.ups, { latte: L.latte, diff: st.diff }) : st.eff;
+        const om = eff.orbMul || 1;
         const mult = () => { if (L.americano > 0) { L.americano--; return 2; } return 1; };
         const addStamps = n => {
             if (!ch.loyalty || !n) return;
@@ -346,41 +403,71 @@ const Engine = (function () {
                 else L.americano += 10;
             }
         };
-        const base = { chapter: st.chapter, bet: st.bet, tier, eff, expandingSymbolId: null, mult: mult() };
-        let wagered = st.bet, won = 0, bean = 0, spins = 1, free = 0;
+        let wagered = st.bet, won = 0, spins = 1, free = 0, ovenRains = 0;
+        const runOvenRain = () => {
+            ovenRains++;
+            for (let i = 0; i < eff.ovenSpins; i++) {
+                const c = { chapter: st.chapter, bet: st.bet, tier, eff, expandingSymbolId: null, ovenRain: true, mult: mult(), orbs: rollOrbs(false, rng, om) };
+                const cv = convertMatcha(genGrid(c, rng), c, rng);
+                won += addMatcha(cv.cells.length);
+                const rr = evaluate(cv.grid, c);
+                won += rr.total + rr.cashback; spins++; free++;
+            }
+        };
+        const addMatcha = n => {
+            if (st.chapter !== 2 || !n) return 0;
+            st.mCount = (st.mCount || 0) + n;
+            let bonus = 0;
+            while (st.mCount >= MATCHA_WAR) { st.mCount -= MATCHA_WAR; bonus += st.bet * ZAFER_MULT; }
+            return bonus;
+        };
+        const addOven = n => {
+            if (!ch.oven || !n) return false;
+            st.oven += n;
+            if (st.oven >= eff.ovenFull) { st.oven = 0; return true; }
+            return false;
+        };
+        const base = { chapter: st.chapter, bet: st.bet, tier, eff, expandingSymbolId: null, mult: mult(), orbs: rollOrbs(false, rng, om), luck: st.noLuck ? 0 : luckFor(st.streak, eff.diff) };
         st.balance -= st.bet;
-        const grid = genGrid(base, rng);
-        const res = evaluate(grid, base);
+        const cv0 = convertMatcha(genGrid(base, rng), base, rng);
+        won += addMatcha(cv0.cells.length);
+        const res = evaluate(cv0.grid, base);
         won += res.total + res.cashback;
-        bean += workshopEarn(st.bet, res.total, tier, eff, false, st.chapter);
+        st.streak = res.total > 0 ? 0 : (st.streak || 0) + 1;
         addStamps(res.stamps);
+        let rain = addOven(res.cupcakes);
         if (res.scatter >= 3) {
             const pool = SYMBOLS.filter(s => s.id !== 'book');
             const exp = pool[Math.floor(rng() * pool.length)].id;
-            let remaining = L.filtre ? 20 : eff.freeSpins, guard = 0;
+            let remaining = L.filtre ? 20 : eff.freeSpins, guard = 0, fsMult = 0;
             L.filtre = false;
             while (remaining > 0 && guard++ < 400) {
                 remaining--;
-                const fctx = { chapter: st.chapter, bet: st.bet, tier, eff, expandingSymbolId: exp, mult: mult() };
-                const g = genGrid(fctx, rng);
+                const fctx = { chapter: st.chapter, bet: st.bet, tier, eff, expandingSymbolId: exp, mult: mult(), inFS: true, fsMult, orbs: rollOrbs(true, rng, om) };
+                const cvf = convertMatcha(genGrid(fctx, rng), fctx, rng);
+                won += addMatcha(cvf.cells.length);
+                const g = cvf.grid;
                 const extra = countScatter(g);
-                if (extra >= 3) remaining += extra;            // free spin sırasında 3+ Kitap: o kadar free spin eklenir
+                if (extra >= 3) remaining += extra;
                 const rr = evaluate(g, fctx);
+                fsMult = rr.fsMult;
                 won += rr.total + rr.cashback;
-                bean += workshopEarn(st.bet, rr.total, tier, eff, true, st.chapter);
                 addStamps(rr.stamps);
+                if (addOven(rr.cupcakes)) rain = true;
                 free++; spins++;
             }
         }
+        if (rain) runOvenRain();
         st.balance += won;
-        return { wagered, won, bean, spins, free };
+        return { wagered, won, spins, free, ovenRains };
     }
 
     return {
-        REELS, ROWS, PAYLINES, LADDER, SPECIAL_REELS, BASE_SCATTER, BASE_FREE_SPINS, MAX_TIER, TIER_PAY, TIER_SCATTER, TIER_BEAN,
-        SYMBOLS, BOOK, NORMALS, SPECIALS, CHAPTERS, UPGRADES, PAYLINES6, lines, EXPAND_K,
-        upgradeCost, effects, ladderIndex, tierOf, betOptions,
-        isWild, pickSymbol, genGrid, expandGrid, expandMin, countScatter, stampCount, evaluate, workshopEarn, playRound, STAMP_RATE, STAMPS_PER_CARD, LATTE_MAX
+        ROWS, PAYLINES, PAYLINES6, LADDER, SPECIAL_REELS, BASE_SCATTER, BASE_FREE_SPINS, MAX_TIER, TIER_PAY, TIER_SCATTER, EXPAND_K,
+        SYMBOLS, BOOK, NORMALS, SPECIALS, CHAPTERS, STAGE_COUNT, UPGRADES,
+        STAMP_RATE, STAMPS_PER_CARD, LATTE_MAX, OVEN_FULL, OVEN_SPINS, BAG_PAY,
+        ORB_TABLE, DIFFS, diffOf, rollOrbs, convertMatcha, MATCHA_WAR, ZAFER_MULT, luckFor, LUCK_MAX, lines, upgradeCost, effects, ladderIndex, tierOf, betOptions,
+        isWild, pickSymbol, genGrid, expandGrid, expandMin, countScatter, stampCount, evaluate, playRound
     };
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = Engine;
