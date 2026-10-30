@@ -451,3 +451,71 @@
         .lb-seg button { font-size: .8rem; padding: 6px 10px; }
         .up-card .only { display: block; color: #2F7FD8; font-weight: 800; font-size: .72rem; }
         .up-card.stale { opacity: .55; }
+
+        /* ---------- Mağaza ---------- */
+        .panel.store { max-width: 520px; width: min(94vw, 520px); max-height: 92vh; overflow-y: auto; }
+        .panel.store .pay-head { display: flex; align-items: center; gap: 8px; width: 100%; } .panel.store .pay-head h3 { margin: 0; flex: 1; text-align: left; }
+        .st-list { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+        .st-card { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 16px; background: #FFF8EC; border: 3px solid #E7CFA6; text-align: left; }
+        .st-card .si { font-size: 1.8rem; width: 46px; height: 46px; flex: none; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: #fff; border: 3px solid #E7CFA6; }
+        .st-card .sb { flex: 1; min-width: 0; display: flex; flex-direction: column; } .st-card b { font-family: 'Baloo 2', sans-serif; color: var(--brown); font-size: 1.05rem; line-height: 1.15; } .st-card small { color: #7A5638; font-size: .8rem; line-height: 1.3; }
+        .st-card.hot { background: linear-gradient(#F1FAE9, #E3F4D3); border-color: #8FCB6B; }
+        .st-card .st-tag { flex: none; font-size: .68rem; font-weight: 900; letter-spacing: .05em; padding: 5px 9px; border-radius: 999px; background: #EFE3D0; color: #9C8B74; }
+        .st-card .st-tag.t2 { background: #FFF1C8; color: #8A5530; font-size: .78rem; }
+        .st-card.soon { opacity: .62; filter: grayscale(.4); }
+        .st-h { margin: 10px 0 2px; font-family: 'Baloo 2', sans-serif; color: var(--brown); text-align: left; }
+
+        /* ---------- Görünümler ---------- */
+        .cz-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
+        .cz { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 6px; border-radius: 16px; background: #FFF8EC; border: 3px solid #E7CFA6; text-align: center; }
+        .cz.on { border-color: #4CAF50; background: #F1FAE9; box-shadow: 0 0 0 3px rgba(76,175,80,.25); }
+        .cz.locked { opacity: .55; } .cz.locked > div { filter: grayscale(1); }
+        .cz b { font-family: 'Baloo 2', sans-serif; color: var(--brown); font-size: .92rem; line-height: 1.1; }
+        .cz small { font-size: .7rem; color: #7A5638; line-height: 1.2; min-height: 2.4em; }
+        .cz-frame { position: relative; width: 84px; height: 60px; border-radius: 12px; background: var(--w); box-shadow: inset 0 0 0 4px var(--g); display: grid; grid-template-columns: repeat(4, 1fr); align-content: space-between; padding: 5px; box-sizing: border-box; }
+        .cz-frame i { width: 7px; height: 7px; border-radius: 50%; justify-self: center; box-shadow: 0 0 5px currentColor; }
+        .cz-frame span { position: absolute; inset: 16px 18px; border-radius: 6px; background: #FFF6E4; box-shadow: 0 0 0 3px var(--g); }
+        .cz-cap { width: 76px; height: 70px; overflow: hidden; } .cz-cap svg { width: 100%; height: 130%; }
+        .cz-cup { width: 70px; height: 64px; } .cz-cup svg { width: 100%; height: 100%; }
+        .ev-card { display: flex; gap: 12px; align-items: center; padding: 12px; margin-bottom: 6px; border-radius: 18px; background: linear-gradient(135deg, #3A1A4F, #6B2C7E 60%, #FF8A1E 140%); color: #FFE9C9; border: 3px solid #FF8A1E; box-shadow: 0 0 18px rgba(255,138,30,.45); }
+        .ev-card .ev-ic { font-size: 2.4rem; animation: dedeCheer 1.4s ease-in-out infinite; }
+        .ev-card .ev-b { flex: 1; display: flex; flex-direction: column; gap: 4px; text-align: left; } .ev-card b { font-family: 'Baloo 2', sans-serif; font-size: 1.1rem; color: #FFD27A; } .ev-card small { color: #FFE9C9; font-weight: 700; }
+        .ev-card .ac-bar { background: rgba(255,255,255,.2); } .ev-card .ac-bar i { background: linear-gradient(90deg, #FFB347, #FF8A1E); }
+
+        /* ---------- Cadılar Bayramı teması ---------- */
+        .menu-event { width: 100%; box-sizing: border-box; padding: 8px 12px; border-radius: 14px; background: linear-gradient(135deg, #3A1A4F, #6B2C7E); color: #FFE9C9; border: 2px solid #FF8A1E; font-size: .86rem; text-align: center; box-shadow: 0 0 14px rgba(255,138,30,.45); }
+        .menu-event b { color: #FFD27A; }
+        body.halloween .bg-veil { background: radial-gradient(ellipse at 50% 120%, rgba(255,138,30,.28), transparent 55%), linear-gradient(rgba(42,12,60,.42), rgba(42,12,60,.18) 40%, rgba(20,6,30,.35)) !important; }
+        body.halloween .menu-title { text-shadow: 0 3px 0 #FF8A1E, 0 0 18px rgba(255,138,30,.6); }
+        body.halloween #topbar, body.halloween #controls { box-shadow: 0 0 0 3px rgba(255,138,30,.55), 0 8px 18px rgba(30,6,40,.45); }
+        body.halloween #spin-btn { background: radial-gradient(circle at 35% 30%, #FFC27A 0%, #FF8A1E 60%, #B4500E 100%); }
+        #hw-deco { position: fixed; inset: 0; pointer-events: none; z-index: 2; overflow: hidden; }
+        .hw-bat { position: absolute; width: 46px; opacity: .85; animation: batFly 14s linear infinite; }
+        .hw-bat svg { width: 100%; animation: batFlap .35s ease-in-out infinite alternate; transform-origin: 50% 40%; }
+        .hw-bat.b0 { top: 8%; animation-delay: 0s; } .hw-bat.b1 { top: 18%; animation-delay: -4s; width: 34px; animation-duration: 17s; } .hw-bat.b2 { top: 4%; animation-delay: -8s; width: 28px; animation-duration: 20s; }
+        .hw-bat.b3 { top: 26%; animation-delay: -11s; animation-duration: 15s; } .hw-bat.b4 { top: 12%; animation-delay: -2s; width: 24px; animation-duration: 22s; }
+        @keyframes batFly { 0% { transform: translate(-12vw, 0); } 25% { transform: translate(22vw, 3vh); } 50% { transform: translate(55vw, -2vh); } 75% { transform: translate(82vw, 4vh); } 100% { transform: translate(112vw, 0); } }
+        @keyframes batFlap { to { transform: scaleY(.55); } }
+        .hw-pk { position: absolute; bottom: 6px; font-size: 2.6rem; filter: drop-shadow(0 0 10px rgba(255,138,30,.8)); animation: pkBob 2.6s ease-in-out infinite alternate; }
+        .hw-pk.p1 { left: 10px; } .hw-pk.p2 { right: 14px; animation-delay: -1.2s; font-size: 2.1rem; } .hw-pk.p3 { left: 64px; font-size: 1.6rem; animation-delay: -.6s; }
+        @keyframes pkBob { to { transform: translateY(-5px) rotate(-4deg); } }
+        @media (max-width: 720px) { .hw-pk { font-size: 1.8rem; } .hw-pk.p3 { display: none; } body[data-mode="game"] .hw-pk { display: none; } }
+        body.lowfx #hw-deco, body.reduce-motion #hw-deco { display: none; }
+
+        .set-h { margin: 14px 0 2px; text-align: left; font-family: 'Baloo 2', sans-serif; color: var(--brown); }
+        .set-sub { display: block; font-size: .72rem; color: #B5452F; font-weight: 700; }
+        .panel.news { max-width: 480px; width: min(94vw, 480px); }
+        .nw-name { font-family: 'Bangers', 'Impact', sans-serif; letter-spacing: .05em; font-size: 1.35rem; color: #E07B2A; margin: -4px 0 6px; }
+        .nw-list { text-align: left; margin: 0 0 12px; padding-left: 1.2em; display: flex; flex-direction: column; gap: 6px; color: #5a3a22; font-size: .92rem; line-height: 1.35; }
+        /* hareketi azalt: süs animasyonları durur, geçişler anlık */
+        body.reduce-motion *, body.reduce-motion *::before, body.reduce-motion *::after { animation-duration: .001s !important; animation-iteration-count: 1 !important; transition-duration: .05s !important; }
+        body.reduce-motion #deco, body.reduce-motion #fx-layer { display: none; }
+        .lb-list .vf { font-style: normal; color: #2E7D32; font-weight: 900; }
+        body.halloween .bg-img { filter: saturate(1.05) brightness(.72) hue-rotate(-8deg); }
+
+        .st-card.hw { background: linear-gradient(135deg, #3A1A4F, #6B2C7E 70%, #A8481A); border-color: #FF8A1E; }
+        .st-card.hw b { color: #FFD27A; } .st-card.hw small { color: #FFE9C9; }
+        .st-card .si.cz-mini { width: 64px; height: 50px; border-radius: 10px; background: none; border: none; }
+        .st-card .si.cz-mini .cz-frame { transform: scale(.72); transform-origin: 0 0; }
+        #ch-in { width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: 12px; border: 3px solid #E7CFA6; font: 800 1.1rem 'Nunito', sans-serif; letter-spacing: .08em; text-transform: uppercase; text-align: center; margin: 8px 0 4px; }
+        .set-ver { cursor: default; user-select: none; -webkit-user-select: none; }

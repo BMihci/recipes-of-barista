@@ -67,9 +67,9 @@ const Engine = (function () {
        pay: tüm kazançların katsayısı · luck: şans desteği adımı/üst sınırı · orb: Dede çarpanı sıklığı
        gift: iflas/24 saat hediyesi · phase: ara durak ödülü katsayısı */
     const DIFFS = {
-        story:   { pay: 1.251, luckStep: 0.10, luckMax: 0.60, orb: 1.0, gift: 10000, phase: 1.5 },
-        std:     { pay: 1.0, luckStep: LUCK_STEP, luckMax: LUCK_MAX, orb: 1.0, gift: 5000, phase: 1.0 },
-        gambler: { pay: 0.657, luckStep: 0, luckMax: 0, orb: 1.8, gift: 5000, phase: 0.5 }
+        story:   { pay: 1.251, luckStep: 0.10, luckMax: 0.60, orb: 1.0, gift: 1000, phase: 1.5 },
+        std:     { pay: 1.0, luckStep: LUCK_STEP, luckMax: LUCK_MAX, orb: 1.0, gift: 1000, phase: 1.0 },
+        gambler: { pay: 0.657, luckStep: 0, luckMax: 0, orb: 1.8, gift: 1000, phase: 0.5 }
     };
     function diffOf(d) { return DIFFS[d] || DIFFS.std; }
     function luckFor(streak, diff) { const D = typeof diff === 'object' && diff ? diff : diffOf(diff); return Math.min(D.luckMax, D.luckStep * (streak || 0)); }

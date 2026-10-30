@@ -23,6 +23,7 @@
             <div class="acts">
                 <button class="btn btn-sm btn-soft" onclick="goMap()">🗺<span class="tx" data-i18n="top.mapT"> HARİTA</span></button>
                 <button class="btn btn-sm" onclick="openShop()">🛠<span class="tx" data-i18n="top.shopT"> ATÖLYE</span></button>
+                <button class="btn btn-sm btn-soft" onclick="openStore()" aria-label="Mağaza">🛒<span class="tx" data-i18n="top.storeT"> MAĞAZA</span></button>
                 <button class="btn btn-sm btn-soft" onclick="openHub()" aria-label="Kupa">🏅<span class="tx" data-i18n="top.hubT"> KUPA</span></button>
                 <button class="btn btn-sm btn-soft" onclick="openSettings()" aria-label="Ayarlar">⚙<span class="tx" data-i18n="top.setT"> AYARLAR</span></button>
                 <button class="btn btn-sm btn-soft" onclick="returnToMenu()">🏠<span class="tx" data-i18n="top.menuT"> MENÜ</span></button>
@@ -40,6 +41,7 @@
                         <img data-sym="book" alt="">
                         <img data-sym="cozybear" alt="">
                     </div>
+                    <div id="menu-event" class="menu-event hidden"></div>
                     <h1 class="menu-title">Recipes of<br>Barista</h1>
                     <p class="menu-sub" data-i18n="menu.sub">3D Deluxe Edition</p>
                     <button id="menu-continue" class="btn hidden" data-i18n="menu.cont">▶ DEVAM ET</button>
@@ -89,6 +91,7 @@
                             <button class="btn" id="map-play" onclick="enterStage()">▶ OYNA</button>
                             <button class="btn btn-soft" onclick="openShop()" data-i18n="map.shop">🛠 ATÖLYE</button>
                             <button class="btn btn-soft" onclick="openHub()" data-i18n="menu2.hub">🏅 KUPA ODASI</button>
+                            <button class="btn btn-soft" onclick="openStore()" data-i18n="store.btn">🛒 MAĞAZA</button>
                             <button class="btn btn-soft" onclick="returnToMenu()" data-i18n="map.menu">🏠 MENÜ</button>
                         </div>
                     </div>
@@ -305,6 +308,7 @@
             <p id="bust-text"></p>
             <div class="bust-timer" id="bust-timer">24:00:00</div>
             <button class="btn btn-block btn-green" id="bust-video" onclick="watchVideo()">🎬</button>
+            <button class="btn btn-block" id="bust-store" onclick="openStore()">🛒</button>
             <button class="btn btn-soft btn-block" id="bust-wait" onclick="bustWait()">⏳</button>
         </div>
     </div>
@@ -341,6 +345,32 @@
         </div>
     </div>
 
+
+    <div id="modal-cheat" class="modal">
+        <div class="panel">
+            <h3 id="ch-title">🧪</h3>
+            <input type="text" id="ch-in" maxlength="24" autocomplete="off" autocapitalize="characters" onkeydown="if(event.key==='Enter')cheatApply()">
+            <p id="ch-msg" class="pf-msg"></p>
+            <div class="row"><button class="btn btn-soft" id="ch-cancel" onclick="closeModal('modal-cheat')"></button><button class="btn" id="ch-ok" onclick="cheatApply()"></button></div>
+        </div>
+    </div>
+
+    <div id="modal-news" class="modal">
+        <div class="panel news">
+            <div class="modal-art"><img data-sym="barista" alt=""><img data-sym="espresso" alt=""></div>
+            <h3 id="nw-title" class="good-title"></h3>
+            <p id="nw-name" class="nw-name"></p>
+            <ul id="nw-list" class="nw-list"></ul>
+            <button class="btn btn-block" id="nw-ok" onclick="closeModal('modal-news')"></button>
+        </div>
+    </div>
+
+    <div id="modal-store" class="modal">
+        <div class="panel store">
+            <div class="pay-head"><h3 id="sto-title">🛒</h3><span class="wallet-chip" id="sto-bank" style="cursor:default"></span><button class="btn btn-sm btn-soft" onclick="closeModal('modal-store')" aria-label="Close">✕</button></div>
+            <div id="sto-list" class="st-list"></div>
+        </div>
+    </div>
 
     <div id="modal-diff" class="modal">
         <div class="panel diff">

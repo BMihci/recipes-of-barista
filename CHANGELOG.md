@@ -2,6 +2,13 @@
 
 V7 (“Filtre Kahve”) öncesi sürümler. Her sürüm bir git etiketiyle (tag) işaretlidir.
 
+## 5.4 — Balkabağı Latte (Pumpkin Latte)
+_2026-10-30_
+
+- 🎃 Cadılar Bayramı etkinliği ve balkabağı görünümleri.
+- ☁️ Bulut kaydı ve sıralama tablosu.
+- 🔔 Hediye bildirimleri ve 6 saatlik hediye.
+
 ## 5.3 — Americano (Americano)
 _2026-10-29_
 

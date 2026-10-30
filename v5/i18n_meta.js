@@ -28,7 +28,7 @@
                     bad: 'Kod geçersiz ya da eksik kopyalanmış.', okT: 'YEDEK YÜKLENSİN Mİ?', okTxt: 'Bu cihazdaki kayıtların yerine yedekteki <b>{n}</b> kayıt ve profil gelecek.', yes: 'EVET, YÜKLE', done: 'Yedek yüklendi ✓'
                 },
                 hub: {
-                    title: '🏅 Kupa Odası', tabs: { daily: '🎁 Günlük', badges: '🏅 Rozetler', album: '📔 Albüm', quests: '📋 Görevler', top: '🏆 Skorlar' },
+                    title: '🏅 Kupa Odası', tabs: { daily: '🎁 Günlük', badges: '🏅 Rozetler', album: '📔 Albüm', looks: '🎨 Görünüm', quests: '📋 Görevler', top: '🏆 Skorlar' },
                     needSave: 'Ödülleri almak için önce bir kayıt yükle.'
                 },
                 daily: {
@@ -114,7 +114,7 @@
                     bad: 'The code is invalid or incomplete.', okT: 'LOAD BACKUP?', okTxt: 'The <b>{n}</b> saves and profile in the backup will replace this device’s data.', yes: 'YES, LOAD', done: 'Backup loaded ✓'
                 },
                 hub: {
-                    title: '🏅 Trophy Room', tabs: { daily: '🎁 Daily', badges: '🏅 Badges', album: '📔 Album', quests: '📋 Quests', top: '🏆 Scores' },
+                    title: '🏅 Trophy Room', tabs: { daily: '🎁 Daily', badges: '🏅 Badges', album: '📔 Album', looks: '🎨 Looks', quests: '📋 Quests', top: '🏆 Scores' },
                     needSave: 'Load a save first to collect rewards.'
                 },
                 daily: {
@@ -174,14 +174,43 @@
                 },
                 pwaInstall: 'Add to home screen'
             };
-            Object.assign(I18N.tr.top, { setT: ' AYARLAR', hubT: ' KUPA' });
-            Object.assign(I18N.tr.shop, { onlyAt: 'Yalnızca {place} şubesinde işe yarar' });
-            Object.assign(I18N.en.shop, { onlyAt: 'Only works at {place}' });
-            Object.assign(I18N.en.top, { setT: ' SETTINGS', hubT: ' TROPHY' });
+            Object.assign(I18N.tr.top, { setT: ' AYARLAR', hubT: ' KUPA', storeT: ' MAĞAZA' });
             Object.assign(I18N.tr.ctl, { turbo: 'TURBO', stop: 'DUR' });
             Object.assign(I18N.en.ctl, { turbo: 'TURBO', stop: 'STOP' });
             Object.assign(I18N.tr, TR);
             Object.assign(I18N.en, EN);
+            I18N.tr.store = { btn: '🛒 MAĞAZA', title: '🛒 Mağaza', open: '🛒 MAĞAZAYA GİT', video: 'Reklam izle', videoTxt: 'Kısa bir video izle, kasana anında +{v} çekirdek. Dilediğin zaman!', wait: '⏳ {t} sn',
+                free: 'Ücretsiz hediye', freeTxt: 'Oyuna girdiğin her 6 saatte bir +{v} çekirdek kendiliğinden gelir.', ready: 'HAZIR!', soonT: 'Çok yakında', soonTag: 'ÇOK YAKINDA', looksT: 'Görünümler', hwTxt: 'Mor-turuncu çerçeve: parlayan balkabakları, örümcek ağı, sallanan örümcek, uçan hayalet ve mum gibi titreşen lambalar. Kalıcıdır.',
+                soon: [['💰', 'Çekirdek paketleri', 'Küçük, orta ve dev çekirdek çuvalları.'], ['🚫', 'Reklamsız oyun', 'Videolar olmadan ödüllerin tamamı.'], ['🎨', 'Premium görünüm paketi', 'Özel çerçeve, şapka ve fincan setleri.'], ['🎟', 'Sezon kartı', 'Sezon boyunca ekstra ödüller ve görevler.']] };
+            I18N.en.store = { btn: '🛒 SHOP', title: '🛒 Shop', open: '🛒 GO TO SHOP', video: 'Watch an ad', videoTxt: 'Watch a short video and get +{v} beans instantly. Any time!', wait: '⏳ {t}s',
+                free: 'Free gift', freeTxt: 'Every 6 hours you play, +{v} beans arrive on their own.', ready: 'READY!', soonT: 'Coming soon', soonTag: 'COMING SOON', looksT: 'Looks', hwTxt: 'Purple-orange frame: glowing pumpkins, a spider web, a dangling spider, a floating ghost and candle-flicker lights. Yours forever.',
+                soon: [['💰', 'Bean packs', 'Small, medium and giant sacks of beans.'], ['🚫', 'Ad-free play', 'All rewards without videos.'], ['🎨', 'Premium look pack', 'Special frame, hat and cup sets.'], ['🎟', 'Season pass', 'Extra rewards and quests all season long.']] };
+            Object.assign(I18N.tr.shop, { onlyAt: 'Yalnızca {place} şubesinde işe yarar' });
+            Object.assign(I18N.en.shop, { onlyAt: 'Only works at {place}' });
+            I18N.tr.cheat = { title: '🧪 Test Kodu', ph: 'Kodu yaz…', ok: 'UYGULA', needSave: 'Önce bir kayıt yükle.', on: 'Test modu AÇIK: spinler kasadan çekirdek düşürmez. (Bu kayıt skor tablosuna girmez.)', off: 'Test modu kapandı.', rich: 'Kasan bu şubenin hedefine çıkarıldı.', bad: 'Geçersiz kod.' };
+            I18N.en.cheat = { title: '🧪 Test Code', ph: 'Type the code…', ok: 'APPLY', needSave: 'Load a save first.', on: 'Test mode ON: spins don’t take beans from your bank. (This save won’t go to the leaderboard.)', off: 'Test mode off.', rich: 'Your bank was raised to this branch’s goal.', bad: 'Invalid code.' };
+            I18N.tr.cosm = { kinds: { frame: '🎰 Makara çerçevesi', cap: '👴 Kahve Dede’nin şapkası', cup: '☕ Çarpan fincanı' }, wear: 'TAK', worn: '✓ Takılı', ready: 'Açıldı',
+                free: 'Başlangıç', byBadge: '“{n}” rozetiyle açılır', byStar: '{n} albüm kartı {s} olunca açılır', byAlbum: 'Albümde {n} kart açınca', byEvent: 'Cadılar Bayramı etkinliğine özel',
+                buyT: 'GÖRÜNÜM SATIN AL', buyTxt: '<b>{n}</b> kalıcı olarak senin olsun mu? Fiyat: <b>{v}</b> çekirdek.', buyOk: 'SATIN AL · {v}', bought: '🎃 Yeni görünüm takıldı!',
+                names: { frame: { klasik: 'Klasik Ahşap', bal: 'Bal Altını', gece: 'Gece Mavisi', matcha: 'Zümrüt Matcha', pastel: 'Pastel Şeker', balkabagi: 'Balkabağı' },
+                         cap: { kasket: 'Kasket', beret: 'Mavi Bere', chef: 'Aşçı Şapkası', crown: 'Usta Tacı', witch: 'Cadı Şapkası' },
+                         cup: { klasik: 'Klasik', lale: 'Lale Desenli', altin: 'Altın Fincan', balkabagi: 'Balkabağı' } } };
+            I18N.en.cosm = { kinds: { frame: '🎰 Reel frame', cap: '👴 Grandpa Brew’s hat', cup: '☕ Multiplier cup' }, wear: 'WEAR', worn: '✓ Equipped', ready: 'Unlocked',
+                free: 'Starter', byBadge: 'Unlocks with the “{n}” badge', byStar: 'Unlocks when the {n} album card reaches {s}', byAlbum: 'Open {n} album cards', byEvent: 'Halloween event exclusive',
+                buyT: 'BUY LOOK', buyTxt: 'Make <b>{n}</b> yours forever? Price: <b>{v}</b> beans.', buyOk: 'BUY · {v}', bought: '🎃 New look equipped!',
+                names: { frame: { klasik: 'Classic Wood', bal: 'Honey Gold', gece: 'Midnight Blue', matcha: 'Emerald Matcha', pastel: 'Pastel Candy', balkabagi: 'Pumpkin' },
+                         cap: { kasket: 'Flat Cap', beret: 'Blue Beret', chef: 'Chef’s Hat', crown: 'Master’s Crown', witch: 'Witch Hat' },
+                         cup: { klasik: 'Classic', lale: 'Tulip Pattern', altin: 'Golden Cup', balkabagi: 'Pumpkin' } } };
+            I18N.tr.ev = { title: '🎃 Cadılar Bayramı Etkinliği', task: 'Etkinlik süresince {n} spin at: Balkabağı çerçeve, Cadı şapkası ve Balkabağı fincan senin!', done: 'Tamamlandı! Ödüllerin Görünüm sekmesinde.', until: '2 Kasım’a kadar',
+                doneT: '🎃 ETKİNLİK TAMAMLANDI!', doneS: 'Balkabağı çerçeve, cadı şapkası ve balkabağı fincan açıldı', banner: '🎃 <b>Cadılar Bayramı etkinliği</b> başladı! 2 Kasım’a kadar özel görünümleri kazan.', theme: 'Etkinlik teması (süsler ve müzik)' };
+            I18N.en.ev = { title: '🎃 Halloween Event', task: 'Spin {n} times during the event: the Pumpkin frame, Witch hat and Pumpkin cup are yours!', done: 'Completed! Your rewards are in the Looks tab.', until: 'until 2 November',
+                doneT: '🎃 EVENT COMPLETE!', doneS: 'Pumpkin frame, witch hat and pumpkin cup unlocked', banner: '🎃 <b>Halloween event</b> is on! Earn special looks until 2 November.', theme: 'Event theme (decorations and music)' };
+            Object.assign(I18N.tr.set, { a11yT: 'Erişilebilirlik', cb: 'Renk körü modu (sembollere şekil işareti)', text: 'Yazı boyutu', textS: ['Normal', 'Büyük', 'Çok büyük'], motion: 'Hareketi azalt', notifT: 'Hatırlatmalar', notif: 'Hediye ve günlük ödül bildirimleri', notifDenied: 'Bildirim izni tarayıcı ayarlarından kapalı.', notifNo: 'Bu cihaz bildirimleri desteklemiyor.', whatsNew: '✨ Bu sürümde neler var?' });
+            Object.assign(I18N.en.set, { a11yT: 'Accessibility', cb: 'Colour-blind mode (shape marks on symbols)', text: 'Text size', textS: ['Normal', 'Large', 'Extra large'], motion: 'Reduce motion', notifT: 'Reminders', notif: 'Gift and daily reward notifications', notifDenied: 'Notifications are blocked in your browser settings.', notifNo: 'This device doesn’t support notifications.', whatsNew: '✨ What’s new in this version?' });
+            I18N.tr.notif = { gift: ['☕ Hediyen hazır!', 'Kasana {v} çekirdek eklendi, Bearista seni bekliyor.'], daily: ['🎁 Günlük ödülün hazır!', 'Giriş serini kaçırma: bugünkü ödülünü almak için uğra.'], askT: 'Hatırlatma ister misin?', ask: 'Hediyen ve günlük ödülün hazır olunca sana haber verelim mi?', yes: 'EVET, HABER VER', no: 'Şimdi değil' };
+            I18N.en.notif = { gift: ['☕ Your gift is ready!', '{v} beans were added to your bank. Bearista is waiting.'], daily: ['🎁 Daily reward ready!', 'Keep your login streak: drop by for today’s reward.'], askT: 'Want reminders?', ask: 'Shall we let you know when your gift and daily reward are ready?', yes: 'YES, REMIND ME', no: 'Not now' };
+
+            Object.assign(I18N.en.top, { setT: ' SETTINGS', hubT: ' TROPHY', storeT: ' SHOP' });
 
             // Kitap: tuş listesi güncellemesi
             const patchKeys = (lang, rows, replace) => {

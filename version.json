@@ -1,20 +1,40 @@
 {
- "num": "≤5.3",
+ "num": "5.4",
  "name": {
-  "tr": "Americano",
-  "en": "Americano"
+  "tr": "Balkabağı Latte",
+  "en": "Pumpkin Latte"
  },
  "notes": {
   "tr": [
-   "☕ Kasaba hikâyesi: 5 şube, SyruppoLab’a karşı mücadele.",
-   "📖 Reçete Kitabı, free spin, genişleyen sembol ve Kahve Dede çarpanları.",
-   "🛠 Atölye geliştirmeleri, görevler, rozetler ve albüm."
+   "🎃 Cadılar Bayramı etkinliği ve balkabağı görünümleri.",
+   "☁️ Bulut kaydı ve sıralama tablosu.",
+   "🔔 Hediye bildirimleri ve 6 saatlik hediye."
   ],
   "en": [
-   "☕ Town story: 5 branches, the fight against SyruppoLab.",
-   "📖 Recipe Book, free spins, expanding symbol and Grandpa Brew multipliers.",
-   "🛠 Workshop upgrades, quests, badges and album."
+   "🎃 Halloween event and pumpkin looks.",
+   "☁️ Cloud save and leaderboard.",
+   "🔔 Gift notifications and the 6-hour gift."
   ]
  },
- "history": []
+ "history": [
+  {
+   "num": "≤5.3",
+   "name": {
+    "tr": "Americano",
+    "en": "Americano"
+   },
+   "notes": {
+    "tr": [
+     "☕ Kasaba hikâyesi: 5 şube, SyruppoLab’a karşı mücadele.",
+     "📖 Reçete Kitabı, free spin, genişleyen sembol ve Kahve Dede çarpanları.",
+     "🛠 Atölye geliştirmeleri, görevler, rozetler ve albüm."
+    ],
+    "en": [
+     "☕ Town story: 5 branches, the fight against SyruppoLab.",
+     "📖 Recipe Book, free spins, expanding symbol and Grandpa Brew multipliers.",
+     "🛠 Workshop upgrades, quests, badges and album."
+    ]
+   }
+  }
+ ]
 }

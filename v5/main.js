@@ -3,7 +3,7 @@
            ===================================================== */
         const $ = id => document.getElementById(id);
         const ALL_SCREENS = ['screen-menu', 'screen-story', 'screen-map', 'screen-game'];
-        const ALL_MODALS = ['modal-bonus-intro', 'modal-info', 'modal-name', 'modal-chapter-intro', 'modal-shop', 'modal-slots', 'modal-confirm', 'modal-drink', 'modal-bust', 'modal-bigwin', 'modal-fsdone', 'modal-hub', 'modal-diff', 'modal-profile', 'modal-settings', 'modal-backup'];
+        const ALL_MODALS = ['modal-bonus-intro', 'modal-info', 'modal-name', 'modal-chapter-intro', 'modal-shop', 'modal-slots', 'modal-confirm', 'modal-drink', 'modal-bust', 'modal-bigwin', 'modal-fsdone', 'modal-hub', 'modal-cheat', 'modal-news', 'modal-store', 'modal-diff', 'modal-profile', 'modal-settings', 'modal-backup'];
 
         function switchScreen(screenId) {
             playSynthNote(650, 0.05);
@@ -662,7 +662,7 @@
             const isLocked = (freeActive() || gameState.autoSpinActive);
             $('bet-minus-btn').disabled = isLocked;
             $('bet-plus-btn').disabled = isLocked;
-            $('hud-stage').textContent = `${DIFF_ICON[(Game.save && Game.save.diff) || 'std']} ${L().stageWord} ${gameState.chapter}`;
+            $('hud-stage').textContent = `${Game.save && Game.save.cheat ? '🧪 ' : ''}${DIFF_ICON[(Game.save && Game.save.diff) || 'std']} ${L().stageWord} ${gameState.chapter}`;
         }
 
         function toggleAutoSpin() {
@@ -925,7 +925,7 @@
             gameState.spinFree = free;
             if (fsSpin) gameState.freeSpinsRemaining--;
             else if (rainSpin) gameState.rainRemaining--;
-            else gameState.balance -= gameState.bet;
+            else if (!(Game.save && Game.save.cheat)) gameState.balance -= gameState.bet;   // test modu: bahis kasadan düşmez
 
             let mult = 1;
             if (gameState.loy.americano > 0) { mult = 2; gameState.loy.americano--; updateLoyaltyUI(); }
@@ -1216,48 +1216,93 @@
             return res;
         }
 
-        /* ---------- KASA BİTTİ: 24 saat bekle ya da video izle ---------- */
-        const GIFT_MS = 24 * 3600 * 1000;
-        function giftAmt() { return (RUN_EFF.diff && RUN_EFF.diff.gift) || 5000; }
+        /* ---------- HEDİYE EKONOMİSİ: 6 saatte bir ücretsiz hediye · istediğin an reklam izle ---------- */
+        const GIFT_MS = 6 * 3600 * 1000, VIDEO_CD = 30 * 1000;
+        // 1.000 çekirdek; Final'de en düşük bahis 2.000 olduğu için hediye en az bir spin'e yetecek kadardır
+        function giftAmt() { return Math.max((RUN_EFF.diff && RUN_EFF.diff.gift) || 1000, CHAPTERS[gameState.chapter || 1].minBet); }
         let bustTimer = null;
         function giftLeft() { const sv = Game.save; if (!sv) return GIFT_MS; return Math.max(0, (sv.lastGift || sv.created || Date.now()) + GIFT_MS - Date.now()); }
+        function videoLeft() { return Math.max(0, ((Game.save && Game.save.lastVideo) || 0) + VIDEO_CD - Date.now()); }
         function fmtTime(ms) { const t = Math.ceil(ms / 1000), h = Math.floor(t / 3600), m = Math.floor(t % 3600 / 60), sec = t % 60; return [h, m, sec].map(v => String(v).padStart(2, '0')).join(':'); }
+        function refreshBank() {
+            if (document.body.dataset.mode === 'game') updateHUD();
+            if (document.body.dataset.screen === 'screen-map') $('map-bank').innerHTML = `${beanIc()} ${fmt(gameState.balance)}`;
+            if ($('modal-store').classList.contains('open')) buildStore();
+        }
         function checkDailyGift() {
             const sv = Game.save;
             if (!sv || gameState.isSpinning) return;
             if (giftLeft() > 0) return;
-            gameState.balance += giftAmt();
+            const v = giftAmt();
+            gameState.balance += v;
             sv.lastGift = Date.now();
             persist();
-            if (document.body.dataset.mode === 'game') updateHUD();
-            if (document.body.dataset.screen === 'screen-map') $('map-bank').innerHTML = `${beanIc()} ${fmt(gameState.balance)}`;
-            showDialog('cozybear', CUR_LANG() === 'en' ? 'BlueBird' : 'MaviKuş', tf(L().gift.got, { v: fmt(giftAmt()) }));
+            refreshBank();
+            showDialog('cozybear', CUR_LANG() === 'en' ? 'BlueBird' : 'MaviKuş', tf(L().gift.got, { v: fmt(v) }));
+            if (typeof Notify !== 'undefined') Notify.plan();
             if ($('modal-bust').classList.contains('open') && gameState.balance >= CHAPTERS[gameState.chapter].minBet) closeBust();
         }
         function showBust() {
             const B = L().bust;
             $('bust-title').textContent = B.t;
             $('bust-text').innerHTML = tf(B.txt, { v: fmt(giftAmt()) });
-            $('bust-video').textContent = tf(B.video, { v: fmt(giftAmt()) });
             $('bust-wait').textContent = B.wait;
-            const tick = () => { $('bust-timer').textContent = fmtTime(giftLeft()); if (giftLeft() === 0) checkDailyGift(); };
+            $('bust-store').textContent = L().store.open;
+            const tick = () => {
+                $('bust-timer').textContent = fmtTime(giftLeft());
+                if (giftLeft() === 0) checkDailyGift();
+                const vl = videoLeft(), vb = $('bust-video');
+                vb.disabled = vl > 0;
+                vb.textContent = vl > 0 ? tf(L().store.wait, { t: Math.ceil(vl / 1000) }) : tf(B.video, { v: fmt(giftAmt()) });
+            };
             tick();
             clearInterval(bustTimer); bustTimer = setInterval(tick, 1000);
             openModal('modal-bust');
             [330, 262, 196].forEach((f, i) => setTimeout(() => playSynthNote(f, 0.25, 'triangle', 0.05), i * 140));
         }
         function closeBust() { clearInterval(bustTimer); bustTimer = null; closeModal('modal-bust'); }
+        /* Şimdilik gerçek reklam yok: her basışta anında ödül (30 sn bekleme ile). Reklam SDK'sı gelince burası onu çağıracak. */
         function watchVideo() {
-            // Şimdilik gerçek reklam yok: tuşa her basışta anında 5.000 çekirdek
-            gameState.balance += giftAmt();
-            if (Game.save) { Game.save.busts = (Game.save.busts || 0) + 1; Game.save.videos = (Game.save.videos || 0) + 1; }
-            gameState.bet = recommendedBet(gameState.chapter, gameState.balance);
-            closeBust();
+            if (!Game.save || videoLeft() > 0) return;
+            const v = giftAmt();
+            gameState.balance += v;
+            Game.save.videos = (Game.save.videos || 0) + 1;
+            Game.save.lastVideo = Date.now();
+            if (gameState.balance >= CHAPTERS[gameState.chapter].minBet && $('modal-bust').classList.contains('open')) {
+                gameState.bet = recommendedBet(gameState.chapter, gameState.balance);
+                closeBust();
+            }
             persist();
-            updateHUD();
+            refreshBank();
             [523, 659, 784].forEach((f, i) => setTimeout(() => playSynthNote(f, 0.2, 'sine', 0.06), i * 100));
-            setMessage(tf(L().gift.video, { v: fmt(giftAmt()) }), true);
-            celebrate(gameState.bet * 10);
+            if (document.body.dataset.mode === 'game') { setMessage(tf(L().gift.video, { v: fmt(v) }), true); celebrate(Math.max(gameState.bet, 1) * 10); }
+            else achToast('goldenbean', tf(L().gift.video, { v: fmt(v) }), '');
+        }
+        /* ---------- MAĞAZA ---------- */
+        let storeTimer = null;
+        function openStore() {
+            if (!Game.save) { showDialog('barista', 'Bearista', L().hub.needSave); return; }
+            closeModal('modal-bust');
+            playSynthNote(560, 0.06);
+            buildStore();
+            clearInterval(storeTimer); storeTimer = setInterval(() => { if ($('modal-store').classList.contains('open')) buildStore(); else clearInterval(storeTimer); }, 1000);
+            openModal('modal-store');
+        }
+        function buildStore() {
+            const S = L().store, vl = videoLeft(), gl = giftLeft();
+            $('sto-title').textContent = S.title;
+            $('sto-bank').innerHTML = `${beanIc()} ${fmt(gameState.balance)}`;
+            const soon = S.soon.map(([ic, n, d]) => `<div class="st-card soon"><span class="si">${ic}</span><div class="sb"><b>${n}</b><small>${d}</small></div><span class="st-tag">${S.soonTag}</span></div>`).join('');
+            $('sto-list').innerHTML = `
+                <div class="st-card hot"><span class="si">🎬</span><div class="sb"><b>${S.video}</b><small>${tf(S.videoTxt, { v: fmt(giftAmt()) })}</small></div>
+                  <button class="btn btn-sm btn-green" ${vl > 0 ? 'disabled' : ''} onclick="watchVideo()">${vl > 0 ? tf(S.wait, { t: Math.ceil(vl / 1000) }) : '+' + fmt(giftAmt())}</button></div>
+                <div class="st-card"><span class="si">⏰</span><div class="sb"><b>${S.free}</b><small>${tf(S.freeTxt, { v: fmt(giftAmt()) })}</small></div>
+                  <span class="st-tag t2">${gl > 0 ? fmtTime(gl) : S.ready}</span></div>
+                ${(() => { const own = cosmUnlocked('frame', 'balkabagi'), on = cosmEquipped('frame') === 'balkabagi', p = cosmPrice('frame', 'balkabagi');
+                    return `<h4 class="st-h">${S.looksT}</h4><div class="st-card hw"><span class="si cz-mini">${cosmPreview('frame', 'balkabagi')}</span><div class="sb"><b>🎃 ${L().cosm.names.frame.balkabagi}</b><small>${S.hwTxt}</small></div>
+                      ${own ? (on ? `<span class="st-tag t2">${L().cosm.worn}</span>` : `<button class="btn btn-sm" onclick="equipCosm('frame','balkabagi');buildStore()">${L().cosm.wear}</button>`)
+                            : `<button class="btn btn-sm btn-green" ${gameState.balance < p ? 'disabled' : ''} onclick="buyCosm('frame','balkabagi')">${fmt(p)} ${beanIc()}</button>`}</div>`; })()}
+                <h4 class="st-h">${S.soonT}</h4>${soon}`;
         }
         function bustWait() {
             closeBust();

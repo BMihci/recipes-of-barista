@@ -176,6 +176,7 @@
             s.maxBal = Math.max(s.maxBal, Math.floor(gameState.balance));
             // görevler
             questProgress('spins', 1);
+            eventSpin();
             if (ratio > 0) { questMax('winx', ratio); questProgress('winsum', ratio); }
             if (ratio >= 15) questProgress('big', 1);
             if (nOrb) questProgress('orbs', nOrb);
@@ -202,7 +203,7 @@
         function ustaActive() { return !!(Game.save && Game.save.finished); }
         function ustaRecord() {
             const sv = Game.save;
-            if (!sv || !sv.finished) return;
+            if (!sv || !sv.finished || sv.tainted) return;   // hile kodu kullanılan kayıt skor tablosuna girmez
             const bal = Math.floor(gameState.balance);
             if (bal > (sv.peak || 0)) {
                 const mode = sv.diff || 'std';
@@ -300,6 +301,7 @@
             const v = grant(dailyAmount(idx));
             Profile.daily = { streak: st.streak, last: dayStr(0) };
             if (idx === 6) { Game.save.dedeGift = true; }
+            setTimeout(() => Notify.offer(), 2500);
             [523, 659, 784, 1047, 1319].forEach((f, i) => setTimeout(() => playSynthNote(f, 0.22, 'sine', 0.06), i * 110));
             setTimeout(() => showDialog(idx === 6 ? 'dede' : 'cozybear', idx === 6 ? L().dede.name : (CUR_LANG() === 'en' ? 'BlueBird' : 'MaviKuş'), tf(idx === 6 ? L().daily.got7 : L().daily.got, { v: fmt(v) })), 300);
             persist(); saveProfile(); checkBadges();
@@ -329,7 +331,7 @@
             if (!$('modal-hub')) return;
             $('hub-title').textContent = H.title;
             const tabs = $('hub-tabs'); tabs.innerHTML = '';
-            ['daily', 'badges', 'album', 'quests', 'top'].forEach(id => {
+            ['daily', 'badges', 'album', 'looks', 'quests', 'top'].forEach(id => {
                 const b = document.createElement('button');
                 b.className = 'tab' + (id === hubTab ? ' on' : '');
                 b.textContent = H.tabs[id];
@@ -339,7 +341,7 @@
                 tabs.appendChild(b);
             });
             const body = $('hub-body');
-            body.innerHTML = ({ daily: hubDaily, badges: hubBadges, album: hubAlbum, quests: hubQuests, top: hubTop })[hubTab]();
+            body.innerHTML = ({ daily: hubDaily, badges: hubBadges, album: hubAlbum, looks: hubLooks, quests: hubQuests, top: hubTop })[hubTab]();
             body.scrollTop = 0;
         }
         function hubDaily() {
@@ -415,7 +417,7 @@
         function setLbMode(m) { lbMode = m; worldTop = null; playSynthNote(520, 0.04); renderHub(); loadWorldTop(); }
         function hubTop() {
             const T = L().lb, F = LB_FIELD[lbMode];
-            SLOTS.forEach(s => { if (s && s.finished) { const k = s.diff || 'std'; if ((s.peak || 0) > (Profile.bestBy[k] || 0)) Profile.bestBy[k] = s.peak; } });
+            SLOTS.forEach(s => { if (s && s.finished && !s.tainted) { const k = s.diff || 'std'; if ((s.peak || 0) > (Profile.bestBy[k] || 0)) Profile.bestBy[k] = s.peak; } });
             Profile.best = Math.max(Profile.best || 0, Profile.bestBy.std || 0);
             let h = `<p class="hub-info">${T.info}</p>`;
             h += `<div class="seg lb-seg">${['story', 'std', 'gambler'].map(k => `<button class="${k === lbMode ? 'on' : ''}" onclick="setLbMode('${k}')">${DIFF_ICON[k]} ${L().diff[k][0]}</button>`).join('')}</div>`;
@@ -428,7 +430,7 @@
             else if (worldTop && worldTop.length) {
                 const myIdx = worldTop.findIndex(r => r.uid === Cloud.user.uid);
                 if (myIdx >= 0) h += `<p class="hub-mid">${tf(T.rank, { n: myIdx + 1 })}</p>`;
-                h += '<ol class="lb-list">' + worldTop.map((r, i) => `<li class="${r.uid === Cloud.user.uid ? 'me' : ''}"><span class="rk">${i < 3 ? ['🥇', '🥈', '🥉'][i] : i + 1}</span><img src="${avatarSrc(r.avatar)}" alt=""><b>${escapeHtml(r.nick || '?')}</b><span>${fmt(r[F] || 0)}</span></li>`).join('') + '</ol>';
+                h += '<ol class="lb-list">' + worldTop.map((r, i) => `<li class="${r.uid === Cloud.user.uid ? 'me' : ''}"><span class="rk">${i < 3 ? ['🥇', '🥈', '🥉'][i] : i + 1}</span><img src="${avatarSrc(r.avatar)}" alt=""><b>${escapeHtml(r.nick || '?')}${r.verified ? ' <i class="vf" title="✓">✓</i>' : ''}</b><span>${fmt(r[F] || 0)}</span></li>`).join('') + '</ol>';
             } else h += `<p class="hub-note">${T.none}</p>`;
             const local = SLOTS.map((s, i) => s && s.finished && (s.diff || 'std') === lbMode ? { name: nickOf() + ' · ' + slotLabel(i), peak: s.peak || s.balance, i } : null).filter(Boolean).sort((a, b) => b.peak - a.peak);
             h += `<h4 class="lb-h">${T.local}</h4>`;
@@ -614,6 +616,23 @@
         Settings.turbo = !!Settings.turbo;
         Settings.vibe = Settings.vibe !== false;
         Settings.fx = Settings.fx || 'full';
+        Settings.cb = !!Settings.cb;
+        Settings.textScale = Settings.textScale || 1;
+        if (Settings.motion === undefined) { try { Settings.motion = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { Settings.motion = false; } }
+        /* ---------- erişilebilirlik ---------- */
+        function applyA11y() {
+            document.documentElement.style.fontSize = (Settings.textScale * 100) + '%';
+            document.body.classList.toggle('reduce-motion', !!Settings.motion);
+        }
+        function setTextScale(v) { Settings.textScale = v; saveSettings(); applyA11y(); refreshSettingsUI(); }
+        function toggleCB() {
+            Settings.cb = !Settings.cb; saveSettings();
+            for (const k in texCache) delete texCache[k];
+            if (typeof refreshGridMeshes === 'function' && builtReels) refreshGridMeshes();
+            refreshSettingsUI();
+        }
+        function toggleMotion() { Settings.motion = !Settings.motion; saveSettings(); applyA11y(); refreshSettingsUI(); }
+        function toggleEventTheme() { Settings.eventTheme = Settings.eventTheme === false; saveSettings(); applyTheme(); stopCasinoMusic(); if (document.body.dataset.mode === 'game' && !freeActive()) startCasinoMusic(); refreshSettingsUI(); }
         function turboOn() { return !!Settings.turbo; }
         function lowFx() { return Settings.fx === 'low'; }
         function openSettings() {
@@ -634,14 +653,22 @@
                 <div class="set-row"><span>${S.turbo}</span><button class="tg ${Settings.turbo ? 'on' : ''}" onclick="toggleTurbo(true)">${tog(Settings.turbo)}</button></div>
                 <div class="set-row"><span>${S.vibe}</span><button class="tg ${Settings.vibe ? 'on' : ''}" onclick="Settings.vibe=!Settings.vibe;saveSettings();buzz(40);refreshSettingsUI()">${tog(Settings.vibe)}</button></div>
                 <div class="set-row"><span>${S.fx}</span><button class="tg ${lowFx() ? 'on' : ''}" onclick="toggleLowFx()">${tog(lowFx())}</button></div>
+                ${eventActive() ? `<div class="set-row"><span>${L().ev.theme}</span><button class="tg ${themeOn() ? 'on' : ''}" onclick="toggleEventTheme()">${tog(themeOn())}</button></div>` : ''}
+                <h4 class="set-h">${S.notifT}</h4>
+                <div class="set-row"><span>${S.notif}${Notify.note() ? `<small class="set-sub">${Notify.note()}</small>` : ''}</span><button class="tg ${Notify.on() ? 'on' : ''}" ${Notify.supported() ? '' : 'disabled'} onclick="Notify.toggle()">${tog(Notify.on())}</button></div>
+                <h4 class="set-h">${S.a11yT}</h4>
+                <div class="set-row"><span>${S.cb}</span><button class="tg ${Settings.cb ? 'on' : ''}" onclick="toggleCB()">${tog(Settings.cb)}</button></div>
+                <div class="set-row"><span>${S.text}</span><div class="seg">${[1, 1.15, 1.3].map((v, i) => `<button class="${Settings.textScale === v ? 'on' : ''}" onclick="setTextScale(${v})">${S.textS[i]}</button>`).join('')}</div></div>
+                <div class="set-row"><span>${S.motion}</span><button class="tg ${Settings.motion ? 'on' : ''}" onclick="toggleMotion()">${tog(Settings.motion)}</button></div>
                 <div class="set-links">
+                    <button class="btn btn-soft btn-block" onclick="closeModal('modal-settings');showNews(true)">${S.whatsNew}</button>
                     <button class="btn btn-soft btn-block" onclick="closeModal('modal-settings');openProfile()">${S.account}</button>
                     <button class="btn btn-soft btn-block" onclick="closeModal('modal-settings');openBackup()">${S.backup}</button>
                     ${document.body.dataset.mode === 'game' && gameState.chapter === 1 ? `<button class="btn btn-soft btn-block" onclick="closeModal('modal-settings');showTutorial()">${S.tut}</button>` : ''}
                     ${PWA.canInstall() ? `<button class="btn btn-green btn-block" onclick="PWA.install()">${S.install}</button>` : (PWA.installed() ? `<p class="hub-ok">${S.installed}</p>` : '')}
                     <button class="btn btn-block btn-danger" onclick="resetAll()">${S.reset}</button>
                 </div>
-                <p class="set-ver">${S.offline} · ${S.ver} 5.3</p>`;
+                <p class="set-ver" onclick="cheatTap()">${S.offline} · ${S.ver} ${APP_VERSION.num} “${APP_VERSION.name[CUR_LANG()] || APP_VERSION.name.tr}”</p>`;
             $('set-close').textContent = S.close;
         }
         function setVol(k, v) { Settings[k] = Math.max(0, Math.min(1, v / 100)); saveSettings(); applyVolumes(); }

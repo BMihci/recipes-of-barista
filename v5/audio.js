@@ -72,6 +72,15 @@
                           [77,null,77,76,77,null,81,null], [79,null,79,77,79,null,83,null], [76,null,79,null,83,null,79,null], [81,null,null,79,76,null,72,null],
                           [77,null,76,null,74,null,72,null], [74,null,76,null,77,null,79,null], [84,null,79,null,76,null,72,null], [71,null,74,null,77,null,79,null]] }
             };
+            // Cadılar Bayramı: la minörde sevimli-ürkütücü müzik kutusu valsi
+            SONGS.spooky = { bpm: 96, swing: 0.62, bass: [0, null, 7, null, 0, null, 7, null], comp: [2, 6], kick: [0, 4], snare: [2, 6], hat: [3, 7],
+                leadVol: 0.03, padVol: 0.014, bassVol: 0.07, cutoff: 1500, sparkle: true,
+                chords: [[[52,57,60,64]], [[50,53,57,62]], [[52,56,59,62]], [[52,57,60,64]], [[53,57,60,65]], [[50,53,57,62]], [[52,56,59,62]], [[52,57,60,64]],
+                         [[52,55,60,64]], [[50,55,59,62]], [[52,57,60,64]], [[52,56,59,62]], [[53,57,60,65]], [[52,56,59,62]], [[52,57,60,64]], [[52,56,59,62]]],
+                mel: [[69,null,72,76,null,75,76,null], [74,null,72,null,69,null,65,null], [68,null,71,74,null,72,71,null], [69,null,null,null,64,null,null,null],
+                      [72,null,69,72,77,null,76,null], [74,null,77,null,74,null,72,null], [71,null,68,null,64,null,68,71], [69,null,null,null,null,null,null,null],
+                      [72,null,76,null,79,null,76,null], [74,null,71,null,67,null,71,null], [72,null,69,null,64,null,69,null], [68,null,64,null,59,null,68,null],
+                      [77,null,76,null,74,null,72,null], [71,null,72,null,74,null,76,null], [81,null,76,null,72,null,69,null], [68,null,71,null,74,null,76,null]] };
             let song = null, timer = null, nextBar = 0, bar = 0, bus = null;
             function out() { if (!bus) { bus = audioCtx.createGain(); bus.gain.value = 1; bus.connect(musBus); } return bus; }
             function env(g, t, a, peak, dur) { g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(peak, t + a); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); }
@@ -158,11 +167,11 @@
         function startCasinoMusic() {
             if (isMuted) return;
             if (GameMusic.current() === 'bonus') return;
-            GameMusic.play('cafe');
+            GameMusic.play(typeof themeOn === 'function' && themeOn() ? 'spooky' : 'cafe');
             casinoMusicInterval = 1;
         }
         function stopCasinoMusic() {
-            if (GameMusic.current() === 'cafe') GameMusic.stop();
+            if (GameMusic.current() === 'cafe' || GameMusic.current() === 'spooky') GameMusic.stop();
             casinoMusicInterval = null;
         }
         function startBonusMusic() {

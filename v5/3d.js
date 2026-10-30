@@ -10,7 +10,80 @@
         const APO = 0.5 / Math.tan(Math.PI / FACES);      // yüz merkezinin eksene uzaklığı (yüz yüksekliği = 1)
         const DRUM_Z = 0.36 - APO;                         // tambur ekseni (ön yüz z≈0.36)
         const VMAX = 19;                                   // rad/sn (≈3 tur/sn)
-        let bulbs = [], drums = [], winFlash = 0, lastFrame = 0, lastRender = 0;
+        let bulbs = [], drums = [], winFlash = 0, lastFrame = 0, lastRender = 0, frameMats = null;
+        /* Görünüm değişince çerçeve renklerini sahneyi yeniden kurmadan güncelle */
+        function applyFrameSkin() {
+            if (!frameMats || !window.THREE) return;
+            const SK = FRAME_SKINS[cosmEquipped('frame')] || FRAME_SKINS.klasik;
+            frameMats.wood.color = srgb(SK.wood); frameMats.gold.color = srgb(SK.gold); frameMats.gold.emissive = srgb(SK.glow);
+            if (frameMats.back) frameMats.back.color = srgb(SK.back);
+            bulbs.forEach((b, i) => { const c = SK.bulbs[i % SK.bulbs.length]; b.material.color = srgb(c); b.material.emissive = srgb(c); });
+            if (hwDecor) hwDecor.visible = cosmEquipped('frame') === 'balkabagi';
+        }
+
+
+        /* ---------- Cadılar Bayramı çerçeve süsleri (Balkabağı çerçevesi takılıyken) ---------- */
+        let hwDecor = null;
+        function hwTex(kind) {
+            const cv = document.createElement('canvas'); cv.width = cv.height = 256;
+            const c = cv.getContext('2d');
+            if (kind === 'pumpkin') {
+                c.translate(128, 140);
+                const g = c.createRadialGradient(-30, -30, 10, 0, 0, 120); g.addColorStop(0, '#FFB25A'); g.addColorStop(.6, '#FF7A12'); g.addColorStop(1, '#B4420A');
+                c.lineWidth = 7; c.strokeStyle = '#4A1C05'; c.fillStyle = g;
+                [[-58, 0, 52], [58, 0, 52], [-26, 0, 60], [26, 0, 60], [0, 0, 62]].forEach(([x, y, rx]) => { c.beginPath(); c.ellipse(x, y, rx, 86, 0, 0, Math.PI * 2); c.fill(); c.stroke(); });
+                c.fillStyle = '#5E8C2A'; c.strokeStyle = '#2E4A12'; c.beginPath(); c.moveTo(-10, -84); c.quadraticCurveTo(-4, -124, 22, -126); c.lineTo(16, -110); c.quadraticCurveTo(8, -100, 10, -82); c.closePath(); c.fill(); c.stroke();
+                const glow = c.createRadialGradient(0, 10, 4, 0, 10, 70); glow.addColorStop(0, '#FFF7B0'); glow.addColorStop(.5, '#FFD23A'); glow.addColorStop(1, '#FF9A1A');
+                c.fillStyle = glow; c.strokeStyle = '#4A1C05'; c.lineWidth = 5;
+                const tri = (x, y, s) => { c.beginPath(); c.moveTo(x - s, y + s * .7); c.lineTo(x, y - s * .8); c.lineTo(x + s, y + s * .7); c.closePath(); c.fill(); c.stroke(); };
+                tri(-36, -18, 20); tri(36, -18, 20); tri(0, 14, 11);
+                c.beginPath(); c.moveTo(-56, 30); c.quadraticCurveTo(0, 82, 56, 30); c.lineTo(40, 38); c.lineTo(30, 52); c.lineTo(18, 42); c.lineTo(4, 58); c.lineTo(-8, 44); c.lineTo(-20, 56); c.lineTo(-32, 42); c.lineTo(-44, 48); c.closePath(); c.fill(); c.stroke();
+            } else if (kind === 'web') {
+                c.strokeStyle = 'rgba(255,255,255,.85)'; c.lineWidth = 3; c.shadowColor = 'rgba(200,170,255,.9)'; c.shadowBlur = 6;
+                for (let i = 0; i <= 6; i++) { const a = i / 6 * Math.PI / 2; c.beginPath(); c.moveTo(0, 0); c.lineTo(Math.cos(a) * 250, Math.sin(a) * 250); c.stroke(); }
+                for (let r = 40; r < 250; r += 38) { c.beginPath(); for (let i = 0; i <= 6; i++) { const a = i / 6 * Math.PI / 2, rr = r + (i % 2 ? -7 : 0); i ? c.lineTo(Math.cos(a) * rr, Math.sin(a) * rr) : c.moveTo(Math.cos(a) * rr, Math.sin(a) * rr); } c.stroke(); }
+            } else if (kind === 'spider') {
+                c.translate(128, 128); c.strokeStyle = '#140818'; c.lineWidth = 9; c.lineCap = 'round';
+                [-1, 1].forEach(s => [[-50, -40], [-62, -6], [-60, 30], [-44, 60]].forEach(([x, y]) => { c.beginPath(); c.moveTo(0, 6); c.quadraticCurveTo(s * x * .6, y - 30, s * x, y); c.stroke(); }));
+                c.fillStyle = '#1E0B24'; c.beginPath(); c.ellipse(0, 24, 38, 44, 0, 0, Math.PI * 2); c.fill(); c.beginPath(); c.arc(0, -22, 24, 0, Math.PI * 2); c.fill();
+                c.fillStyle = '#FF8A1E'; c.beginPath(); c.arc(-9, -26, 6, 0, Math.PI * 2); c.arc(9, -26, 6, 0, Math.PI * 2); c.fill();
+                c.fillStyle = '#B66DFF'; c.beginPath(); c.moveTo(0, 8); c.lineTo(12, 26); c.lineTo(0, 44); c.lineTo(-12, 26); c.closePath(); c.fill();
+            } else if (kind === 'ghost') {
+                c.translate(128, 120); c.fillStyle = 'rgba(255,255,255,.92)'; c.strokeStyle = 'rgba(180,140,255,.9)'; c.lineWidth = 5; c.shadowColor = 'rgba(190,150,255,.9)'; c.shadowBlur = 18;
+                c.beginPath(); c.moveTo(-70, 100); c.lineTo(-70, -20); c.bezierCurveTo(-70, -110, 70, -110, 70, -20); c.lineTo(70, 100);
+                for (let i = 0; i < 5; i++) c.quadraticCurveTo(56 - i * 28, 80, 42 - i * 28, 100);
+                c.closePath(); c.fill(); c.stroke(); c.shadowBlur = 0;
+                c.fillStyle = '#2A1238'; c.beginPath(); c.ellipse(-24, -20, 11, 15, 0, 0, Math.PI * 2); c.ellipse(24, -20, 11, 15, 0, 0, Math.PI * 2); c.fill();
+                c.fillStyle = '#FF9FBF'; c.beginPath(); c.ellipse(-40, 6, 10, 6, 0, 0, Math.PI * 2); c.ellipse(40, 6, 10, 6, 0, 0, Math.PI * 2); c.fill();
+                c.strokeStyle = '#2A1238'; c.lineWidth = 5; c.beginPath(); c.arc(0, 8, 12, 0.15 * Math.PI, 0.85 * Math.PI); c.stroke();
+            }
+            return makeTex(cv);
+        }
+        function buildHwDecor(N, WIN_H) {
+            const g = new THREE.Group();
+            const ox = (N + 1.1) / 2, oy = (WIN_H + 1.15) / 2;
+            const plane = (tex, s, x, y, z) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(s, s), new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false })); m.position.set(x, y, z); g.add(m); return m; };
+            const pk = hwTex('pumpkin');
+            g.userData.pumpkins = [plane(pk, 0.9, -ox + 0.12, -oy + 0.36, 0.86), plane(pk, 0.78, ox - 0.1, -oy + 0.32, 0.86), plane(pk, 0.5, -ox + 0.68, -oy + 0.2, 0.84)];
+            const web = plane(hwTex('web'), 1.0, -ox + 0.5, oy - 0.5, 0.8); web.rotation.z = -Math.PI / 2; web.scale.x = -1;
+            const thread = new THREE.Mesh(new THREE.PlaneGeometry(0.02, 1), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .6, depthWrite: false }));
+            thread.position.set(ox - 1.15, oy - 0.2, 0.82); g.add(thread);
+            const spider = plane(hwTex('spider'), 0.42, ox - 1.15, oy - 0.7, 0.84);
+            const ghost = plane(hwTex('ghost'), 0.75, ox + 0.15, oy - 0.05, 0.9);
+            Object.assign(g.userData, { thread, spider, ghost, oy, ox });
+            g.visible = false;
+            return g;
+        }
+        function updateHwDecor(now) {
+            if (!hwDecor || !hwDecor.visible) return;
+            const U = hwDecor.userData;
+            U.pumpkins.forEach((p, i) => p.material.color.setScalar(0.82 + 0.18 * Math.abs(Math.sin(now * 0.011 + i * 2.1) * Math.sin(now * 0.0037 + i))));
+            const drop = 0.45 + 0.3 * (0.5 + 0.5 * Math.sin(now * 0.0012));
+            U.spider.position.y = U.oy - 0.25 - drop; U.spider.rotation.z = Math.sin(now * 0.002) * 0.15;
+            U.thread.scale.y = drop; U.thread.position.y = U.oy - 0.25 - drop / 2;
+            U.ghost.position.y = U.oy - 0.05 + Math.sin(now * 0.0021) * 0.12; U.ghost.position.x = U.ox + 0.15 + Math.sin(now * 0.0013) * 0.08;
+            U.ghost.material.opacity = 0.75 + 0.25 * Math.sin(now * 0.003);
+        }
 
         function roundRectPath(ctx, x, y, w, h, r) {
             ctx.beginPath();
@@ -93,6 +166,7 @@
             else if (sym.special === 'stamp') drawBadge(ctx, S, B.stamp, '#B8452F', 144);
             else if (sym.special === 'oven') drawBadge(ctx, S, B.oven, '#D9558F', 144);
             else if (sym.special === 'bag') drawBadge(ctx, S, B.bag, '#7A5A22', 160);
+            if (typeof Settings !== 'undefined' && Settings.cb) drawMark(ctx, sym);
             if (mode === 'w') {        // kazanç parıltısı
                 ctx.save();
                 roundRectPath(ctx, 10, 10, S - 20, S - 20, 38);
@@ -104,6 +178,31 @@
             return canvas;
         }
 
+        /* Renk körü modu: her sembolün sol üst köşesinde ayırt edici bir şekil */
+        const CB_MARK = { barista: 'circle', girlfriend: 'heart', baking_bear: 'square', portafilter: 'triangle', v60: 'diamond', espresso: 'hexagon',
+                          aeropress: 'plus', golden_bean: 'ring', croissant: 'moon', book: 'star', pitcher: 'J', matcha: 'M', cupcake: 'K', coffeebag: 'H', stamp: 'D' };
+        function drawMark(ctx, sym) {
+            const k = CB_MARK[sym.id]; if (!k) return;
+            const x = 46, y = 46, r = 20;
+            ctx.save();
+            ctx.beginPath(); ctx.arc(x, y, r + 7, 0, Math.PI * 2); ctx.fillStyle = '#FFFFFF'; ctx.fill();
+            ctx.lineWidth = 4; ctx.strokeStyle = '#1E1E1E'; ctx.stroke();
+            ctx.fillStyle = '#1E1E1E'; ctx.strokeStyle = '#1E1E1E'; ctx.lineWidth = 6;
+            ctx.beginPath();
+            const poly = (n, rot, rr) => { for (let i = 0; i < n; i++) { const a = rot + i * Math.PI * 2 / n; i ? ctx.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr) : ctx.moveTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); } ctx.closePath(); ctx.fill(); };
+            if (k === 'circle') { ctx.arc(x, y, r * .7, 0, Math.PI * 2); ctx.fill(); }
+            else if (k === 'ring') { ctx.arc(x, y, r * .62, 0, Math.PI * 2); ctx.stroke(); }
+            else if (k === 'square') { ctx.fillRect(x - r * .62, y - r * .62, r * 1.24, r * 1.24); }
+            else if (k === 'triangle') poly(3, -Math.PI / 2, r * .85);
+            else if (k === 'diamond') poly(4, 0, r * .85);
+            else if (k === 'hexagon') poly(6, 0, r * .75);
+            else if (k === 'plus') { ctx.fillRect(x - r * .2, y - r * .75, r * .4, r * 1.5); ctx.fillRect(x - r * .75, y - r * .2, r * 1.5, r * .4); }
+            else if (k === 'moon') { ctx.arc(x, y, r * .72, 0, Math.PI * 2); ctx.fill(); ctx.globalCompositeOperation = 'destination-out'; ctx.beginPath(); ctx.arc(x + r * .38, y - r * .2, r * .6, 0, Math.PI * 2); ctx.fill(); ctx.globalCompositeOperation = 'source-over'; }
+            else if (k === 'heart') { ctx.moveTo(x, y + r * .7); ctx.bezierCurveTo(x - r * 1.1, y - r * .1, x - r * .5, y - r * .9, x, y - r * .3); ctx.bezierCurveTo(x + r * .5, y - r * .9, x + r * 1.1, y - r * .1, x, y + r * .7); ctx.fill(); }
+            else if (k === 'star') { for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r * .38 : r * .85; i ? ctx.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr) : ctx.moveTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); } ctx.closePath(); ctx.fill(); }
+            else { ctx.font = "900 30px 'Baloo 2', Arial, sans-serif"; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(k, x, y + 2); }
+            ctx.restore();
+        }
         function makeTex(canvas) {
             const tex = new THREE.CanvasTexture(canvas);
             tex.anisotropy = maxAniso;
@@ -114,7 +213,7 @@
         /* mode: 'n' normal, 'w' kazanan, 'b' hareket bulanıklığı (hızlı dönüş) */
         function getSymbolTexture(sym, win, blur) {
             const mode = win ? 'w' : blur ? 'b' : 'n';
-            const key = sym.id + ':' + mode + ':' + CUR_LANG();
+            const key = sym.id + ':' + mode + ':' + CUR_LANG() + (Settings.cb ? ':cb' : '');
             if (texCache[key]) return texCache[key];
             let canvas;
             if (mode === 'b') {
@@ -240,7 +339,7 @@
             const WIN_W = N + 0.1, WIN_H = 3.0;
 
             // --- makara penceresinin arkası (koyu boşluk) ---
-            const back = new THREE.Mesh(new THREE.PlaneGeometry(WIN_W + 0.4, WIN_H + 0.6), new THREE.MeshBasicMaterial({ color: srgb(0x2a160b) }));
+            const back = new THREE.Mesh(new THREE.PlaneGeometry(WIN_W + 0.4, WIN_H + 0.6), new THREE.MeshBasicMaterial({ color: srgb((FRAME_SKINS[cosmEquipped('frame')] || FRAME_SKINS.klasik).back) }));
             back.position.z = DRUM_Z - APO - 0.2;
             scene.add(back);
 
@@ -308,8 +407,10 @@
             }
 
             // --- dolap: ahşap çerçeve + altın iç kenar ---
-            const wood = new THREE.MeshStandardMaterial({ color: srgb(0x8A5530), roughness: 0.55, metalness: 0.05 });
-            const gold = new THREE.MeshStandardMaterial({ color: srgb(0xF2C25A), roughness: 0.28, metalness: 0.75, emissive: srgb(0x3a2200), emissiveIntensity: 0.4 });
+            const SK = FRAME_SKINS[cosmEquipped('frame')] || FRAME_SKINS.klasik;
+            const wood = new THREE.MeshStandardMaterial({ color: srgb(SK.wood), roughness: 0.55, metalness: 0.05 });
+            const gold = new THREE.MeshStandardMaterial({ color: srgb(SK.gold), roughness: 0.28, metalness: 0.75, emissive: srgb(SK.glow), emissiveIntensity: 0.4 });
+            frameMats = { wood, gold, back: back.material };
             const outer = frameRing(N + 1.1, WIN_H + 1.15, 0.45, WIN_W, WIN_H, 0.18, 0.28, wood);
             outer.position.z = 0.38;
             scene.add(outer);
@@ -319,7 +420,7 @@
 
             // --- renkli ampuller (çerçeve boyunca kayan ışıklar) ---
             bulbs = [];
-            const palette = [0xFFD27A, 0xFF8FAB, 0x7FE3FF, 0xA8F07A];
+            const palette = SK.bulbs;
             // ampuller ahşap bandın tam ortasından, çerçevenin yuvarlak köşelerini izleyerek dizilir
             const inX = WIN_W / 2 + 0.11, outX = (N + 1.1) / 2, inY = WIN_H / 2 + 0.11, outY = (WIN_H + 1.15) / 2;
             const hx = (inX + outX) / 2, hy = (inY + outY) / 2, cr = 0.24;   // yol yarı-genişlik/yükseklik + köşe yarıçapı
@@ -355,6 +456,9 @@
             });
 
             // --- heyecan (2 Wild) parıltısı: makara önünde parlayan çerçeve ---
+            hwDecor = buildHwDecor(N, WIN_H);
+            scene.add(hwDecor);
+            hwDecor.visible = cosmEquipped('frame') === 'balkabagi';
             teasePlanes = [];
             const teaseTex = (() => {
                 const cv = document.createElement('canvas'); cv.width = 128; cv.height = 384;
@@ -589,7 +693,10 @@
             const spinning = drums.some(d => d.mode !== 'idle');
             const flashing = now - winFlash < 1600;
             const speed = flashing ? 0.02 : spinning ? 0.012 : 0.004;
+            updateHwDecor(now);
+            const candle = hwDecor && hwDecor.visible && !flashing;   // Balkabağı: mum gibi titreşen ampuller
             bulbs.forEach((b, i) => {
+                if (candle) { b.material.emissiveIntensity = 0.45 + 0.7 * Math.abs(Math.sin(now * 0.009 + i * 1.7) * Math.sin(now * 0.0047 + i * 0.6)); return; }
                 const w = Math.sin(now * speed - i * 0.55);
                 b.material.emissiveIntensity = flashing ? (Math.floor(now / 110 + i) % 2 ? 1.6 : 0.25) : 0.35 + 0.9 * Math.max(0, w);
             });

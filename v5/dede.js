@@ -5,20 +5,32 @@
         ASSETS.sym.dede = DEDE_IMG;
         /* Çarpan: Türk kahvesi fincanı (kademe rengine göre kuşak) */
         const CUP_COL = { o1: ['#3FA34D', '#BDF0B0'], o2: ['#2F7FD8', '#B9DDFF'], o3: ['#8E44D6', '#E6C9FF'], o4: ['#D8342A', '#FFD0A0'] };
-        function cupSVG(tier) {
-            const [c, l] = CUP_COL[tier] || CUP_COL.o1;
-            return `<svg viewBox="0 0 120 110" class="cup" aria-hidden="true">
-              <ellipse cx="60" cy="96" rx="52" ry="11" fill="#E9DCC6" stroke="#B8945E" stroke-width="3"/>
-              <ellipse cx="60" cy="93" rx="38" ry="6" fill="#F7EFE2"/>
-              <path d="M24 30 Q24 86 60 90 Q96 86 96 30 Z" fill="#FFFDF8" stroke="#B8945E" stroke-width="3"/>
-              <path d="M26 48 Q60 58 94 48 L93 62 Q60 72 27 62 Z" fill="${c}"/>
+        function cupSVG(tier, style) {
+            style = style || (typeof cosmEquipped === 'function' ? cosmEquipped('cup') : 'klasik');
+            let [c, l] = CUP_COL[tier] || CUP_COL.o1;
+            let body = '#FFFDF8', rim = '#D9A73A', saucer = '#E9DCC6', deco = '';
+            if (style === 'lale') {         // lale motifli İznik fincanı
+                body = '#F6FBFF'; deco = `<g stroke="${c}" stroke-width="2.4" fill="${l}"><path d="M44 66 q-6 -12 0 -18 q4 6 0 18z"/><path d="M60 70 q-7 -14 0 -21 q7 7 0 21z"/><path d="M76 66 q6 -12 0 -18 q-4 6 0 18z"/></g><path d="M44 66 q16 8 32 0" stroke="#3FA34D" stroke-width="2.5" fill="none"/>`;
+            } else if (style === 'altin') { // altın gövde, beyaz kuşak
+                body = '#F2C25A'; rim = '#FFF3C4'; saucer = '#F7D27A'; l = '#FFFFFF';
+            } else if (style === 'balkabagi') { // balkabağı fincan: oyulmuş yüz
+                body = '#FF8A1E'; rim = '#3A1A4F'; saucer = '#5A2A7A'; c = '#3A1A4F'; l = '#FFD27A';
+                deco = `<g fill="#3A1A4F"><path d="M40 52 l8 -8 l8 8z"/><path d="M64 52 l8 -8 l8 8z"/><path d="M40 66 q20 12 40 0 l-6 2 l-4 -4 l-4 5 l-6 -5 l-6 5 l-4 -5 l-4 4z"/></g>`;
+            }
+            const band = style === 'balkabagi' || style === 'lale' ? '' : `<path d="M26 48 Q60 58 94 48 L93 62 Q60 72 27 62 Z" fill="${c}"/>
               <g fill="${l}"><circle cx="38" cy="56" r="3"/><circle cx="50" cy="60" r="3"/><circle cx="62" cy="61" r="3"/><circle cx="74" cy="59" r="3"/><circle cx="85" cy="55" r="3"/></g>
-              <path d="M26 46 Q60 56 94 46" stroke="#D9A73A" stroke-width="2.5" fill="none"/><path d="M27 64 Q60 74 93 64" stroke="#D9A73A" stroke-width="2.5" fill="none"/>
-              <ellipse cx="60" cy="30" rx="36" ry="9" fill="#D9A73A"/>
+              <path d="M26 46 Q60 56 94 46" stroke="${rim}" stroke-width="2.5" fill="none"/><path d="M27 64 Q60 74 93 64" stroke="${rim}" stroke-width="2.5" fill="none"/>`;
+            const ring = style === 'lale' || style === 'balkabagi' ? `<path d="M27 40 Q60 50 93 40" stroke="${c}" stroke-width="4" fill="none"/>` : '';
+            return `<svg viewBox="0 0 120 110" class="cup" aria-hidden="true">
+              <ellipse cx="60" cy="96" rx="52" ry="11" fill="${saucer}" stroke="#B8945E" stroke-width="3"/>
+              <ellipse cx="60" cy="93" rx="38" ry="6" fill="#F7EFE2" opacity=".85"/>
+              <path d="M24 30 Q24 86 60 90 Q96 86 96 30 Z" fill="${body}" stroke="#B8945E" stroke-width="3"/>
+              ${band}${ring}${deco}
+              <ellipse cx="60" cy="30" rx="36" ry="9" fill="${rim}"/>
               <ellipse cx="60" cy="31" rx="31" ry="6.5" fill="#5A3416"/>
               <ellipse cx="60" cy="30" rx="27" ry="5" fill="#B9844F"/>
               <g fill="#E7C7A0" opacity=".9"><circle cx="50" cy="29" r="2"/><circle cx="64" cy="31" r="1.6"/><circle cx="71" cy="28" r="1.4"/></g>
-              <path d="M34 36 Q32 60 40 76" stroke="#fff" stroke-width="4" fill="none" opacity=".7" stroke-linecap="round"/>
+              <path d="M34 36 Q32 60 40 76" stroke="#fff" stroke-width="4" fill="none" opacity=".6" stroke-linecap="round"/>
             </svg>`;
         }
         const Dede = {
@@ -28,7 +40,7 @@
                 const box = this.el();
                 if (!box || box.dataset.ready) return;
                 box.dataset.ready = '1';
-                box.innerHTML = `<div class="dd-aura"></div><div class="dd-fig">${DEDE_SVG}</div><div class="dd-bub" id="dede-bub"></div>`;
+                box.innerHTML = `<div class="dd-aura"></div><div class="dd-fig">${dedeSVG(typeof cosmEquipped === 'function' ? cosmEquipped('cap') : 'kasket')}</div><div class="dd-bub" id="dede-bub"></div>`;
             },
             /* yalnızca çarpan zamanı ortaya çıkar */
             show() {

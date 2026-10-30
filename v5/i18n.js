@@ -84,8 +84,8 @@
                        filtreB: '☕ Filtre: sonraki FS 20', americanoB: '☕ Americano ×2 · {n} spin', latteB: '🥛 Latte: Wild +%{n}', maxed: 'En fazla {n} kez seçilebilir',
                        drinks: { filtre: ['Filtre Kahve', 'Sonraki free spin’lerin <b>20</b> tane olur.'], americano: ['Americano', 'Sonraki <b>10 çevirimde ×2</b> çarpan.'], latte: ['Latte', 'Wild (Reçete Kitabı) ihtimali bu aşama boyunca <b>+%10</b>.'] },
                        ready: '{d} hazır!', said: { filtre: 'Sonraki free spin bonusun 20 tur olacak.', americano: 'Sonraki 10 çevirimde kazançların ×2!', latte: 'Reçete Kitabı artık daha sık geliyor (+%10).' } },
-                bust: { t: 'KASAN BOŞALDI!', txt: 'Bütün çekirdeklerin bitti! Kasana her 24 saatte bir <b>{v}</b> çekirdek hediye eklenir. Sıradaki hediyeye kalan süre:', video: '🎬 VİDEO İZLE (+{v})', wait: '⏳ 24 SAAT BEKLE', waitMsg: 'Günlük hediyene {t} kaldı. Video izleyerek hemen 5.000 çekirdek alabilirsin.' },
-                gift: { got: 'Günlük hediye: kasana +{v} çekirdek eklendi! ☕', video: '🎬 Video izlendi: +{v} çekirdek!' },
+                bust: { t: 'KASAN BOŞALDI!', txt: 'Bütün çekirdeklerin bitti! Oyuna girdiğin her 6 saatte bir kasana <b>{v}</b> çekirdek hediye eklenir. Sıradaki hediyeye kalan süre:', video: '🎬 VİDEO İZLE (+{v})', wait: '⏳ BEKLE', waitMsg: 'Sıradaki hediyene {t} kaldı. Mağazadan video izleyerek hemen çekirdek alabilirsin.' },
+                gift: { got: '6 saatlik hediye: kasana +{v} çekirdek eklendi! ☕', video: '🎬 Video izlendi: +{v} çekirdek!' },
                 bigwin: ['BÜYÜK KAZANÇ!', 'MEGA KAZANÇ!', 'EPİK KAZANÇ!'], bigwinTap: 'devam etmek için dokun',
                 fsdone: { t: 'FREE SPIN BİTTİ!', txt: 'Toplam kazancın', mult: 'Toplam çarpan ×{v}', ok: 'DEVAM ET ☕' },
                 done: { cont: 'SLOTA DEVAM ET', shop: '🛠 ATÖLYE' },
@@ -109,7 +109,7 @@
                         ['FREE SPIN SAYACI', 'Free spin ve Pasta Yağmuru sırasında kalan tur sayısını gösterir.'],
                         ['⚡ ÇARPAN ÇEKİRDEĞİ', 'Bazen makaraların üstüne şimşekle bir çarpan çekirdeği düşer (×2 – ×100). O spinde kazanç varsa kazancın çarpılır. Free spin’de çarpanlar birikir (en fazla ×25) ve sonraki her kazancı çarpar.'],
                         ['🎉 BÜYÜK KAZANÇ', 'Bahsinin 15 katı ve üstü kazançlarda Büyük, 40 katında Mega, 100 katında Epik kazanç gösterisi açılır. Dokununca hızlanır.'],
-                        ['🎬 GÜNLÜK HEDİYE', 'Her 24 saatte bir kasana 5.000 çekirdek eklenir. Kasan biterse video izleyerek hemen 5.000 çekirdek alabilirsin.']
+                        ['🛒 MAĞAZA · HEDİYE', 'Oyuna girdiğin her 6 saatte bir kasana 1.000 çekirdek eklenir. Mağazadan istediğin zaman reklam izleyerek +1.000 çekirdek alabilirsin.']
                     ],
                     specialT: '🍵 Matcha → Kahve & 🥛 Pitcher (2. aşamadan itibaren)',
                     pitcher: (E) => `1., 3., 5. makarada.<br>Hatlarda diğer sembollerin yerine geçer.<br>Ekranda 3 tane = <b>Latte Art Bonusu: bahsin ${fx(E.latteMult)} katı</b>`,
@@ -211,8 +211,8 @@
                        filtreB: '☕ Filter: next FS 20', americanoB: '☕ Americano ×2 · {n} spins', latteB: '🥛 Latte: Wild +{n}%', maxed: 'Can be chosen at most {n} times',
                        drinks: { filtre: ['Filter Coffee', 'Your next free spins will be <b>20</b>.'], americano: ['Americano', '<b>×2</b> on your next <b>10 spins</b>.'], latte: ['Latte', 'Wild (Recipe Book) chance <b>+10%</b> for this stage.'] },
                        ready: '{d} is ready!', said: { filtre: 'Your next free spin bonus will last 20 spins.', americano: 'Your wins are ×2 for the next 10 spins!', latte: 'Recipe Books now land more often (+10%).' } },
-                bust: { t: 'YOUR BANK IS EMPTY!', txt: 'You’re out of beans! Every 24 hours <b>{v}</b> beans are gifted to your bank. Time until the next gift:', video: '🎬 WATCH VIDEO (+{v})', wait: '⏳ WAIT 24 HOURS', waitMsg: 'Your daily gift arrives in {t}. Watch a video to get 5,000 beans right away.' },
-                gift: { got: 'Daily gift: +{v} beans added to your bank! ☕', video: '🎬 Video watched: +{v} beans!' },
+                bust: { t: 'YOUR BANK IS EMPTY!', txt: 'You’re out of beans! Every 6 hours you play, <b>{v}</b> beans are gifted to your bank. Time until the next gift:', video: '🎬 WATCH VIDEO (+{v})', wait: '⏳ WAIT', waitMsg: 'Your next gift arrives in {t}. Watch a video in the Shop to get beans right away.' },
+                gift: { got: '6-hour gift: +{v} beans added to your bank! ☕', video: '🎬 Video watched: +{v} beans!' },
                 bigwin: ['BIG WIN!', 'MEGA WIN!', 'EPIC WIN!'], bigwinTap: 'tap to continue',
                 fsdone: { t: 'FREE SPINS OVER!', txt: 'Your total win', mult: 'Total multiplier ×{v}', ok: 'CONTINUE ☕' },
                 done: { cont: 'BACK TO THE REELS', shop: '🛠 WORKSHOP' },
@@ -236,7 +236,7 @@
                         ['FREE SPIN COUNTER', 'Shows the spins left during Free Spins and Cake Rain.'],
                         ['⚡ MULTIPLIER BEAN', 'Sometimes a multiplier bean strikes the reels with lightning (×2 – ×100). If that spin wins, the win is multiplied. In free spins multipliers add up (max ×25) and multiply every following win.'],
                         ['🎉 BIG WIN', 'Wins of 15× your bet show a Big Win, 40× Mega and 100× Epic celebration. Tap to speed it up.'],
-                        ['🎬 DAILY GIFT', 'Every 24 hours 5,000 beans are added to your bank. If you run out, watch a video to get 5,000 beans right away.']
+                        ['🛒 SHOP · GIFT', 'Every 6 hours you play, 1,000 beans are added to your bank. Watch an ad in the Shop any time for +1,000 beans.']
                     ],
                     specialT: '🍵 Matcha → Coffee & 🥛 Pitcher (from stage 2)',
                     pitcher: (E) => `Reels 1, 3, 5.<br>Substitutes for other symbols on lines.<br>3 on screen = <b>Latte Art Bonus: ${fx(E.latteMult)}× bet</b>`,

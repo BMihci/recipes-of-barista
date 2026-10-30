@@ -140,9 +140,10 @@
                 try {
                     await this.ref().set({ data, updatedAt: Date.now() });
                     const BB = Profile.bestBy || {};
-                    if ((BB.std || 0) + (BB.story || 0) + (BB.gambler || 0) + (Profile.best || 0) > 0) {
+                    if ((BB.std || 0) + (BB.story || 0) + (BB.gambler || 0) + (Profile.best || 0) > 0 && Date.now() - (this.lastLb || 0) > 25000) {
+                        this.lastLb = Date.now();
                         const avatar = await smallAvatar(Profile.avatar);
-                        await this.db.collection('leaderboard').doc(this.user.uid).set({ nick: (Profile.nick || Profile.bestName || '?').slice(0, 16), avatar, best: Math.floor(Math.max(Profile.best || 0, BB.std || 0)), bestStory: Math.floor(BB.story || 0), bestGambler: Math.floor(BB.gambler || 0), updatedAt: Date.now() });
+                        await this.db.collection('leaderboard').doc(this.user.uid).set({ nick: (Profile.nick || Profile.bestName || '?').slice(0, 16), avatar, best: Math.floor(Math.max(Profile.best || 0, BB.std || 0)), bestStory: Math.floor(BB.story || 0), bestGambler: Math.floor(BB.gambler || 0), spins: Profile.stats.spins || 0, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
                         this.scoreDirty = false;
                     }
                     this.lastSync = Date.now(); this.err = false;
