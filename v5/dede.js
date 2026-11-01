@@ -13,6 +13,14 @@
                 body = '#F6FBFF'; deco = `<g stroke="${c}" stroke-width="2.4" fill="${l}"><path d="M44 66 q-6 -12 0 -18 q4 6 0 18z"/><path d="M60 70 q-7 -14 0 -21 q7 7 0 21z"/><path d="M76 66 q6 -12 0 -18 q-4 6 0 18z"/></g><path d="M44 66 q16 8 32 0" stroke="#3FA34D" stroke-width="2.5" fill="none"/>`;
             } else if (style === 'altin') { // altın gövde, beyaz kuşak
                 body = '#F2C25A'; rim = '#FFF3C4'; saucer = '#F7D27A'; l = '#FFFFFF';
+            } else if (style === 'matcha') { // matcha çanağı: yeşil sırlı, beyaz damla
+                body = '#7DB46C'; rim = '#E9F7DA'; saucer = '#CFE6B8'; c = '#3F7A3A'; l = '#E9F7DA';
+            } else if (style === 'pastel') { // pembe-mavi şekerli pastel
+                body = '#FFD3E2'; rim = '#C9E7FF'; saucer = '#FFF0B3'; c = '#8EC5F0'; l = '#FFFFFF';
+                deco = `<g fill="#FFFFFF" opacity=".9"><circle cx="40" cy="74" r="2"/><circle cx="58" cy="80" r="2"/><circle cx="78" cy="74" r="2"/></g>`;
+            } else if (style === 'toprak') { // el yapımı toprak fincan, buğday başağı
+                body = '#B9683A'; rim = '#E8B84A'; saucer = '#D9A070'; c = '#7A3E1C'; l = '#E8B84A';
+                deco = `<g stroke="#E8B84A" stroke-width="2.4" fill="#E8B84A"><path d="M60 82 L60 66" fill="none"/><ellipse cx="56" cy="72" rx="3" ry="5" transform="rotate(-30 56 72)"/><ellipse cx="64" cy="72" rx="3" ry="5" transform="rotate(30 64 72)"/><ellipse cx="60" cy="66" rx="3" ry="5"/></g>`;
             } else if (style === 'balkabagi') { // balkabağı fincan: oyulmuş yüz
                 body = '#FF8A1E'; rim = '#3A1A4F'; saucer = '#5A2A7A'; c = '#3A1A4F'; l = '#FFD27A';
                 deco = `<g fill="#3A1A4F"><path d="M40 52 l8 -8 l8 8z"/><path d="M64 52 l8 -8 l8 8z"/><path d="M40 66 q20 12 40 0 l-6 2 l-4 -4 l-4 5 l-6 -5 l-6 5 l-4 -5 l-4 4z"/></g>`;

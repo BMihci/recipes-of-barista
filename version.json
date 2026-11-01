@@ -1,22 +1,58 @@
 {
- "num": "5.4",
+ "num": "5.5.1",
  "name": {
-  "tr": "Balkabağı Latte",
-  "en": "Pumpkin Latte"
+  "tr": "Cortado",
+  "en": "Cortado"
  },
  "notes": {
   "tr": [
-   "🎃 Cadılar Bayramı etkinliği ve balkabağı görünümleri.",
-   "☁️ Bulut kaydı ve sıralama tablosu.",
-   "🔔 Hediye bildirimleri ve 6 saatlik hediye."
+   "📱 iPhone’da mağaza kapatma tuşuna erişilememesi düzeltildi; mobil boyutlandırma yenilendi.",
+   "🕹 Slot kolları mağazada görünür oldu."
   ],
   "en": [
-   "🎃 Halloween event and pumpkin looks.",
-   "☁️ Cloud save and leaderboard.",
-   "🔔 Gift notifications and the 6-hour gift."
+   "📱 Fixed the unreachable store close button on iPhone; refreshed mobile sizing.",
+   "🕹 Slot levers are now visible in the store."
   ]
  },
  "history": [
+  {
+   "num": "5.5.0",
+   "name": {
+    "tr": "Cortado",
+    "en": "Cortado"
+   },
+   "notes": {
+    "tr": [
+     "🎨 Görünümler: çerçeve, Dede şapkası ve fincan koleksiyonları.",
+     "🕹 3D slot kolu ve kol görünümleri.",
+     "🏆 Büyük ikramiye kutlaması."
+    ],
+    "en": [
+     "🎨 Looks: frame, Grandpa hat and cup collections.",
+     "🕹 3D slot lever and lever skins.",
+     "🏆 Jackpot celebration."
+    ]
+   }
+  },
+  {
+   "num": "5.4",
+   "name": {
+    "tr": "Balkabağı Latte",
+    "en": "Pumpkin Latte"
+   },
+   "notes": {
+    "tr": [
+     "🎃 Cadılar Bayramı etkinliği ve balkabağı görünümleri.",
+     "☁️ Bulut kaydı ve sıralama tablosu.",
+     "🔔 Hediye bildirimleri ve 6 saatlik hediye."
+    ],
+    "en": [
+     "🎃 Halloween event and pumpkin looks.",
+     "☁️ Cloud save and leaderboard.",
+     "🔔 Gift notifications and the 6-hour gift."
+    ]
+   }
+  },
   {
    "num": "≤5.3",
    "name": {

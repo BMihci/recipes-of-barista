@@ -5,12 +5,13 @@
            ===================================================== */
         const texCache = {};
         let maxAniso = 1;
-        const FACES = 20;                                  // geniş tambur: 3 satırın üçü de net görünür
+        const FACES = 28;                                  // geniş tambur: 5 satırın beşi de net görünür
+        const RW = Engine.ROWS, RMID = (Engine.ROWS - 1) / 2;   // görünen satır sayısı ve orta satır
         const STEP = Math.PI * 2 / FACES;
         const APO = 0.5 / Math.tan(Math.PI / FACES);      // yüz merkezinin eksene uzaklığı (yüz yüksekliği = 1)
         const DRUM_Z = 0.36 - APO;                         // tambur ekseni (ön yüz z≈0.36)
         const VMAX = 19;                                   // rad/sn (≈3 tur/sn)
-        let bulbs = [], drums = [], winFlash = 0, lastFrame = 0, lastRender = 0, frameMats = null;
+        let bulbs = [], drums = [], winFlash = 0, lastFrame = 0, lastRender = 0, frameMats = null, frameH = 0;
         /* Görünüm değişince çerçeve renklerini sahneyi yeniden kurmadan güncelle */
         function applyFrameSkin() {
             if (!frameMats || !window.THREE) return;
@@ -253,6 +254,105 @@
             return makeTex(cv);
         }
 
+        /* =====================================================
+           SLOT MAKİNESİ KOLU (3D): çerçevenin sağ yanında. Spin başlarken hızla aşağı çekilir,
+           makaralar dönerken yavaşça yukarı kalkar; turboda hızlı in-çık, "durdur"da hızlı dönüş.
+           ===================================================== */
+        const LEVER_W = 1.0, LEVER_REST = -0.12, LEVER_PULL = 2.35, LEVER_LEN = 1.45;
+        let leverObj = null, rainbowUntil = 0, rainbowOn = false;
+        const LEVER_STYLES = {
+            kirmizi:     { shaft: 0xD8DDE3, sm: 0.9, knob: 0xE0262E, km: 0.15, mount: 0x8E959C, shape: 'ball' },
+            portafiltre: { shaft: 0xC9CED4, sm: 0.9, knob: 0x1E1A18, km: 0.05, mount: 0x6E747A, shape: 'grip' },
+            cezve:       { shaft: 0xC77A3A, sm: 0.85, knob: 0x6A3B1C, km: 0.05, mount: 0xB0652A, shape: 'grip' },
+            cekirdek:    { shaft: 0xE3AE4A, sm: 0.75, knob: 0x5A3016, km: 0.1, mount: 0x7A4A22, shape: 'bean' },
+            altin:       { shaft: 0xF2C25A, sm: 0.95, knob: 0xFFD86B, km: 0.9, mount: 0xC8942E, shape: 'ball', glow: 0x6a4400 }
+        };
+        function leverOn() { return typeof cosmEquipped === 'function' && cosmEquipped('lever') !== 'yok'; }
+        function buildLever(N) {
+            const g = new THREE.Group();
+            const S = LEVER_STYLES[cosmEquipped('lever')] || LEVER_STYLES.kirmizi;
+            const x0 = (N + 1.1) / 2;
+            const metal = (c, m, r) => new THREE.MeshStandardMaterial({ color: srgb(c), metalness: m, roughness: r });
+            // yan gövde: yuvarlatılmış kutu + krom halka
+            const mount = new THREE.Mesh(new THREE.BoxGeometry(0.34, 1.0, 0.56), metal(S.mount, 0.7, 0.35));
+            mount.position.set(x0 + 0.13, -0.15, 0.25);
+            g.add(mount);
+            const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.2, 24), metal(S.shaft, 0.9, 0.2));
+            hub.rotation.z = Math.PI / 2;
+            hub.position.set(x0 + 0.36, -0.15, 0.25);
+            g.add(hub);
+            const arm = new THREE.Group();   // pivot: kol bu nokta etrafında X ekseninde döner
+            arm.position.set(x0 + 0.48, -0.15, 0.25);
+            const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.06, LEVER_LEN, 16), metal(S.shaft, S.sm, 0.22));
+            shaft.position.y = LEVER_LEN / 2;
+            arm.add(shaft);
+            const km = new THREE.MeshStandardMaterial({ color: srgb(S.knob), metalness: S.km, roughness: 0.25, emissive: srgb(S.glow || 0x000000), emissiveIntensity: S.glow ? 0.5 : 0 });
+            let knob;
+            if (S.shape === 'grip') { knob = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.09, 0.5, 18), km); knob.position.y = LEVER_LEN + 0.2; }
+            else if (S.shape === 'bean') { knob = new THREE.Mesh(new THREE.SphereGeometry(0.2, 22, 18), km); knob.scale.set(0.8, 1.15, 0.8); knob.position.y = LEVER_LEN + 0.12;
+                const groove = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.4, 0.33), metal(0x2A160B, 0, 0.8)); groove.position.y = LEVER_LEN + 0.12; arm.add(groove); }
+            else { knob = new THREE.Mesh(new THREE.SphereGeometry(0.2, 24, 20), km); knob.position.y = LEVER_LEN + 0.1; }
+            arm.add(knob);
+            g.add(arm);
+            g.userData.arm = arm;
+            g.userData.top = [arm.position.x, arm.position.y, arm.position.z];
+            arm.rotation.x = LEVER_REST;
+            g.visible = leverOn();
+            return g;
+        }
+        const Lever = {
+            a: LEVER_REST, q: [], cur: null,
+            // seq: [[hedefAçı, ms, 'in'|'out'|'lin'], ...]
+            play(seq) { if (!leverOn()) return; this.q = seq.slice(); this.cur = null; },
+            pull(totalMs, fast) {
+                const down = fast ? 110 : 150;
+                const up = fast ? 200 : Math.max(380, (totalMs || 900) - down + 120);
+                this.play([[LEVER_PULL, down, 'in'], [LEVER_PULL, fast ? 20 : 60, 'lin'], [LEVER_REST, up, fast ? 'out' : 'slow']]);
+                if (leverOn()) { playSynthNote(110, 0.09, 'square', 0.04); setTimeout(() => playSynthNote(70, 0.12, 'sine', 0.06), down); }
+            },
+            release() { if (!leverOn() || (this.q.length === 0 && !this.cur)) return; this.play([[LEVER_REST, 170, 'out']]); },
+            step(now) {
+                const arm = leverObj && leverObj.userData.arm;
+                if (!arm) return;
+                if (!this.cur && this.q.length) { const [to, ms, e] = this.q[0]; this.cur = { from: this.a, to, ms, e, t0: now }; }
+                if (!this.cur) return;
+                const c = this.cur, k = Math.min(1, (now - c.t0) / c.ms);
+                const f = c.e === 'in' ? k * k : c.e === 'out' ? 1 - Math.pow(1 - k, 3) : c.e === 'slow' ? 1 - Math.pow(1 - k, 1.6) : k;
+                this.a = c.from + (c.to - c.from) * f;
+                if (k >= 1) { this.a = c.to; this.q.shift(); this.cur = null; }
+                arm.rotation.x = this.a + (this.a > 1.5 ? Math.sin(now * 0.08) * 0.015 : 0);
+            }
+        };
+        function refreshLever() {
+            if (!scene || !leverObj) return;
+            scene.remove(leverObj);
+            leverObj = buildLever(builtReels || 5);
+            scene.add(leverObj);
+            Lever.a = LEVER_REST; Lever.q = []; Lever.cur = null;
+            onWindowResize();
+        }
+        /* kola dokunmak için görünmez düğme: kolun ekrandaki yerine oturtulur */
+        function placeLeverHit() {
+            let b = $('lever-hit');
+            if (!leverOn() || !leverObj) { if (b) b.style.display = 'none'; return; }
+            if (!b) {
+                b = document.createElement('button'); b.id = 'lever-hit'; b.type = 'button';
+                b.setAttribute('aria-label', (L().lever && L().lever.aria) || 'Lever');
+                b.onclick = () => { if (gameState.isSpinning) { if (curSpin && curSpin.slam) curSpin.slam(); } else spinReels(); };
+                $('three-container').appendChild(b);
+            }
+            const cont = $('three-container'), W = cont.clientWidth || 1, H = cont.clientHeight || 1;
+            const f = (H / 2) / Math.tan(((camera && camera.fov) || 42) * Math.PI / 360);
+            const [px, py, pz] = leverObj.userData.top, camZ = camera.position.z, camX = camera.position.x;
+            const proj = (x, y, z) => { const sc = f / (camZ - z); return [W / 2 + (x - camX) * sc, H / 2 - y * sc]; };
+            const top = proj(px, py + LEVER_LEN + 0.35, pz), bot = proj(px, py - 0.6, pz), sc = f / (camZ - pz);
+            const w = Math.max(44, 0.9 * sc);
+            b.style.display = '';
+            b.style.left = (top[0] - w / 2) + 'px'; b.style.width = w + 'px';
+            b.style.top = top[1] + 'px'; b.style.height = Math.max(60, bot[1] - top[1]) + 'px';
+        }
+        function celebrateLights(ms) { rainbowUntil = performance.now() + (ms || 4000); winFlash = performance.now(); }
+
         /* Renderer bir kez kurulur; makara sayısı değişince (6. makara) sahne yeniden inşa edilir */
         function initThreeJS() {
             const container = document.getElementById('three-container');
@@ -336,7 +436,8 @@
             cyan.position.set(N / 2 + 1.2, -1.6, 2.6);
             scene.add(cyan);
 
-            const WIN_W = N + 0.1, WIN_H = 3.0;
+            const WIN_W = N + 0.1, WIN_H = +(2 * APO * Math.sin((RMID + 0.5) * STEP) + 0.06).toFixed(2);
+            frameH = WIN_H + 1.45;
 
             // --- makara penceresinin arkası (koyu boşluk) ---
             const back = new THREE.Mesh(new THREE.PlaneGeometry(WIN_W + 0.4, WIN_H + 0.6), new THREE.MeshBasicMaterial({ color: srgb((FRAME_SKINS[cosmEquipped('frame')] || FRAME_SKINS.klasik).back) }));
@@ -378,9 +479,9 @@
                 drums.push(d);
                 reelColumns.push({ group, drum: d });
                 if (!gameState.grid[r]) gameState.grid[r] = [];
-                for (let row = 0; row < 3; row++) if (!gameState.grid[r][row]) gameState.grid[r][row] = visualSymbol(r);
+                for (let row = 0; row < RW; row++) if (!gameState.grid[r][row]) gameState.grid[r][row] = visualSymbol(r);
                 faces.forEach(f => setFace(f, visualSymbol(r), false));
-                for (let row = 0; row < 3; row++) setFace(meshAt(r, row), gameState.grid[r][row], false);
+                for (let row = 0; row < RW; row++) setFace(meshAt(r, row), gameState.grid[r][row], false);
                 updateFaceShading(d);
             }
 
@@ -455,6 +556,10 @@
                 bulbs.push(b);
             });
 
+            // --- slot makinesi kolu (Atölye'den alınır; sağ yanda) ---
+            leverObj = buildLever(N);
+            scene.add(leverObj);
+
             // --- heyecan (2 Wild) parıltısı: makara önünde parlayan çerçeve ---
             hwDecor = buildHwDecor(N, WIN_H);
             scene.add(hwDecor);
@@ -486,21 +591,21 @@
         function cellScreenPos(r, row) {
             const N = builtReels || 5;
             const x = -(N - 1) / 2 + r;
-            const a = (1 - row) * STEP;
+            const a = (RMID - row) * STEP;
             const y = APO * Math.sin(a), z = DRUM_Z + APO * Math.cos(a);
             const cont = document.getElementById('three-container');
             const W = cont.clientWidth || 1, H = cont.clientHeight || 1;
             const f = (H / 2) / Math.tan(((camera && camera.fov) || 42) * Math.PI / 360);
-            const camZ = camera ? camera.position.z : 9, camY = camera ? camera.position.y : 0;
+            const camZ = camera ? camera.position.z : 9, camY = camera ? camera.position.y : 0, camX = camera ? camera.position.x : 0;
             const sc = f / (camZ - z);
-            return { x: (W / 2 + x * sc) / W * 100, y: (H / 2 - (y - camY) * sc) / H * 100 };
+            return { x: (W / 2 + (x - camX) * sc) / W * 100, y: (H / 2 - (y - camY) * sc) / H * 100 };
         }
 
         /* Görünür satırın yüzü: 0 = üst, 1 = orta, 2 = alt */
         function meshAt(r, row) {
             const d = drums[r];
             if (!d) return null;
-            return d.faces[((d.mid + (1 - row)) % FACES + FACES) % FACES];
+            return d.faces[((d.mid + (RMID - row)) % FACES + FACES) % FACES];
         }
 
         /* Yüzün ekrandaki açısına göre ışık (öne bakan parlak, kenara dönen koyu) */
@@ -510,7 +615,7 @@
                 a = Math.atan2(Math.sin(a), Math.cos(a));
                 const c = Math.cos(a);
                 // görünen 3 satır (±1 adım) tam parlak; pencereden çıkan yüzler hızla kararır (silindir derinliği)
-                const edge = Math.abs(a) - STEP * 1.25;
+                const edge = Math.abs(a) - STEP * (RMID + 0.25);
                 const b = edge <= 0 ? 1.0 - 0.05 * Math.abs(a) / STEP : Math.max(0.08, 1.0 - edge * 3.2);
                 f.material.color.setScalar(Math.max(0.12, Math.min(1.08, b)));
                 f.userData.disp = a;
@@ -522,7 +627,7 @@
             drums.forEach((d, r) => {
                 if (!gameState.grid[r]) gameState.grid[r] = [];
                 d.faces.forEach(f => { f.scale.set(1, 1, 1); f.rotation.z = 0; });
-                for (let row = 0; row < 3; row++) {
+                for (let row = 0; row < RW; row++) {
                     if (!gameState.grid[r][row]) gameState.grid[r][row] = visualSymbol(r);
                     setFace(meshAt(r, row), gameState.grid[r][row], false);
                 }
@@ -548,9 +653,7 @@
                 const m = Math.ceil((d.phi + Math.PI) / STEP);
                 d.target = m * STEP;
                 const fi = k => ((k % FACES) + FACES) % FACES;
-                const top = d.faces[fi(m + 1)], mid = d.faces[fi(m)], bot = d.faces[fi(m - 1)];
-                setFace(top, col[0], false); setFace(mid, col[1], false); setFace(bot, col[2], false);
-                [top, mid, bot].forEach(f => { f.userData.locked = true; });
+                for (let row = 0; row < RW; row++) { const f = d.faces[fi(m + (RMID - row))]; setFace(f, col[row], false); f.userData.locked = true; }
                 d.newMid = fi(m);
                 d.onLand = onLand;
                 d.pending = true;               // hız sabitlenince yavaşlamaya geç
@@ -639,10 +742,13 @@
             renderer.setSize(width, height, false);
             camera.aspect = width / height;
             const t = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
-            const distH = 4.45 / (2 * t);
-            const distW = (builtReels + 1.5) / (2 * t * camera.aspect);
+            const distH = (frameH || 4.45) / (2 * t);
+            const lw = leverOn() ? LEVER_W : 0;   // kol takılıysa sahne sağa doğru genişler
+            const distW = (builtReels + 1.5 + lw) / (2 * t * camera.aspect);
             camera.position.z = Math.max(distH, distW) + 0.6;
-            camera.lookAt(0, 0, 0);
+            camera.position.x = lw / 2;
+            camera.lookAt(lw / 2, 0, 0);
+            placeLeverHit();
             camera.updateProjectionMatrix();
         }
 
@@ -662,12 +768,13 @@
 
             const now = performance.now();
             // pil/işlemci tasarrufu: boştayken (dönüş, kazanç, heyecan yokken) ~15 kare/sn yeter
-            const busy = drums.some(d => d.mode !== 'idle') || winningMeshRefs.length > 0 || now - winFlash < 1600 || teasePlanes.some(p => p.visible);
+            const busy = drums.some(d => d.mode !== 'idle') || winningMeshRefs.length > 0 || now - winFlash < 1600 || teasePlanes.some(p => p.visible) || Lever.q.length > 0 || now < rainbowUntil;
             if (document.hidden || (!busy && now - lastRender < 66)) return;
             lastRender = now;
             const dt = lastFrame ? Math.min(0.05, (now - lastFrame) / 1000) : 0.016;
             lastFrame = now;
             drums.forEach(d => stepDrum(d, now, dt));
+            Lever.step(now);
 
             const time = now * 0.007;
             winningMeshRefs.forEach(mesh => {
@@ -695,6 +802,17 @@
             const speed = flashing ? 0.02 : spinning ? 0.012 : 0.004;
             updateHwDecor(now);
             const candle = hwDecor && hwDecor.visible && !flashing;   // Balkabağı: mum gibi titreşen ampuller
+            if (now < rainbowUntil) {   // büyük kutlama: ampuller gökkuşağının tüm renklerinde hızla döner
+                rainbowOn = true;
+                const n = bulbs.length || 1;
+                bulbs.forEach((b, i) => {
+                    const h = ((now * 0.0011) + i / n * 2) % 1;
+                    b.material.color.setHSL(h, 1, 0.55); b.material.emissive.setHSL(h, 1, 0.5);
+                    b.material.emissiveIntensity = 0.9 + 0.8 * Math.abs(Math.sin(now * 0.012 + i * 0.4));
+                });
+                if (renderer && scene && camera) renderer.render(scene, camera);
+                return;
+            } else if (rainbowOn) { rainbowOn = false; applyFrameSkin(); }
             bulbs.forEach((b, i) => {
                 if (candle) { b.material.emissiveIntensity = 0.45 + 0.7 * Math.abs(Math.sin(now * 0.009 + i * 1.7) * Math.sin(now * 0.0047 + i * 0.6)); return; }
                 const w = Math.sin(now * speed - i * 0.55);

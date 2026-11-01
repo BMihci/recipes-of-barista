@@ -208,33 +208,17 @@
     </div>
 
     <div id="modal-info" class="modal">
-        <div class="panel wide">
+        <div class="panel wide ip-panel">
             <div class="pay-head">
                 <h3 id="info-title">📖</h3>
                 <button class="btn btn-sm btn-soft" onclick="closeInfoModal()" aria-label="Close">✕</button>
             </div>
-            <div class="rule-box">
-                <h4 id="info-keys-t"></h4>
-                <div id="info-keys" class="keys"></div>
-            </div>
-            <div class="rule-box">
-                <h4 id="info-rules-t"></h4>
-                <p id="info-rules"></p>
-            </div>
-            <div>
-                <h4 id="info-pays-t" style="margin:0 0 8px;font-family:'Baloo 2',sans-serif;color:var(--brown)"></h4>
-                <div id="pay-grid" class="pay-grid"></div>
-            </div>
-            <div id="pay-oven" class="rule-box hidden"><h4 id="po-t"></h4><p id="po-txt"></p></div>
-            <div id="pay-bag" class="rule-box hidden"><h4 id="pb-t"></h4><p id="pb-txt"></p></div>
-            <div id="pay-loyalty" class="rule-box hidden"><h4 id="pl-t"></h4><p id="pl-txt"></p></div>
-            <div id="pay-special" class="rule-box hidden">
-                <h4 id="ps-t"></h4>
-                <div class="pay-grid" style="margin:8px 0">
-                    <div class="pay-card" id="ps-pitcher"></div>
-                    <div class="pay-card" id="ps-matcha"></div>
-                </div>
-                <p class="sp-note" id="ps-note"></p>
+            <div class="ip-tabs" id="ip-tabs"></div>
+            <div class="ip-view" id="ip-view"></div>
+            <div class="ip-nav">
+                <button class="btn btn-sm ip-arrow" id="ip-prev" onclick="infoPage(-1)" aria-label="◀">◀</button>
+                <span class="ip-count" id="ip-count">1 / 1</span>
+                <button class="btn btn-sm ip-arrow" id="ip-next" onclick="infoPage(1)" aria-label="▶">▶</button>
             </div>
             <button class="btn btn-block" id="info-ok" onclick="closeInfoModal()">ANLADIM</button>
         </div>
@@ -253,27 +237,23 @@
         <div class="panel">
             <h3 id="nb-title">BARİSTA NOT DEFTERİ!</h3>
             <p id="notebook-text"></p>
-            <div class="bk-scene" id="bk-scene">
-                <div class="bk-stage" id="nb-book">
-                    <div class="bk-shadow"></div>
-                    <div class="bk-back"></div>
-                    <div class="bk-page bk-left"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-                    <div class="bk-page bk-right"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-                    <div class="bk-gutter"></div>
-                    <div class="bk-cover">
-                        <div class="bk-face bk-front"><img data-sym="book" alt=""><div id="nb-cover">BARİSTA<br>NOT DEFTERİ</div></div>
-                        <div class="bk-face bk-inside"><b id="nb-back">✨</b></div>
+            <div class="rb-scene" id="bk-scene">
+                <div class="rb-book" id="nb-book">
+                    <div class="rb-shadow"></div>
+                    <div class="rb-leather"></div>
+                    <div class="rb-page rb-left"><div class="rb-sym"><img id="rb-left-img" alt=""></div></div>
+                    <div class="rb-page rb-right" id="nb-card"><div class="rb-sym"><img id="notebook-symbol-icon" alt=""></div></div>
+                    <div class="rb-leaf" id="rb-leaf">
+                        <div class="rb-lf rb-lf-front"><div class="rb-sym"><img id="rb-leaf-f" alt=""></div></div>
+                        <div class="rb-lf rb-lf-back"><div class="rb-sym"><img id="rb-leaf-b" alt=""></div></div>
+                    </div>
+                    <div class="rb-gutter"></div>
+                    <div class="rb-cover">
+                        <div class="rb-face rb-front"><img data-sym="book" alt=""><div id="nb-cover">BARİSTA<br>NOT DEFTERİ</div></div>
+                        <div class="rb-face rb-inside"><b id="nb-back">✨</b></div>
                     </div>
                 </div>
-                <div class="bk-holo" id="bk-holo">
-                    <div class="hl-beam"></div>
-                    <div class="hl-card" id="nb-card">
-                        <div class="hl-ring"></div>
-                        <img id="notebook-symbol-icon" alt="">
-                        <div class="hl-scan"></div>
-                    </div>
-                    <span class="hl-name" id="notebook-symbol-name">?</span>
-                </div>
+                <span class="rb-name" id="notebook-symbol-name">?</span>
             </div>
             <button id="bonus-start-btn" class="btn btn-block" onclick="startFreeSpinSequence()" disabled>🚀</button>
         </div>

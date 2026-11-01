@@ -33,6 +33,7 @@ boot = """        /* =====================================================
            KLAVYE (PC): Boşluk = Spin
            ===================================================== */
         document.addEventListener('keydown', (e) => {
+            if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && document.getElementById('modal-info').classList.contains('open')) { infoPage(e.key === 'ArrowLeft' ? -1 : 1); return; }
             if (e.code !== 'Space') return;
             if (document.body.dataset.mode !== 'game') return;
             if (document.querySelector('.modal.open')) return;

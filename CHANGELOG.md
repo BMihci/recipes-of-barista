@@ -2,6 +2,15 @@
 
 V7 (“Filtre Kahve”) öncesi sürümler. Her sürüm bir git etiketiyle (tag) işaretlidir.
 
+## 5.5.1 — Cortado (Cortado)
+_2026-11-01_
+
+- 🎨 Görünümler: çerçeve, Dede şapkası ve fincan koleksiyonları.
+- 🕹 3D slot kolu ve kol görünümleri.
+- 🏆 Büyük ikramiye kutlaması.
+- 📱 iPhone’da mağaza kapatma tuşuna erişilememesi düzeltildi; mobil boyutlandırma yenilendi.
+- 🕹 Slot kolları mağazada görünür oldu.
+
 ## 5.4 — Balkabağı Latte (Pumpkin Latte)
 _2026-10-30_
 

@@ -35,8 +35,18 @@
             if (stage) stage.scrollTop = 0;
         }
 
-        function openModal(id) { $(id).classList.add('open'); }
-        function closeModal(id) { $(id).classList.remove('open'); }
+        /* gerçek görünür yükseklik (iOS Safari adres çubuğu / klavye) → pencereler buna göre sığar */
+        function setAppH() { const h = (window.visualViewport && window.visualViewport.height) || window.innerHeight; document.documentElement.style.setProperty('--app-h', Math.round(h) + 'px'); }
+        setAppH();
+        window.addEventListener('resize', setAppH); window.addEventListener('orientationchange', () => setTimeout(setAppH, 250));
+        if (window.visualViewport) window.visualViewport.addEventListener('resize', setAppH);
+        /* ✕ düğmesi olan pencereler arka plana dokununca da kapanır */
+        const BACKDROP_CLOSE = { 'modal-store': () => closeModal('modal-store'), 'modal-info': () => closeInfoModal(), 'modal-hub': () => closeHub(), 'modal-shop': () => closeShop() };
+        document.addEventListener('click', e => { const m = e.target; if (m && m.classList && m.classList.contains('modal') && m.classList.contains('open') && BACKDROP_CLOSE[m.id]) BACKDROP_CLOSE[m.id](); });
+        /* body.modal-open: eski iOS Safari ':has()' desteklemediği için pencere açıkken ses düğmesi vb. buna göre gizlenir */
+        function syncModalClass() { document.body.classList.toggle('modal-open', !!document.querySelector('.modal.open')); }
+        function openModal(id) { setAppH(); const m = $(id); m.classList.add('open'); const p = m.querySelector('.panel'); if (p) p.scrollTop = 0; m.scrollTop = 0; syncModalClass(); }
+        function closeModal(id) { $(id).classList.remove('open'); syncModalClass(); }
         function anyModalOpen() { return !!document.querySelector('.modal.open'); }
         function whenNoModal(fn) {
             const go = () => { if (anyModalOpen()) { setTimeout(go, 350); return; } fn(); };
@@ -203,7 +213,8 @@
             { x: 390, y: 400, color: '#8FCB6B', img: 'matcha' },
             { x: 590, y: 470, color: '#FF9FBF', img: 'cupcake' },
             { x: 760, y: 300, color: '#B7D96A', img: 'coffeebag' },
-            { x: 880, y: 138, color: '#9A7BC9', img: 'book' }
+            { x: 880, y: 138, color: '#9A7BC9', img: 'book' },
+            { x: 650, y: 118, color: '#F2C25A', img: 'goldenbean', usta: true }
         ];
         function mapSVG() {
             const sv = Game.save, cur = sv.stage, fin = sv.finished;
@@ -226,28 +237,28 @@
             // bulutlar
             h += `<g class="map-cloud" fill="#fff" opacity=".9"><ellipse cx="180" cy="60" rx="46" ry="18"/><ellipse cx="210" cy="48" rx="30" ry="16"/></g><g class="map-cloud c2" fill="#fff" opacity=".85"><ellipse cx="600" cy="80" rx="52" ry="18"/><ellipse cx="630" cy="66" rx="32" ry="16"/></g>`;
             // yol
-            const d = MAP_NODES.map((n, i) => (i ? 'L' : 'M') + n.x + ' ' + n.y).join(' ');
+            const d = MAP_NODES.slice(0, 5).map((n, i) => (i ? 'L' : 'M') + n.x + ' ' + n.y).join(' ') + ` M${MAP_NODES[4].x} ${MAP_NODES[4].y} L${MAP_NODES[5].x} ${MAP_NODES[5].y}`;
             h += `<path d="${d}" fill="none" stroke="#C99A66" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" opacity=".55"/>`;
             h += `<path d="${d}" fill="none" stroke="#FFF6EA" stroke-width="5" stroke-dasharray="14 14" stroke-linecap="round"/>`;
             // düğümler
             MAP_NODES.forEach((n, i) => {
                 const st = i + 1;
                 const done = st < cur || (st === 5 && fin);
-                const here = st === cur;
-                const locked = st > cur;
+                const here = n.usta ? fin : (st === cur && !fin);
+                const locked = n.usta ? !fin : st > cur;
                 h += `<g class="map-node ${done ? 'done' : ''} ${here ? 'here' : ''} ${locked ? 'locked' : ''}" data-stage="${st}" tabindex="0" filter="url(#mp-sh)">`;
                 if (here) h += `<circle cx="${n.x}" cy="${n.y}" r="70" class="map-glow" fill="none" stroke="#FFD27A" stroke-width="10"/>`;
                 h += `<circle cx="${n.x}" cy="${n.y}" r="56" fill="${locked ? '#D8CBB8' : n.color}" stroke="#FFF6EA" stroke-width="8"/>
                       <circle cx="${n.x}" cy="${n.y}" r="56" fill="none" stroke="#7A4B2A" stroke-width="3"/>
                       <image href="${S(n.img)}" x="${n.x - 38}" y="${n.y - 40}" width="76" height="76" ${locked ? 'opacity=".45"' : ''}/>
                       <circle cx="${n.x + 42}" cy="${n.y - 42}" r="17" fill="${done ? '#5E8C61' : here ? '#E63946' : '#9C8B74'}" stroke="#fff" stroke-width="4"/>
-                      <text x="${n.x + 42}" y="${n.y - 36}" text-anchor="middle" font-size="18" font-weight="800" fill="#fff" font-family="Baloo 2, Nunito, sans-serif">${done ? '✓' : locked ? '🔒' : st}</text>
+                      <text x="${n.x + 42}" y="${n.y - 36}" text-anchor="middle" font-size="18" font-weight="800" fill="#fff" font-family="Baloo 2, Nunito, sans-serif">${n.usta ? (locked ? '🔒' : '∞') : done ? '✓' : locked ? '🔒' : st}</text>
                       <g transform="translate(${n.x},${n.y + 78})"><rect x="-92" y="-17" width="184" height="34" rx="17" fill="#FFF6EA" stroke="#C99A66" stroke-width="3"/>
-                      <text y="7" text-anchor="middle" font-size="18" font-weight="700" fill="#6B4226" font-family="Baloo 2, Nunito, sans-serif">${escapeHtml(L().stage[st].place)}</text></g>
+                      <text y="7" text-anchor="middle" font-size="18" font-weight="700" fill="#6B4226" font-family="Baloo 2, Nunito, sans-serif">${escapeHtml(n.usta ? L().usta.place : L().stage[st].place)}</text></g>
                     </g>`;
             });
             // oyuncu jetonu
-            const cn = MAP_NODES[Math.min(cur, 5) - 1];
+            const cn = fin ? MAP_NODES[5] : MAP_NODES[Math.min(cur, 5) - 1];
             h += `<g class="map-token"><image href="${S('barista')}" x="${cn.x - 34}" y="${cn.y - 150}" width="68" height="68"/><polygon points="${cn.x - 9},${cn.y - 84} ${cn.x + 9},${cn.y - 84} ${cn.x},${cn.y - 70}" fill="#E63946"/></g>`;
             h += `</svg>`;
             return h;
@@ -267,7 +278,7 @@
                 g.addEventListener('keydown', e => { if (e.key === 'Enter') go(); });
             });
             const cur = Game.save.stage;
-            $('map-info').innerHTML = `<b>${stageLabel(cur)}</b> · ${L().map.here}`;
+            $('map-info').innerHTML = Game.save.finished ? `<b>${L().usta.place}</b> · ${L().map.here}` : `<b>${stageLabel(cur)}</b> · ${L().map.here}`;
             $('map-play').textContent = L().map.play;
             switchScreen('screen-map');
             maybeAutoDaily();
@@ -275,7 +286,12 @@
         function mapClick(st) {
             const sv = Game.save;
             playSynthNote(600, 0.05);
-            if (st === sv.stage) { enterStage(st); return; }
+            if (st === 6) {   // Usta Kafesi: final sonrası sonsuz rekor modu (yalnızca Final mekanikleri)
+                if (sv.finished) { enterStage(5); return; }
+                $('map-info').innerHTML = `<b>${L().usta.place}</b> · ${L().map.locked} — ${L().usta.lockTxt}`;
+                return;
+            }
+            if (st === sv.stage && !sv.finished) { enterStage(st); return; }
             if (st < sv.stage || (st === 5 && sv.finished)) {
                 $('map-info').innerHTML = `<b>${stageLabel(st)}</b> · ${L().map.done} <button class="btn btn-sm btn-soft" onclick="playStory(${st})">${L().map.story}</button>`;
                 return;
@@ -430,56 +446,81 @@
         }
 
         /* ---------- ÖDEME TABLOSU + KİTAP ---------- */
+        /* =====================================================
+           REÇETE KİTABI (bilgi): gerçek slot ödeme tabloları gibi sayfalı — ◀ ▶ ile gezilir
+           ===================================================== */
+        let infoIdx = 0, infoPages = [];
+        function symPayRows(sym, E, ch) {
+            const mult = E.symMult[sym.id] * ch.payScale * (ch.boost[sym.id] || 1) * (E.payBonus || 1);
+            const lineBet = gameState.bet / Engine.LINES;
+            const counts = E.reels === 6 ? [6, 5, 4, 3, 2] : [5, 4, 3, 2];
+            return counts.map(n => {
+                const v = n === 6 ? (sym.values[5] || 0) * 2.5 : sym.values[n];
+                if (!v) return '';
+                const beans = v * mult * lineBet;
+                return `<div class="ip-pr"><b>${n}×</b><span>${fmt(beans >= 10 ? Math.round(beans) : Math.round(beans * 10) / 10)} ${beanIc()}</span></div>`;
+            }).join('');
+        }
+        function symCard(sym, E, ch, big) {
+            const up = E.symMult[sym.id] > 1 ? `<span class="up">⬆ ×${fmtX(E.symMult[sym.id])}</span>` : '';
+            return `<div class="ip-sym ${big ? 'big' : ''}"><div class="ip-si"><img src="${ASSETS.sym[sym.img]}" alt=""></div>
+                    <div class="ip-sb"><b class="nm">${symName(sym.id)}</b>${symPayRows(sym, E, ch)}${up}</div></div>`;
+        }
+        function linesSVG() {
+            const R = Engine.ROWS, cols = ['#E0262E', '#2F7FD8', '#3FA34D', '#E8A33A', '#8E5BD8', '#D8486E', '#1BA6A6', '#9A6A2A'];
+            return Engine.PAYLINES.map((ln, i) => {
+                const c = cols[i % cols.length];
+                const cells = [];
+                for (let x = 0; x < 5; x++) for (let y = 0; y < R; y++) cells.push(`<rect x="${x * 12 + 1}" y="${y * 12 + 1}" width="10" height="10" rx="2" fill="${ln[x] === y ? c : '#F3E2C3'}" opacity="${ln[x] === y ? .9 : 1}"/>`);
+                const path = ln.map((y, x) => `${x ? 'L' : 'M'}${x * 12 + 6} ${y * 12 + 6}`).join(' ');
+                return `<div class="ip-line"><svg viewBox="0 0 60 ${R * 12}">${cells.join('')}<path d="${path}" stroke="#4A2A0E" stroke-width="1.6" fill="none" stroke-linejoin="round"/></svg><small>${i + 1}</small></div>`;
+            }).join('');
+        }
         function buildPayTable() {
-            const grid = $('pay-grid');
-            if (!grid) return;
-            grid.innerHTML = '';
+            const view = $('ip-view');
+            if (!view) return;
             const ch = CHAPTERS[gameState.chapter] || CHAPTERS[1];
-            const E = RUN_EFF, I = L().info;
-            SYMBOLS.forEach(sym => {
-                const card = document.createElement('div');
-                card.className = 'pay-card';
-                const im = document.createElement('img');
-                im.src = ASSETS.sym[sym.img];
-                im.alt = symName(sym.id);
-                const nm = document.createElement('div');
-                nm.className = 'nm';
-                nm.textContent = symName(sym.id) + (sym.isScatter ? ' (Wild)' : '');
-                const vals = document.createElement('div');
-                vals.className = 'vals';
-                const mult = E.symMult[sym.id] * ch.payScale * (ch.boost[sym.id] || 1) * (E.payBonus || 1);
-                const counts = (E.reels === 6 ? [6, 5, 4, 3, 2] : [5, 4, 3, 2]);
-                vals.innerHTML = counts.map(n => {
-                    const v = n === 6 ? (sym.values[5] || 0) * 2.5 : sym.values[n];
-                    return v ? `${n}x: ${fmtX(v * mult)}` : '';
-                }).filter(Boolean).join('<br>');
-                if (E.symMult[sym.id] > 1) vals.innerHTML += `<br><span class="up">⬆ ×${fmtX(E.symMult[sym.id])}</span>`;
-                card.append(im, nm, vals);
-                grid.appendChild(card);
-            });
+            const E = RUN_EFF, I = L().info, P = I.pages, st = gameState.chapter;
+            const book = SYMBOLS.find(s => s.isScatter), normals = SYMBOLS.filter(s => !s.isScatter);
+            const high = normals.slice(0, 4), low = normals.slice(4);
+            infoPages = [];
+            infoPages.push(['🎯', P.rules, `<div class="ip-txt">${I.rules(E, st)}</div>`]);
+            infoPages.push(['📖', P.book, `<div class="ip-hero">${symCard(book, E, ch, true)}</div><div class="ip-txt">${tf(I.bookTxt, { n: E.freeSpins })}</div>`]);
+            infoPages.push(['💎', P.high, `<div class="ip-grid">${high.map(s => symCard(s, E, ch, true)).join('')}</div>`]);
+            infoPages.push(['☕', P.low, `<div class="ip-grid">${low.map(s => symCard(s, E, ch, false)).join('')}</div>`]);
+            if (st === 2) infoPages.push(['🍵', P.special, `<div class="ip-grid">
+                    <div class="ip-sym big"><div class="ip-si"><img src="${ASSETS.sym.pitcher}" alt=""></div><div class="ip-sb"><b class="nm">${symName('pitcher')} · ${L().badge.wild}</b><small>${I.pitcher(E)}</small></div></div>
+                    <div class="ip-sym big"><div class="ip-si"><img src="${ASSETS.sym.matcha}" alt=""></div><div class="ip-sb"><b class="nm">${symName('matcha')} · ${L().badge.foam}</b><small>${I.matcha(E)}</small></div></div></div>
+                    <p class="ip-txt sp-note">${I.specialNote}</p>`]);
+            if (st === 3) infoPages.push(['🧁', P.special, `<div class="ip-hero"><img class="ip-hi" src="${ASSETS.sym.cupcake}" alt=""></div><h4 class="ip-h">${I.ovenT}</h4><div class="ip-txt">${I.oven(E)}</div>`]);
+            if (st === 4) infoPages.push(['🌾', P.special, `<div class="ip-hero"><img class="ip-hi" src="${ASSETS.sym.coffeebag}" alt=""></div><h4 class="ip-h">${I.bagT}</h4><div class="ip-txt">${I.bag(E)}</div>`]);
+            if (st === 5) infoPages.push(['☕', P.special, `<div class="ip-hero"><img class="ip-hi" src="${ASSETS.sym.stamp}" alt=""></div><h4 class="ip-h">${I.loyT}</h4><div class="ip-txt">${I.loy}</div>`]);
+            infoPages.push(['〰️', P.lines, `<p class="ip-txt">${tf(I.linesTxt, { n: Engine.LINES })}</p><div class="ip-lines">${linesSVG()}</div>`]);
+            infoPages.push(['🎮', P.keys, `<div class="keys">${I.keys.map(k => `<div class="key-row"><span class="kk">${k[0]}</span><span>${k[1]}</span></div>`).join('')}</div>`]);
+            infoIdx = Math.min(infoIdx, infoPages.length - 1);
             $('info-title').textContent = I.title;
             $('info-ok').textContent = I.ok;
-            $('info-rules-t').textContent = I.rulesT;
-            $('info-rules').innerHTML = I.rules(E, gameState.chapter);
-            $('info-pays-t').textContent = I.paysT;
-            $('info-keys-t').textContent = I.keysT;
-            $('info-keys').innerHTML = I.keys.map(k => `<div class="key-row"><span class="kk">${k[0]}</span><span>${k[1]}</span></div>`).join('');
-            const st = gameState.chapter;
-            $('pay-special').classList.toggle('hidden', st !== 2);
-            $('ps-t').textContent = I.specialT;
-            $('ps-pitcher').innerHTML = `<img src="${ASSETS.sym.pitcher}" alt=""><div class="nm">${symName('pitcher')} · ${L().badge.wild}</div><div class="vals">${I.pitcher(E)}</div>`;
-            $('ps-matcha').innerHTML = `<img src="${ASSETS.sym.matcha}" alt=""><div class="nm">${symName('matcha')} · ${L().badge.foam}</div><div class="vals">${I.matcha(E)}</div>`;
-            $('ps-note').textContent = I.specialNote;
-            $('pay-oven').classList.toggle('hidden', st !== 3);
-            $('po-t').textContent = I.ovenT; $('po-txt').innerHTML = I.oven(E);
-            $('pay-bag').classList.toggle('hidden', st !== 4);
-            $('pb-t').textContent = I.bagT; $('pb-txt').innerHTML = I.bag(E);
-            $('pay-loyalty').classList.toggle('hidden', st !== 5);
-            $('pl-t').textContent = I.loyT; $('pl-txt').innerHTML = I.loy;
+            renderInfoPage(0);
         }
+        function renderInfoPage(dir) {
+            const pg = infoPages[infoIdx], view = $('ip-view');
+            $('ip-tabs').innerHTML = infoPages.map((p, i) => `<button class="ip-tab ${i === infoIdx ? 'on' : ''}" onclick="infoGo(${i})" title="${escapeHtml(p[1])}">${p[0]}</button>`).join('');
+            view.innerHTML = `<div class="ip-page ${dir > 0 ? 'in-r' : dir < 0 ? 'in-l' : ''}"><h4 class="ip-title">${pg[0]} ${pg[1]}</h4>${pg[2]}</div>`;
+            $('ip-count').textContent = `${infoIdx + 1} / ${infoPages.length}`;
+            $('ip-prev').disabled = infoIdx === 0;
+            $('ip-next').disabled = infoIdx === infoPages.length - 1;
+            view.scrollTop = 0;
+        }
+        function infoPage(d) {
+            const n = Math.max(0, Math.min(infoPages.length - 1, infoIdx + d));
+            if (n === infoIdx) return;
+            infoIdx = n; playPageFlip(); renderInfoPage(d);
+        }
+        function infoGo(i) { const d = i - infoIdx; if (!d) return; infoIdx = i; playPageFlip(); renderInfoPage(d); }
         function openInfoModal() {
             playSynthNote(500, 0.05);
             hideTutorial();
+            infoIdx = 0;
             buildPayTable();
             openModal('modal-info');
         }
@@ -974,17 +1015,18 @@
             if (teaseFrom >= 0) for (let k = teaseFrom + 1; k < N; k++) stopAt[k] = stopAt[teaseFrom] + (fast ? 500 : 650) + (k - teaseFrom) * (fast ? 700 : 850);
             const requested = new Array(N).fill(false);
             let landed = 0, teasing = false, elapsed = 0;
+            Lever.pull(teaseFrom >= 0 ? stopAt[teaseFrom] : stopAt[N - 1], fast);   // kol: hızla in, makaralarla birlikte yavaşça kalk
             orbsDropped = false;
 
             const onLand = (r) => {
                 setTease(r, false);
-                for (let row = 0; row < 3; row++) gameState.grid[r][row] = pending.g[r][row];
+                for (let row = 0; row < Engine.ROWS; row++) gameState.grid[r][row] = pending.g[r][row];
                 const hasBook = pending.g[r].some(s => s.id === 'book');
                 playSynthNote(300 + r * 60, 0.07, 'triangle', 0.06);
                 playSynthNote(120, 0.08, 'sine', 0.05);
                 if (hasBook) {
                     playSynthNote(teasing ? 1175 : 880, 0.18, 'sine', 0.07);
-                    for (let row = 0; row < 3; row++) if (pending.g[r][row].id === 'book') { const m = meshAt(r, row); if (m) { setFace(m, pending.g[r][row], true, false); m.userData.popStart = Date.now(); winningMeshRefs.push(m); } }
+                    for (let row = 0; row < Engine.ROWS; row++) if (pending.g[r][row].id === 'book') { const m = meshAt(r, row); if (m) { setFace(m, pending.g[r][row], true, false); m.userData.popStart = Date.now(); winningMeshRefs.push(m); } }
                 }
                 if (r === teaseFrom) {
                     teasing = true;
@@ -1009,6 +1051,7 @@
             curSpin = { slam: () => {   // dönerken SPİN'e tekrar basınca: makaraları hemen durdur (heyecan makaraları hariç)
                 for (let r = 0; r < N; r++) if (!requested[r] && (teaseFrom < 0 || r <= teaseFrom)) stopAt[r] = Math.min(stopAt[r], elapsed);
                 Reels.fast = true;
+                Lever.release();
             } };
             const spinInterval = setInterval(() => {
                 elapsed += 40;
@@ -1062,6 +1105,7 @@
 
             // 3+ Reçete Kitabı (normal ya da pasta yağmuru spini): not defteri
             if (res.scatter >= 3 && !gameState.expandingSymbolId) {
+                gameState.bonusBooks = res.scatter;          // 3'ten fazla her kitap: +1 free spin
                 playSynthNote(950, 0.35);
                 gameState.bonusLock = true;
                 gameState.autoSpinActive = false; updateAutoSpinButtonUI();
@@ -1150,7 +1194,7 @@
                 winningMeshRefs.push(mesh);
             };
             res.marks.forEach(m => { if (expanded.indexOf(m.r) === -1) markCell(m.r, m.row, p.g[m.r][m.row]); });
-            for (let r = 0; r < p.g.length; r++) for (let row = 0; row < 3; row++) {
+            for (let r = 0; r < p.g.length; r++) for (let row = 0; row < Engine.ROWS; row++) {
                 const id = p.g[r][row].id;
                 if (id === 'stamp' || (id === 'cupcake' && gameState.chapter === 3)) markCell(r, row, p.g[r][row]);
             }
@@ -1160,7 +1204,7 @@
                 const sym = SYMBOLS.find(s => s.id === p.ctx.expandingSymbolId);
                 expanded.forEach((r, i) => {
                     setTimeout(() => {
-                        for (let row = 0; row < 3; row++) {
+                        for (let row = 0; row < Engine.ROWS; row++) {
                             gameState.grid[r][row] = sym;
                             const mesh = meshAt(r, row);
                             if (!mesh) continue;
@@ -1298,10 +1342,8 @@
                   <button class="btn btn-sm btn-green" ${vl > 0 ? 'disabled' : ''} onclick="watchVideo()">${vl > 0 ? tf(S.wait, { t: Math.ceil(vl / 1000) }) : '+' + fmt(giftAmt())}</button></div>
                 <div class="st-card"><span class="si">⏰</span><div class="sb"><b>${S.free}</b><small>${tf(S.freeTxt, { v: fmt(giftAmt()) })}</small></div>
                   <span class="st-tag t2">${gl > 0 ? fmtTime(gl) : S.ready}</span></div>
-                ${(() => { const own = cosmUnlocked('frame', 'balkabagi'), on = cosmEquipped('frame') === 'balkabagi', p = cosmPrice('frame', 'balkabagi');
-                    return `<h4 class="st-h">${S.looksT}</h4><div class="st-card hw"><span class="si cz-mini">${cosmPreview('frame', 'balkabagi')}</span><div class="sb"><b>🎃 ${L().cosm.names.frame.balkabagi}</b><small>${S.hwTxt}</small></div>
-                      ${own ? (on ? `<span class="st-tag t2">${L().cosm.worn}</span>` : `<button class="btn btn-sm" onclick="equipCosm('frame','balkabagi');buildStore()">${L().cosm.wear}</button>`)
-                            : `<button class="btn btn-sm btn-green" ${gameState.balance < p ? 'disabled' : ''} onclick="buyCosm('frame','balkabagi')">${fmt(p)} ${beanIc()}</button>`}</div>`; })()}
+                ${storeLevers()}
+                ${storeLooks()}
                 <h4 class="st-h">${S.soonT}</h4>${soon}`;
         }
         function bustWait() {
@@ -1325,7 +1367,7 @@
             let last = 0;
             pending.ctx.orbs.forEach((v, i) => {
                 let r, row, k = 0;
-                do { r = Math.floor(Math.random() * N); row = Math.floor(Math.random() * 3); k++; } while (used.has(r + ',' + row) && k < 20);
+                do { r = Math.floor(Math.random() * N); row = Math.floor(Math.random() * Engine.ROWS); k++; } while (used.has(r + ',' + row) && k < 20);
                 used.add(r + ',' + row);
                 const pos = cellScreenPos(r, row);
                 const el = document.createElement('div');
@@ -1401,7 +1443,7 @@
             $('bw-tap').textContent = L().bigwinTap;
             openModal('modal-bigwin');
             const dur = (1800 + tier * 900) * (turboOn() ? 0.5 : 1), t0 = performance.now();
-            buzz(tier ? [40, 60, 80] : 50);
+            jackpotShow(tier, 3.2 + tier * 0.9);
             let lastTick = 0, done = false;
             const step = () => {
                 if (!$('modal-bigwin').classList.contains('open')) return;
@@ -1409,7 +1451,7 @@
                 el.textContent = fmt(amount * (1 - Math.pow(1 - u, 3)));
                 if (performance.now() - lastTick > 90 && u < 1) { lastTick = performance.now(); playSynthNote(700 + u * 900, 0.05, 'triangle', 0.04); }
                 if (u < 1) requestAnimationFrame(step);
-                else if (!done) { done = true; [784, 988, 1175, 1568].forEach((f, i) => setTimeout(() => playSynthNote(f, 0.25, 'sine', 0.07), i * 110)); bigWinTimer = setTimeout(closeBigWin, turboOn() ? 1000 : 2200); }
+                else if (!done) { done = true; bigWinTimer = setTimeout(closeBigWin, turboOn() ? 1400 : 2200); }
             };
             step();
             celebrate(amount * 3);
@@ -1417,11 +1459,36 @@
             bigWinAmount = amount;
         }
         let bigWinTimer = null, bigWinAmount = 0;
+        /* büyük kutlama: fanfar + vuruşlarla senkron ekran parlaması + gökkuşağı ampuller */
+        let jpTimers = [];
+        function jackpotShow(tier, sec) {
+            jackpotStop(true);
+            sec = sec || (3.2 + tier * 0.9);
+            const beats = playJackpot(tier, sec);
+            let fl = $('jp-flash');
+            if (!fl) { fl = document.createElement('div'); fl.id = 'jp-flash'; fl.setAttribute('aria-hidden', 'true'); document.body.appendChild(fl); }
+            const soft = !!Settings.motion || lowFx();
+            document.body.classList.add('jackpot');
+            beats.forEach((ms, i) => jpTimers.push(setTimeout(() => {
+                fl.style.setProperty('--h', (i * 47) % 360);
+                fl.classList.remove('on', 'soft'); void fl.offsetWidth; fl.classList.add('on'); if (soft) fl.classList.add('soft');
+                if (i % 3 === 0 && typeof flashLights === 'function') flashLights();
+            }, ms)));
+            if (typeof celebrateLights === 'function') celebrateLights(sec * 1000 + 600);
+            jpTimers.push(setTimeout(() => jackpotStop(false), sec * 1000 + 900));
+        }
+        function jackpotStop(silent) {
+            jpTimers.forEach(clearTimeout); jpTimers = [];
+            document.body.classList.remove('jackpot');
+            const fl = $('jp-flash'); if (fl) fl.classList.remove('on');
+            if (silent) return;
+        }
         function closeBigWin() {
             const el = $('bw-amount');
             if ($('modal-bigwin').classList.contains('open') && el.textContent !== fmt(bigWinAmount)) { el.textContent = fmt(bigWinAmount); return; }
             clearTimeout(bigWinTimer);
             closeModal('modal-bigwin');
+            stopJackpot(); jackpotStop();
         }
         function showFsDone(win, mult, sym) {
             const F = L().fsdone;
@@ -1435,7 +1502,8 @@
             const t0 = performance.now();
             const step = () => { const u = Math.min(1, (performance.now() - t0) / 1500); el.textContent = fmt(win * (1 - Math.pow(1 - u, 3))); if (u < 1) requestAnimationFrame(step); };
             step();
-            [659, 784, 988, 1319].forEach((f, i) => setTimeout(() => playSynthNote(f, 0.22, 'sine', 0.06), i * 120));
+            const ratio = win / Math.max(1, gameState.bet);
+            jackpotShow(ratio >= 100 ? 2 : ratio >= 40 ? 1 : 0);
             if (win > 0) celebrate(win);
         }
 
@@ -1470,6 +1538,8 @@
         function nbLater(fn, ms) { const t = setTimeout(fn, ms); nbTimers.push(t); return t; }
         function nbClear() { nbTimers.forEach(clearTimeout); nbTimers = []; }
 
+        function extraBooks() { return Math.max(0, (gameState.bonusBooks || 0) - 3); }
+        function fsTotalNext() { return nextFreeSpins() + extraBooks(); }
         function triggerBonusGameIntro() {
             metaEvent('fs');
             const eligibleSymbols = SYMBOLS.filter(s => s.id !== 'book');
@@ -1486,39 +1556,52 @@
         function runNotebookReveal(finalSym, pool) {
             nbClear();
             const book = $('nb-book'), card = $('nb-card'), icon = $('notebook-symbol-icon'), name = $('notebook-symbol-name'), text = $('notebook-text'), btn = $('bonus-start-btn');
-            book.classList.remove('open');
-            card.classList.remove('landed', 'shuffling', 'tick');
+            const leaf = $('rb-leaf'), leftImg = $('rb-left-img'), lf = $('rb-leaf-f'), lb = $('rb-leaf-b');
+            book.classList.remove('open', 'flipping');
+            leaf.classList.remove('go');
+            card.classList.remove('landed'); $('bk-scene').classList.remove('landed');
             card.querySelectorAll('.nb-spark').forEach(n => n.remove());
-            icon.src = ASSETS.sym.book;
+            icon.removeAttribute('src'); leftImg.removeAttribute('src');
             name.textContent = '?';
             text.textContent = L().nb.found;
             btn.disabled = true;
-            nbLater(() => { playPageFlip(); book.classList.add('open'); }, 650);
-            nbLater(() => playBell(1568, 0, 0.03, 1.6), 1500);
+            nbLater(() => { playPageFlip(); book.classList.add('open'); }, 500);
+            nbLater(() => playBell(1568, 0, 0.03, 1.6), 1300);
+            /* Book of Ra tarzı: sayfalar hızla çevrilir, her sayfada bir sembol; giderek yavaşlar ve seçilen sembolde durur */
+            let cur = null;
+            const flipTo = (sym, d) => {
+                const prev = cur; cur = sym;
+                if (prev) { lf.src = ASSETS.sym[prev.img]; lb.src = ASSETS.sym[prev.img]; }
+                else { lf.removeAttribute('src'); lb.removeAttribute('src'); }
+                icon.src = ASSETS.sym[sym.img];   // alttaki yeni sayfa
+                leaf.style.setProperty('--d', Math.round(d) + 'ms');
+                leaf.classList.remove('go'); void leaf.offsetWidth; leaf.classList.add('go');
+                nbLater(() => { if (prev) leftImg.src = ASSETS.sym[prev.img]; else leftImg.removeAttribute('src'); }, d * 0.85);
+            };
             nbLater(() => {
                 text.textContent = L().nb.picking;
-                card.classList.add('shuffling');
-                let delay = 60, step = 0, last = null;
-                const total = 20;
+                book.classList.add('flipping');
+                let delay = 70, step = 0, last = null;
+                const total = 24;
                 const tick = () => {
                     step++;
                     let sym;
                     if (step >= total) sym = finalSym;
                     else { do { sym = pool[Math.floor(Math.random() * pool.length)]; } while (sym === last || (step === total - 1 && sym === finalSym)); }
                     last = sym;
-                    icon.src = ASSETS.sym[sym.img];
-                    name.textContent = step >= total ? symName(finalSym.id) : '...';
-                    card.classList.remove('tick'); void card.offsetWidth; card.classList.add('tick');
-                    playHoloTick(step);
-                    if (step >= total) { landed(); return; }
-                    delay = step > 12 ? delay * 1.28 : delay * 1.06;
+                    const d = Math.max(90, Math.min(520, delay * 0.95));
+                    flipTo(sym, d);
+                    name.textContent = '...';
+                    if (delay > 140 || step % 2) playPageFlip(); else playHoloTick(step);
+                    if (step >= total) { nbLater(() => { name.textContent = symName(finalSym.id); landed(); }, d); return; }
+                    delay = step > 15 ? delay * 1.24 : delay * 1.04;
                     nbLater(tick, delay);
                 };
                 tick();
-            }, 650 + 1750);
+            }, 500 + 1500);
             function landed() {
                 card.classList.remove('shuffling');
-                card.classList.add('landed');
+                card.classList.add('landed'); $('bk-scene').classList.add('landed');
                 playBellCelebration();
                 flashLights();
                 ['✨', '⭐', '🤎', '✨', '⭐', '✨', '🤎', '✨', '⭐', '✨'].forEach((st, i, arr) => {
@@ -1533,7 +1616,7 @@
                     setTimeout(() => sp.remove(), 1100);
                 });
                 celebrate(gameState.bet * 25);
-                text.innerHTML = tf(L().nb.result, { s: symName(finalSym.id), n: nextFreeSpins(), f: gameState.loy.filtre ? L().nb.filtre : '', min: Engine.expandMin(finalSym) });
+                text.innerHTML = tf(L().nb.result, { s: symName(finalSym.id), n: fsTotalNext() + (extraBooks() ? ' ' + tf(L().nb.extra, { k: extraBooks() }) : ''), f: gameState.loy.filtre ? L().nb.filtre : '', min: Engine.expandMin(finalSym) });
                 nbLater(() => { btn.disabled = false; }, 500);
             }
         }
@@ -1544,7 +1627,8 @@
             closeModal('modal-bonus-intro');
             gameState.bonusLock = false;
             if (!gameState.expandingSymbolId) gameState.expandingSymbolId = SYMBOLS.filter(s => s.id !== 'book')[0].id;
-            const n = nextFreeSpins();
+            const n = fsTotalNext();
+            gameState.bonusBooks = 0;
             if (gameState.loy.filtre) { gameState.loy.filtre = false; updateLoyaltyUI(); }
             gameState.freeSpinsRemaining = n;
             gameState.freeSpinsTotal = n;
@@ -1584,7 +1668,7 @@
             $('shop-bank').innerHTML = `${S.bank}: ${beanIc()} ${fmt(gameState.balance)}`;
             const tabs = $('shop-tabs');
             tabs.innerHTML = '';
-            ['symbol', 'skill', 'special', 'late'].forEach(id => {
+            ['symbol', 'skill', 'special', 'late', 'lever'].forEach(id => {
                 const b = document.createElement('button');
                 b.className = 'tab' + (id === shopTab ? ' on' : '');
                 b.textContent = S.tabs[id];
@@ -1593,6 +1677,7 @@
             });
             const list = $('shop-list');
             list.innerHTML = '';
+            if (shopTab === 'lever') { buildLeverShop(list); return; }
             const ups = Engine.UPGRADES.filter(u => u.group === shopTab).sort((a, b) => (a.unlock || 0) - (b.unlock || 0) || (a.group === 'symbol' ? a.baseCost - b.baseCost : 0));
             const note = (txt) => { const p = document.createElement('p'); p.className = 'shop-lock'; p.textContent = txt; list.appendChild(p); };
             if (gameState.isSpinning) note(S.spinWait);
@@ -1612,7 +1697,6 @@
                 let pips = '';
                 for (let i = 0; i < u.max; i++) pips += `<i class="${i < lvl ? 'on' : ''}"></i>`;
                 const only = { sp_pitcher: 2, sp_latte: 2, sp_foam: 2, sp_matcha: 2, sp_oven: 3, sp_rain: 3, sp_bag: 4, sp_bagrate: 4 }[u.id];
-                if (only && !maxed && Game.save && Game.save.stage > only) card.classList.add('stale');
                 body.innerHTML = `<b>${upName(u)}</b><span class="pips">${pips}</span>` + (only ? `<small class="only">📍 ${tf(L().shop.onlyAt, { place: L().stage[only].place })}</small>` : '') +
                     `<small class="cur">${upDesc(u, lvl)}</small>` +
                     (maxed ? `<small class="nxt">${S.maxed}</small>` : `<small class="nxt">➜ ${upDesc(u, lvl + 1)}</small>`);
@@ -1632,6 +1716,22 @@
             Engine.UPGRADES.forEach(u => { total += u.max; have += upLevel(u.id); });
             $('shop-progress').textContent = tf(S.power, { have, total });
             $('shop-foot').textContent = S.foot;
+        }
+
+        /* Atölye › Kol: slot makinesi kolu tasarımları */
+        function buildLeverShop(list) {
+            const S = L().shop, V = L().lever, C = L().cosm;
+            let h = `<p class="shop-lock lv-note">${V.note}</p>`;
+            COSM.lever.forEach(it => {
+                const own = cosmUnlocked('lever', it.id), on = cosmEquipped('lever') === it.id, p = it.buy ? cosmPrice('lever', it.id) : 0;
+                const act = on ? `<button class="btn btn-sm btn-green" disabled>${C.worn}</button>`
+                    : own ? `<button class="btn btn-sm" onclick="equipCosm('lever','${it.id}');buildShop()">${it.id === 'yok' ? V.remove : C.wear}</button>`
+                    : `<button class="btn btn-sm" ${gameState.balance < p || gameState.isSpinning ? 'disabled' : ''} onclick="buyCosm('lever','${it.id}')">${fmt(p)} ${beanIc()}</button>`;
+                h += `<div class="up-card lv ${on ? 'maxed' : ''}">${it.id === 'yok' ? '<span class="lv-none">🚫</span>' : leverSVG(it.id)}<div class="ub"><b>${V.names[it.id]}</b><small class="cur">${V.desc[it.id]}</small></div>${act}</div>`;
+            });
+            list.innerHTML = h;
+            $('shop-progress').textContent = '';
+            $('shop-foot').textContent = V.foot;
         }
 
         function buyUpgrade(id) {

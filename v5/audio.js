@@ -260,6 +260,83 @@
             });
             buzz([40, 60, 40, 60, 120]);
         }
+        /* =====================================================
+           BÜYÜK KUTLAMA (free spin sonu / büyük kazanç): 3–5 sn'lik fanfar + çanlar + şıngırdayan altınlar.
+           Kendi ses kanalından çalar (atlanınca yumuşakça susar); müzik bu sırada kısılır.
+           Dönen değer: ışık efektleri için vuruş zamanları (ms).
+           ===================================================== */
+        let jpBus = null, jpEnd = 0;
+        function playJackpot(tier, sec) {
+            const beats = [];
+            sec = sec || (3.2 + (tier || 0) * 0.9);
+            const B = 0.19;   // sekizlik nota (~158 bpm)
+            const mel = [   // [vuruş, nota(midi), uzunluk(vuruş)]
+                [0, 67, 1], [1, 72, 1], [2, 76, 1], [3, 79, 2], [5, 76, 1], [6, 79, 3],
+                [9, 77, 1], [10, 76, 1], [11, 74, 1], [12, 72, 1], [13, 74, 1], [14, 76, 2], [16, 79, 1], [17, 84, 5]];
+            const extra = tier >= 1 ? [[22, 81, 1], [23, 79, 1], [24, 84, 7]] : [];
+            const notes = mel.concat(extra), lastBeat = notes[notes.length - 1][0] + notes[notes.length - 1][2];
+            const scale = Math.min(1.25, sec / (lastBeat * B + 0.6));
+            const b = B * scale;
+            notes.forEach(n => beats.push(Math.round(n[0] * b * 1000)));
+            if (isMuted) return beats;
+            initAudio(); if (!audioCtx) return beats;
+            const t0 = audioCtx.currentTime + 0.05;
+            if (jpBus) { try { jpBus.gain.cancelScheduledValues(t0); jpBus.gain.setTargetAtTime(0, t0, 0.05); } catch (e) {} }
+            jpBus = audioCtx.createGain(); jpBus.gain.value = 1; jpBus.connect(sfxBus);
+            const out = jpBus, hz = m => 440 * Math.pow(2, (m - 69) / 12);
+            // müziği kıs, sonra geri aç
+            try { const mv = musBus.gain.value; musBus.gain.cancelScheduledValues(t0); musBus.gain.setTargetAtTime(mv * 0.22, t0, 0.08); musBus.gain.setTargetAtTime(mv, t0 + lastBeat * b + 0.8, 0.4); } catch (e) {}
+            // pirinç (bakır üflemeli) ses: iki hafif akortsuz testere + alçak geçiren süzgeç
+            const brass = (f, at, dur, vol) => {
+                const lp = audioCtx.createBiquadFilter(), g = audioCtx.createGain();
+                lp.type = 'lowpass'; lp.Q.value = 1.2;
+                lp.frequency.setValueAtTime(700, at); lp.frequency.linearRampToValueAtTime(2600, at + 0.06); lp.frequency.exponentialRampToValueAtTime(1500, at + dur);
+                g.gain.setValueAtTime(0.0001, at); g.gain.linearRampToValueAtTime(vol, at + 0.03); g.gain.setValueAtTime(vol * 0.8, at + Math.max(0.05, dur - 0.08)); g.gain.exponentialRampToValueAtTime(0.0001, at + dur + 0.12);
+                [-6, 6].forEach(dt => { const o = audioCtx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f; o.detune.value = dt; o.connect(lp); o.start(at); o.stop(at + dur + 0.15); });
+                lp.connect(g); g.connect(out);
+            };
+            notes.forEach(([s, m, l]) => {
+                const at = t0 + s * b, dur = l * b * 0.92;
+                brass(hz(m), at, dur, 0.05);
+                brass(hz(m - 12), at, dur, 0.022);
+                if (l >= 2) bellAt(hz(m + 12), at, 0.035, 1.6);
+            });
+            // bas ve akorlar: C – F – G – C
+            [[0, [48, 64, 67]], [9, [53, 65, 69]], [13, [55, 62, 71]], [17, [48, 64, 67, 72]]].concat(tier >= 1 ? [[22, [53, 69, 72]], [24, [48, 64, 67, 72, 76]]] : []).forEach(([s, ch], i, arr) => {
+                const at = t0 + s * b, end = t0 + (i + 1 < arr.length ? arr[i + 1][0] : lastBeat) * b;
+                ch.forEach((m, k) => { const o = audioCtx.createOscillator(), g = audioCtx.createGain(); o.type = k ? 'triangle' : 'sine'; o.frequency.value = hz(m);
+                    g.gain.setValueAtTime(0.0001, at); g.gain.linearRampToValueAtTime(k ? 0.018 : 0.06, at + 0.04); g.gain.exponentialRampToValueAtTime(0.0001, end + 0.3);
+                    o.connect(g); g.connect(out); o.start(at); o.stop(end + 0.35); });
+            });
+            // davul: her vuruşta yumuşak tok vuruş, final akorunda trampet sağanağı
+            for (let s = 0; s < lastBeat; s += 2) { const at = t0 + s * b, o = audioCtx.createOscillator(), g = audioCtx.createGain(); o.type = 'sine';
+                o.frequency.setValueAtTime(150, at); o.frequency.exponentialRampToValueAtTime(50, at + 0.12); g.gain.setValueAtTime(0.11, at); g.gain.exponentialRampToValueAtTime(0.0001, at + 0.16);
+                o.connect(g); g.connect(out); o.start(at); o.stop(at + 0.18); }
+            const rollAt = t0 + 15 * b;
+            for (let i = 0; i < 14; i++) { const at = rollAt + i * b / 3.5, s = audioCtx.createBufferSource(), f = audioCtx.createBiquadFilter(), g = audioCtx.createGain();
+                s.buffer = noiseBuf(); f.type = 'highpass'; f.frequency.value = 2200; g.gain.setValueAtTime(0.012 + i * 0.002, at); g.gain.exponentialRampToValueAtTime(0.0001, at + 0.07);
+                s.connect(f); f.connect(g); g.connect(out); s.start(at, Math.random() * 0.3); s.stop(at + 0.08); }
+            // çan kaskadları (başta ve finalde)
+            [2093, 2637, 3136, 4186].forEach((f, i) => bellAt(f, t0 + i * 0.07, 0.03, 1.8));
+            [1046.5, 1318.5, 1568, 2093, 2637, 3136].forEach((f, i) => bellAt(f, t0 + 17 * b + i * 0.08, 0.035, 2.4));
+            // şıngırdayan altın paralar: rastgele metalik "ting"ler (kutlama boyunca)
+            const coinEnd = lastBeat * b + 0.4, n = Math.round(coinEnd * (tier >= 2 ? 26 : tier ? 20 : 15));
+            for (let i = 0; i < n; i++) {
+                const at = t0 + Math.random() * coinEnd, f = 2400 + Math.random() * 1800;
+                [[1, 0.022], [1.51, 0.012], [2.73, 0.006]].forEach(([m, v]) => { const o = audioCtx.createOscillator(), g = audioCtx.createGain(); o.type = 'sine'; o.frequency.value = f * m;
+                    g.gain.setValueAtTime(0.0001, at); g.gain.exponentialRampToValueAtTime(v, at + 0.004); g.gain.exponentialRampToValueAtTime(0.0001, at + 0.09 + Math.random() * 0.12);
+                    o.connect(g); g.connect(out); o.start(at); o.stop(at + 0.25); });
+            }
+            jpEnd = t0 + lastBeat * b + 2.4;
+            buzz(tier ? [60, 80, 60, 80, 200] : [50, 70, 120]);
+            return beats;
+        }
+        function stopJackpot() {
+            if (!audioCtx || !jpBus) return;
+            const t = audioCtx.currentTime;
+            try { jpBus.gain.cancelScheduledValues(t); jpBus.gain.setTargetAtTime(0, t, 0.12); musBus.gain.cancelScheduledValues(t); applyVolumes(); } catch (e) {}
+            jpBus = null;
+        }
         let _noise = null;
         function noiseBuf() {
             if (_noise) return _noise;

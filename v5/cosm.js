@@ -7,45 +7,64 @@
             bal:       { wood: 0xB9771F, gold: 0xFFE08A, glow: 0x553300, back: 0x2e1a06, bulbs: [0xFFE08A, 0xFFB347, 0xFFF3C4, 0xFFC94D], sw: ['#B9771F', '#FFE08A'] },
             pastel:    { wood: 0xD98FA8, gold: 0xFFF1F6, glow: 0x3a1a26, back: 0x3a1c2a, bulbs: [0xFFC2D6, 0xC9E7FF, 0xFFF0B3, 0xCFF5D2], sw: ['#D98FA8', '#FFF1F6'] },
             gece:      { wood: 0x24345C, gold: 0xA9C8FF, glow: 0x0a1a3a, back: 0x0c1428, bulbs: [0xA9C8FF, 0xFFFFFF, 0x7FE3FF, 0xC7B8FF], sw: ['#24345C', '#A9C8FF'] },
+            hasat:     { wood: 0x7A4A22, gold: 0xE8B84A, glow: 0x3a2000, back: 0x24140a, bulbs: [0xFFB347, 0xE8B84A, 0xFF7A3D, 0xFFE08A], sw: ['#7A4A22', '#E8B84A'] },
             matcha:    { wood: 0x4F7A52, gold: 0xD9EFA8, glow: 0x1a2a0a, back: 0x14200f, bulbs: [0xD9EFA8, 0xA8F07A, 0xFFF6C8, 0x7FD6A0], sw: ['#4F7A52', '#D9EFA8'] },
             balkabagi: { wood: 0x3A1A4F, gold: 0xFF8A1E, glow: 0x3a1400, back: 0x160a1f, bulbs: [0xFF8A1E, 0xB66DFF, 0x9CFF6E, 0xFFD27A], sw: ['#3A1A4F', '#FF8A1E'] }
         };
-        const COSM = {
-            frame: [
-                { id: 'klasik' }, { id: 'bal', badge: 'big' }, { id: 'gece', badge: 'fs25' },
-                { id: 'matcha', badge: 'zafer' }, { id: 'pastel', album: 8 }, { id: 'balkabagi', event: 'hw', buy: true }
-            ],
-            cap: [
-                { id: 'kasket' }, { id: 'beret', star: ['girlfriend', 2] }, { id: 'chef', badge: 'rain' },
-                { id: 'crown', badge: 'hero' }, { id: 'witch', event: 'hw' }
-            ],
-            cup: [
-                { id: 'klasik' }, { id: 'lale', badge: 'dede25' }, { id: 'altin', badge: 'epic' }, { id: 'balkabagi', event: 'hw' }
-            ]
-        };
-        function cosmEquipped(kind) { return (Profile.cosm && Profile.cosm[kind]) || COSM[kind][0].id; }
+        /* Görünüm SETLERİ: her şube tamamlanınca yeni bir set (çerçeve + Dede şapkası + fincan) açılır.
+           Cadılar Bayramı görünümleri yalnızca Mağaza'dan (etkinlik süresince) satın alınır. */
+        const COSM_SETS = [
+            { id: 's1', ic: 'barista', frame: 'klasik', cap: 'kasket', cup: 'klasik', need: 0 },   // başlangıç
+            { id: 's2', ic: 'matcha', frame: 'matcha', cap: 'bandana', cup: 'matcha', need: 1 },   // 1. şube bitince
+            { id: 's3', ic: 'cupcake', frame: 'pastel', cap: 'chef', cup: 'pastel', need: 2 },
+            { id: 's4', ic: 'coffeebag', frame: 'hasat', cap: 'hasir', cup: 'toprak', need: 3 },
+            { id: 's5', ic: 'stamp', frame: 'gece', cap: 'beret', cup: 'lale', need: 4 },
+            { id: 's6', ic: 'goldenbean', frame: 'bal', cap: 'crown', cup: 'altin', need: 5 }     // oyunu bitirince
+        ];
+        const HW_LOOKS = [['frame', 'balkabagi', 0.12], ['cap', 'witch', 0.06], ['cup', 'balkabagi', 0.05]];
+        const COSM = { frame: [], cap: [], cup: [] };
+        COSM_SETS.forEach(s => ['frame', 'cap', 'cup'].forEach(k => COSM[k].push({ id: s[k], set: s })));
+        HW_LOOKS.forEach(([k, id, f]) => COSM[k].push({ id, event: 'hw', buy: true, f }));
+        /* Slot makinesi kolu: Atölye'den satın alınır (profilde kalıcı) */
+        COSM.lever = [{ id: 'yok' }, { id: 'kirmizi', buy: true, f: 0.03 }, { id: 'portafiltre', buy: true, f: 0.05 }, { id: 'cezve', buy: true, f: 0.06 }, { id: 'cekirdek', buy: true, f: 0.08 }, { id: 'altin', buy: true, f: 0.12 }];
+        const LEVER_ICON = { kirmizi: ['#D8DDE3', '#E0262E'], portafiltre: ['#C9CED4', '#1E1A18'], cezve: ['#C77A3A', '#6A3B1C'], cekirdek: ['#E3AE4A', '#5A3016'], altin: ['#F2C25A', '#FFD86B'] };
+        function leverSVG(id) {
+            const [s, k] = LEVER_ICON[id] || ['#ccc', '#999'];
+            const grip = id === 'portafiltre' || id === 'cezve';
+            const kn = grip ? `<rect x="25" y="4" width="14" height="26" rx="6" fill="${k}" stroke="#2a160b" stroke-width="2"/>`
+                : id === 'cekirdek' ? `<ellipse cx="32" cy="16" rx="11" ry="14" fill="${k}" stroke="#2a160b" stroke-width="2"/><path d="M32 4 q-5 12 0 24" stroke="#2a160b" stroke-width="2.4" fill="none"/>`
+                : `<circle cx="32" cy="16" r="12" fill="${k}" stroke="#2a160b" stroke-width="2"/><circle cx="28" cy="12" r="4" fill="#fff" opacity=".55"/>`;
+            return `<svg viewBox="0 0 64 100" class="lv-ic" aria-hidden="true"><rect x="8" y="62" width="24" height="34" rx="6" fill="#8E959C" stroke="#2a160b" stroke-width="2"/><circle cx="32" cy="76" r="9" fill="${s}" stroke="#2a160b" stroke-width="2"/><rect x="29" y="22" width="6" height="56" rx="3" fill="${s}" stroke="#2a160b" stroke-width="1.5"/>${kn}</svg>`;
+        }
+        function cosmEquipped(kind) { const id = Profile.cosm && Profile.cosm[kind]; return id && cosmUnlocked(kind, id) ? id : COSM[kind][0].id; }
+        function setOpen(s) {
+            if (!s.need) return true;
+            const st = Profile.stats || {};
+            if (s.need >= 5) return (st.finished || 0) > 0 || !!(Game.save && Game.save.finished);
+            return Math.max(st.maxStage || 1, (Game.save && Game.save.stage) || 1) > s.need;
+        }
         function cosmUnlocked(kind, id) {
             const it = COSM[kind].find(x => x.id === id);
             if (!it) return false;
-            if (it.badge) return !!Profile.badges[it.badge];
-            if (it.star) return (Profile.stars[it.star[0]] || 0) >= it.star[1];
-            if (it.album) return albumCards().filter(c => (Profile.stars[c.id] || 0) >= 1).length >= it.album;
             if (Profile.cosmOwned && Profile.cosmOwned[kind + ':' + id]) return true;
-            if (it.event) return !!(Profile.event && Profile.event[EVENT.id] && Profile.event[EVENT.id].done);
-            return true;
+            if (it.set) return setOpen(it.set);
+            return !it.buy && !it.event;
         }
-        /* Satın alınabilir görünüm: fiyat bulunduğun şubeye göre ölçeklenir (şube hedefinin %12'si)
-           1. şube 12 bin · 2. 60 bin · 3. 300 bin · 4. 1,2 milyon · Final 6 milyon */
+        /* Satın alınabilir görünüm: fiyat bulunduğun şubeye göre ölçeklenir (çerçeve hedefin %12'si, şapka %6, fincan %5) */
         function cosmPrice(kind, id) {
-            const st = (Game.save && Game.save.stage) || 1;
-            return Math.round(CHAPTERS[st].unlockAt * 0.12 / 1000) * 1000;
+            const st = (Game.save && Game.save.stage) || 1, it = COSM[kind].find(x => x.id === id);
+            return Math.max(1000, Math.round(CHAPTERS[st].unlockAt * ((it && it.f) || 0.12) / 1000) * 1000);
+        }
+        function cosmName(kind, id) { return kind === 'lever' ? L().lever.names[id] : L().cosm.names[kind][id]; }
+        function cosmBuyable(kind, id) {
+            const it = COSM[kind].find(x => x.id === id);
+            return !!(it && it.buy && Game.save && !cosmUnlocked(kind, id) && (!it.event || eventActive()));
         }
         function buyCosm(kind, id) {
-            const it = COSM[kind].find(x => x.id === id);
-            if (!it || !it.buy || !Game.save || cosmUnlocked(kind, id)) return;
+            if (!cosmBuyable(kind, id)) return;
             const p = cosmPrice(kind, id);
             if (gameState.isSpinning || gameState.balance < p) { playSynthNote(200, 0.15, 'triangle', 0.05); return; }
-            confirmBox({ title: L().cosm.buyT, text: tf(L().cosm.buyTxt, { n: L().cosm.names[kind][id], v: fmt(p) }), art: ['dede', 'goldenbean'], ok: tf(L().cosm.buyOk, { v: fmt(p) }), good: true, onOk: () => {
+            confirmBox({ title: L().cosm.buyT, text: tf(L().cosm.buyTxt, { n: cosmName(kind, id), v: fmt(p) }), art: ['dede', 'goldenbean'], ok: tf(L().cosm.buyOk, { v: fmt(p) }), good: true, onOk: () => {
                 if (gameState.balance < p) return;
                 gameState.balance -= p;
                 Profile.cosmOwned = Object.assign(Profile.cosmOwned || {}, { [kind + ':' + id]: Date.now() });
@@ -53,27 +72,36 @@
                 [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => playSynthNote(f, 0.2, 'sine', 0.06), i * 100));
                 equipCosm(kind, id);
                 if (typeof refreshBank === 'function') refreshBank();
-                achToast('dede', L().cosm.bought, L().cosm.names[kind][id]);
+                if ($('modal-store').classList.contains('open') && typeof buildStore === 'function') buildStore();
+                if ($('modal-shop').classList.contains('open') && typeof buildShop === 'function') buildShop();
+                achToast('dede', L().cosm.bought, cosmName(kind, id));
             } });
         }
-        function cosmCond(kind, it) {
+        function setCond(s) {
             const C = L().cosm;
-            if (it.badge) return tf(C.byBadge, { n: L().badges.list[it.badge][0] });
-            if (it.star) return tf(C.byStar, { n: symName(it.star[0]), s: '★'.repeat(it.star[1]) });
-            if (it.album) return tf(C.byAlbum, { n: it.album });
-            if (it.event) return C.byEvent;
-            return C.free;
+            if (!s.need) return C.free;
+            if (s.need >= 5) return C.bySetFinal;
+            return tf(C.bySet, { n: L().stage[s.need].place });
         }
         function equipCosm(kind, id) {
             if (!cosmUnlocked(kind, id)) return;
-            Profile.cosm = Object.assign({ frame: 'klasik', cap: 'kasket', cup: 'klasik' }, Profile.cosm || {}, { [kind]: id });
+            Profile.cosm = Object.assign({ frame: 'klasik', cap: 'kasket', cup: 'klasik', lever: 'yok' }, Profile.cosm || {}, { [kind]: id });
             saveProfile();
             playSynthNote(784, 0.1, 'triangle', 0.05);
             applyCosm();
-            renderHub();
+            if ($('modal-hub') && $('modal-hub').classList.contains('open')) renderHub();
+        }
+        function equipSet(i) {
+            const s = COSM_SETS[i];
+            if (!s || !setOpen(s)) return;
+            Profile.cosm = Object.assign({}, Profile.cosm || {}, { frame: s.frame, cap: s.cap, cup: s.cup });
+            saveProfile();
+            [659, 784, 988].forEach((f, k) => setTimeout(() => playSynthNote(f, 0.12, 'triangle', 0.05), k * 70));
+            applyCosm(); renderHub();
         }
         function applyCosm() {
             if (typeof applyFrameSkin === 'function') applyFrameSkin();
+            if (typeof refreshLever === 'function' && (leverObj ? true : leverOn())) refreshLever();
             const box = $('dede');
             if (box && box.dataset.ready) { const f = box.querySelector('.dd-fig'); if (f) f.innerHTML = dedeSVG(cosmEquipped('cap')); }
         }
@@ -86,21 +114,49 @@
             if (kind === 'cap') return `<div class="cz-cap">${dedeSVG(id)}</div>`;
             return `<div class="cz-cup">${cupSVG('o2', id)}</div>`;
         }
+        function czPiece(kind, id, un) {
+            const C = L().cosm, on = cosmEquipped(kind) === id;
+            return `<button class="cz-p ${on ? 'on' : ''}" ${un && !on ? `onclick="equipCosm('${kind}','${id}')"` : 'disabled'} title="${escapeHtml(C.names[kind][id])}">${cosmPreview(kind, id)}<small>${C.names[kind][id]}${on ? ' ✓' : ''}</small></button>`;
+        }
         function hubLooks() {
             const C = L().cosm;
-            let h = eventCard();
-            ['frame', 'cap', 'cup'].forEach(kind => {
-                h += `<h4 class="lb-h">${C.kinds[kind]}</h4><div class="cz-grid">`;
-                COSM[kind].forEach(it => {
-                    const un = cosmUnlocked(kind, it.id), on = cosmEquipped(kind) === it.id;
-                    h += `<div class="cz ${un ? '' : 'locked'} ${on ? 'on' : ''}">${cosmPreview(kind, it.id)}<b>${C.names[kind][it.id]}</b>
-                          <small>${un ? (on ? C.worn : C.ready) : '🔒 ' + cosmCond(kind, it)}</small>
-                          ${un && !on ? `<button class="btn btn-sm" onclick="equipCosm('${kind}','${it.id}')">${C.wear}</button>` : ''}
-                          ${!un && it.buy && Game.save ? `<button class="btn btn-sm btn-green" ${gameState.balance < cosmPrice(kind, it.id) ? 'disabled' : ''} onclick="buyCosm('${kind}','${it.id}')">${fmt(cosmPrice(kind, it.id))} ${beanIc()}</button>` : ''}</div>`;
-                });
-                h += '</div>';
+            let h = eventCard() + `<p class="cz-note">${C.setNote}</p>`;
+            COSM_SETS.forEach((s, i) => {
+                const un = setOpen(s), all = un && ['frame', 'cap', 'cup'].every(k => cosmEquipped(k) === s[k]);
+                h += `<div class="cz-set ${un ? '' : 'locked'} ${all ? 'on' : ''}">
+                        <div class="cz-sh"><img src="${ASSETS.sym[s.ic]}" alt=""><b>${C.sets[s.id]}</b>
+                          <small>${un ? (all ? C.worn : C.ready) : '🔒 ' + setCond(s)}</small>
+                          ${un && !all ? `<button class="btn btn-sm" onclick="equipSet(${i})">${C.wearSet}</button>` : ''}</div>
+                        <div class="cz-row">${['frame', 'cap', 'cup'].map(k => czPiece(k, s[k], un)).join('')}</div></div>`;
             });
+            // Cadılar Bayramı: yalnızca mağazadan
+            const own = HW_LOOKS.filter(([k, id]) => cosmUnlocked(k, id));
+            h += `<div class="cz-set hw"><div class="cz-sh"><span class="cz-ic">🎃</span><b>${C.hwSet}</b><small>${C.hwShop}</small>
+                    ${Game.save && eventActive() ? `<button class="btn btn-sm btn-green" onclick="closeModal('modal-hub');openStore()">🛒 ${L().store.title.replace(/^\S+\s/, '')}</button>` : ''}</div>
+                  <div class="cz-row">${HW_LOOKS.map(([k, id]) => czPiece(k, id, cosmUnlocked(k, id))).join('')}</div></div>`;
             return h;
+        }
+        /* Mağaza bölümü: slot kolları (Atölye › Kol ile aynı) */
+        function storeLevers() {
+            const S = L().store, V = L().lever, C = L().cosm;
+            return `<h4 class="st-h">${V.storeT}</h4><p class="st-sub">${V.storeTxt}</p>` + COSM.lever.filter(it => it.id !== 'yok').map(it => {
+                const own = cosmUnlocked('lever', it.id), on = cosmEquipped('lever') === it.id, p = cosmPrice('lever', it.id);
+                const act = on ? `<button class="btn btn-sm" onclick="equipCosm('lever','yok');buildStore()">${V.remove}</button>`
+                    : own ? `<button class="btn btn-sm" onclick="equipCosm('lever','${it.id}');buildStore()">${C.wear}</button>`
+                    : `<button class="btn btn-sm btn-green" ${gameState.balance < p || gameState.isSpinning ? 'disabled' : ''} onclick="buyCosm('lever','${it.id}')">${fmt(p)} ${beanIc()}</button>`;
+                return `<div class="st-card ${on ? 'on' : ''}"><span class="si lv-mini">${leverSVG(it.id)}</span><div class="sb"><b>${V.names[it.id]}${on ? ' ✓' : ''}</b><small>${V.desc[it.id]}</small></div>${act}</div>`;
+            }).join('');
+        }
+        /* Mağaza bölümü: Cadılar Bayramı görünümleri */
+        function storeLooks() {
+            const S = L().store, C = L().cosm;
+            if (!eventActive() && !HW_LOOKS.some(([k, id]) => cosmUnlocked(k, id))) return '';
+            return `<h4 class="st-h">${S.looksT}</h4>` + HW_LOOKS.map(([k, id]) => {
+                const own = cosmUnlocked(k, id), on = cosmEquipped(k) === id, p = cosmPrice(k, id);
+                const act = own ? (on ? `<span class="st-tag t2">${C.worn}</span>` : `<button class="btn btn-sm" onclick="equipCosm('${k}','${id}');buildStore()">${C.wear}</button>`)
+                    : eventActive() ? `<button class="btn btn-sm btn-green" ${gameState.balance < p ? 'disabled' : ''} onclick="buyCosm('${k}','${id}')">${fmt(p)} ${beanIc()}</button>` : `<span class="st-tag">${C.byEvent}</span>`;
+                return `<div class="st-card hw"><span class="si cz-mini cz-${k}">${cosmPreview(k, id)}</span><div class="sb"><b>🎃 ${C.names[k][id]}</b><small>${S.hwTxt[k]}</small></div>${act}</div>`;
+            }).join('');
         }
 
         /* =====================================================
@@ -120,12 +176,9 @@
             E.spins++;
             if (E.spins >= EVENT.goal) {
                 E.done = true;
-                Profile.cosmOwned = Object.assign(Profile.cosmOwned || {}, { 'frame:balkabagi': 1, 'cap:witch': 1, 'cup:balkabagi': 1 });
-                Profile.cosm = Object.assign({ frame: 'klasik', cap: 'kasket', cup: 'klasik' }, Profile.cosm || {}, { frame: 'balkabagi', cap: 'witch', cup: 'balkabagi' });
                 achToast('dede', L().ev.doneT, L().ev.doneS);
                 const v = grant(150 * rewardUnit());
                 if (v) setTimeout(() => achToast('goldenbean', '+' + fmt(v), ''), 3200);
-                applyCosm();
             }
         }
         function eventCard() {
@@ -154,8 +207,9 @@
 
         /* =====================================================
            TEST / HİLE KODLARI (gizli): Ayarlar'da sürüm yazısına 5 kez dokun
-           KAHVEDEDE    → test modu aç/kapat: spin bahsi kasadan düşmez
-           SONRAKISUBE  → kasayı bulunduğun şubenin hedefine çıkarır
+           CERENKUS   → test modu aç/kapat: spin bahsi kasadan düşmez
+           SUBEAC     → kasayı bulunduğun şubenin hedefine çıkarır
+           EASTEREGG  → profil başına bir kez 5.000 çekirdek hediye (hile sayılmaz)
            Hile kullanılan kayıt skor tablosuna gönderilmez.
            ===================================================== */
         let cheatTaps = 0, cheatT = null;
@@ -175,10 +229,20 @@
             const msg = t => { $('ch-msg').textContent = t; };
             if (!Game.save) { msg(C.needSave); return; }
             const sv = Game.save;
-            if (code === 'KAHVEDEDE') {
+            if (code === 'EASTEREGG') {
+                if (Profile.egg) { msg(C.eggUsed); playSynthNote(200, 0.15, 'triangle', 0.05); return; }
+                Profile.egg = Date.now(); saveProfile();
+                gameState.balance += 5000;
+                msg(C.egg);
+                [523, 659, 784, 1047, 1319].forEach((f, i) => setTimeout(() => playSynthNote(f, 0.22, 'sine', 0.06), i * 90));
+                persist(); if (typeof refreshBank === 'function') refreshBank();
+                setTimeout(() => { closeModal('modal-cheat'); achToast('goldenbean', C.egg, '+' + fmt(5000)); }, 900);
+                return;
+            }
+            if (code === 'CERENKUS') {
                 sv.cheat = !sv.cheat; sv.tainted = true;
                 msg(sv.cheat ? C.on : C.off);
-            } else if (code === 'SONRAKISUBE') {
+            } else if (code === 'SUBEAC') {
                 const c = CHAPTERS[sv.stage];
                 if (!sv.finished) gameState.balance = Math.max(gameState.balance, c.unlockAt);
                 sv.tainted = true; msg(C.rich);

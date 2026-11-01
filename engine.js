@@ -8,17 +8,24 @@ const Engine = (function () {
     'use strict';
 
     /* ---------------- Temel sabitler ---------------- */
-    const ROWS = 3;
+    /* v5.5: 5 makara × 5 satır, 20 ödeme hattı. Hücre başına özel sembol oranları 3 satırdaki
+       ekran başına ortalama sayıyı koruyacak şekilde ölçeklendi (× 3/5). */
+    const ROWS = 5;
     const PAYLINES = [
-        [1, 1, 1, 1, 1], [0, 0, 0, 0, 0], [2, 2, 2, 2, 2], [0, 1, 2, 1, 0], [2, 1, 0, 1, 2],
-        [0, 0, 1, 2, 2], [2, 2, 1, 0, 0], [1, 0, 1, 2, 1], [1, 2, 1, 0, 1], [0, 1, 1, 1, 2]
+        [2, 2, 2, 2, 2], [1, 1, 1, 1, 1], [3, 3, 3, 3, 3], [0, 0, 0, 0, 0], [4, 4, 4, 4, 4],
+        [0, 1, 2, 3, 4], [4, 3, 2, 1, 0], [1, 2, 3, 2, 1], [3, 2, 1, 2, 3], [0, 1, 0, 1, 0],
+        [4, 3, 4, 3, 4], [2, 1, 2, 3, 2], [2, 3, 2, 1, 2], [1, 0, 1, 2, 1], [3, 4, 3, 2, 3],
+        [0, 0, 2, 4, 4], [4, 4, 2, 0, 0], [1, 2, 2, 2, 3], [3, 2, 2, 2, 1], [2, 0, 2, 4, 2]
     ];
+    const LINES = PAYLINES.length;
     // 6. makara için hatlar: ilk 5 aynı; 6. durak = 5. makaranın satırı (4. ile aynıysa o, değilse orta satır)
-    const PAYLINES6 = PAYLINES.map(l => l.concat([l[4] === l[3] ? l[4] : 1]));
+    const PAYLINES6 = PAYLINES.map(l => l.concat([l[4] === l[3] ? l[4] : 2]));
     function lines(ctx) { return (ctx.eff.reels || 5) === 6 ? PAYLINES6 : PAYLINES; }
-    const EXPAND_K = 10;                        // genişleyen sembol: 10 hattın hepsinde öder
-    const SPECIAL_REELS = [0, 2, 4];            // Matcha / Pitcher yalnızca 1., 3., 5. makarada
-    const BASE_SCATTER = 0.05;                  // hücre başına Reçete Kitabı ihtimali (taban)
+    const EXPAND_K = LINES;                     // genişleyen sembol: 20 hattın hepsinde öder
+    let EXPAND_SCALE = 0.15;                       // 5 satırda genişleme çok daha sık olduğu için ödemesi ölçeklenir (simülasyonla)
+    const SPECIAL_REELS = [0, 2, 4];            // Pitcher yalnızca 1., 3., 5. makarada
+    const CELL = 0.6;                           // hücre başı oran ölçeği (3 satır → 5 satır)
+    const BASE_SCATTER = 0.05 * CELL;           // hücre başına Reçete Kitabı ihtimali (taban)
     const BASE_FREE_SPINS = 10;
 
     /* Bahis merdiveni (1-2-5 dizisi). Her 3 basamak = 1 "bahis kademesi". */
@@ -51,9 +58,9 @@ const Engine = (function () {
         coffeebag: { id: 'coffeebag', img: 'coffeebag', special: 'bag' }, // Aşama 4: 3+ çuval = hasat ödemesi (her yerde)
         stamp:   { id: 'stamp',   img: 'stamp',   special: 'stamp' }      // Aşama 5: sadakat kartı damgası
     };
-    const STAMP_RATE = 0.012, STAMPS_PER_CARD = 10, LATTE_MAX = 2;
-    const OVEN_RATE = 0.03, OVEN_RAIN_RATE = 0.10, OVEN_FULL = 12, OVEN_SPINS = 6;
-    const BAG_RATE = 0.035, BAG_PAY = { 3: 2, 4: 6, 5: 20, 6: 60, 7: 150 };   // bahsin katı
+    const STAMP_RATE = 0.012 * CELL, STAMPS_PER_CARD = 10, LATTE_MAX = 2;
+    const OVEN_RATE = 0.03 * CELL, OVEN_RAIN_RATE = 0.10 * CELL, OVEN_FULL = 12, OVEN_SPINS = 6;
+    const BAG_RATE = 0.035 * CELL, BAG_PAY = { 3: 2, 4: 6, 5: 20, 6: 60, 7: 150 };   // bahsin katı
 
     /* Çarpan çekirdekleri (Gates of Olympus tarzı): spin başına şansla düşer; kazanç varsa çarpar.
        Free spin'de çarpanlar birikir ve sonraki her kazancı çarpar. */
@@ -67,9 +74,9 @@ const Engine = (function () {
        pay: tüm kazançların katsayısı · luck: şans desteği adımı/üst sınırı · orb: Dede çarpanı sıklığı
        gift: iflas/24 saat hediyesi · phase: ara durak ödülü katsayısı */
     const DIFFS = {
-        story:   { pay: 1.251, luckStep: 0.10, luckMax: 0.60, orb: 1.0, gift: 1000, phase: 1.5 },
+        story:   { pay: 1.29, luckStep: 0.10, luckMax: 0.60, orb: 1.0, gift: 1000, phase: 1.5 },
         std:     { pay: 1.0, luckStep: LUCK_STEP, luckMax: LUCK_MAX, orb: 1.0, gift: 1000, phase: 1.0 },
-        gambler: { pay: 0.657, luckStep: 0, luckMax: 0, orb: 1.8, gift: 1000, phase: 0.5 }
+        gambler: { pay: 0.632, luckStep: 0, luckMax: 0, orb: 1.8, gift: 1000, phase: 0.5 }
     };
     function diffOf(d) { return DIFFS[d] || DIFFS.std; }
     function luckFor(streak, diff) { const D = typeof diff === 'object' && diff ? diff : diffOf(diff); return Math.min(D.luckMax, D.luckStep * (streak || 0)); }
@@ -89,11 +96,11 @@ const Engine = (function () {
        unlockAt: kasada bu kadar görülünce sonraki şube satın alınabilir; price: satın alma bedeli
        payScale: o aşamanın taban RTP'sini hedefe çeken kalibrasyon katsayısı (simülasyonla bulundu). */
     const CHAPTERS = {
-        1: { id: 1, key: 'cafe',    seed: 5000,    unlockAt: 100000,   price: 80000,    minBet: 10,    maxBet: 10000,   payScale: 0.4434, specials: false, boost: {}, phases: [0.5] },
-        2: { id: 2, key: 'matcha',  seed: 20000,   unlockAt: 500000,   price: 400000,   minBet: 100,   maxBet: 50000,   payScale: 0.2615,   specials: true,  boost: {}, phases: [0.5] },
-        3: { id: 3, key: 'bakery',  seed: 100000,  unlockAt: 2500000,  price: 2000000,  minBet: 500,   maxBet: 200000,  payScale: 0.2225,   specials: false,  boost: {}, phases: [0.5], oven: true },
-        4: { id: 4, key: 'harvest', seed: 500000,  unlockAt: 10000000, price: 8000000,  minBet: 1000,  maxBet: 1000000, payScale: 0.1729,   specials: false,  boost: {}, phases: [0.5], harvest: true },
-        5: { id: 5, key: 'castle',  seed: 2000000, unlockAt: 50000000, price: 50000000, minBet: 2000,  maxBet: 5000000, payScale: 0.0493,   specials: false,  boost: { book: 1.5, barista: 1.5, girlfriend: 1.25 }, phases: [0.25, 0.5, 0.75], loyalty: true, final: true }
+        1: { id: 1, key: 'cafe',    seed: 5000,    unlockAt: 100000,   price: 80000,    minBet: 10,    maxBet: 10000,   payScale: 0.6041, specials: false, boost: {}, phases: [0.5] },
+        2: { id: 2, key: 'matcha',  seed: 20000,   unlockAt: 500000,   price: 400000,   minBet: 100,   maxBet: 50000,   payScale: 0.3482,   specials: true,  boost: {}, phases: [0.5] },
+        3: { id: 3, key: 'bakery',  seed: 100000,  unlockAt: 2500000,  price: 2000000,  minBet: 500,   maxBet: 200000,  payScale: 0.3447,   specials: false,  boost: {}, phases: [0.5], oven: true },
+        4: { id: 4, key: 'harvest', seed: 500000,  unlockAt: 10000000, price: 8000000,  minBet: 1000,  maxBet: 1000000, payScale: 0.2367,   specials: false,  boost: {}, phases: [0.5], harvest: true },
+        5: { id: 5, key: 'castle',  seed: 2000000, unlockAt: 50000000, price: 50000000, minBet: 2000,  maxBet: 5000000, payScale: 0.073,   specials: false,  boost: { book: 1.5, barista: 1.5, girlfriend: 1.25 }, phases: [0.25, 0.5, 0.75], loyalty: true, final: true }
     };
     const STAGE_COUNT = 5;
 
@@ -129,24 +136,24 @@ const Engine = (function () {
         const L = id => (ups && ups[id]) || 0;
         const e = {
             symMult: {},
-            scatterAdd: 0.0008 * L('sk_scatter'),
+            scatterAdd: 0.0008 * CELL * L('sk_scatter'),
             assist: 0.02 * L('sk_assist'),
             freeSpins: BASE_FREE_SPINS + L('sk_free') + L('lx_free'),
             reels: L('lx_reel6') ? 6 : 5,
             payBonus: 1 + 0.04 * L('lx_pay'),
             expandMul: 1 + 0.05 * L('lx_expand'),
-            stampAdd: 0.002 * L('lx_stamp'),
+            stampAdd: 0.002 * CELL * L('lx_stamp'),
             expandChance: 0.0015 * L('sk_expand'),
             cashback: 0.02 * L('sk_cash'),
-            pitcherRate: 0.07 + 0.005 * L('sp_pitcher'),
-            matchaRate: 0.05 + 0.01 * L('sp_matcha'),
+            pitcherRate: (0.07 + 0.005 * L('sp_pitcher')) * CELL,
+            matchaRate: (0.05 + 0.01 * L('sp_matcha')) * CELL,
             convBias: 0.35 * L('sp_foam'),
             latteMult: 2 + 0.4 * L('sp_latte'),
             foam: 0.5 + 0.08 * L('sp_foam'),
             ovenFull: OVEN_FULL - L('sp_oven'),
             ovenSpins: OVEN_SPINS + 2 * L('sp_rain'),
             bagMult: 1 + 0.25 * L('sp_bag'),
-            bagRate: BAG_RATE + 0.005 * L('sp_bagrate'),
+            bagRate: BAG_RATE + 0.005 * CELL * L('sp_bagrate'),
             bookMult: (1 + 0.015 * L('lx_book')) * (1 + 0.10 * ((extra && extra.latte) || 0))
         };
         e.diffKey = (extra && extra.diff) || 'std';
@@ -279,7 +286,7 @@ const Engine = (function () {
 
     function evaluate(grid, ctx) {
         const e = ctx.eff;
-        const lineBet = ctx.bet / 10;
+        const lineBet = ctx.bet / LINES;
         const marks = [];
         const R = grid.length;
         let lineTotal = 0;
@@ -347,7 +354,7 @@ const Engine = (function () {
             const ex = expandGrid(grid, ctx);
             expanded = ex.reels;
             if (ex.reels.length) {
-                expandPay = symPay(ex.sym, ex.reels.length, ctx) * lineBet * EXPAND_K * (e.expandMul || 1);
+                expandPay = symPay(ex.sym, ex.reels.length, ctx) * lineBet * EXPAND_K * (e.expandMul || 1) * EXPAND_SCALE;
                 ex.reels.forEach(r => { for (let row = 0; row < ROWS; row++) marks.push({ r, row, mode: 'win' }); });
             }
         }
@@ -439,7 +446,7 @@ const Engine = (function () {
         if (res.scatter >= 3) {
             const pool = SYMBOLS.filter(s => s.id !== 'book');
             const exp = pool[Math.floor(rng() * pool.length)].id;
-            let remaining = L.filtre ? 20 : eff.freeSpins, guard = 0, fsMult = 0;
+            let remaining = (L.filtre ? 20 : eff.freeSpins) + Math.max(0, res.scatter - 3), guard = 0, fsMult = 0;   // 3'ten fazla her kitap +1 spin
             L.filtre = false;
             while (remaining > 0 && guard++ < 400) {
                 remaining--;
@@ -463,7 +470,7 @@ const Engine = (function () {
     }
 
     return {
-        ROWS, PAYLINES, PAYLINES6, LADDER, SPECIAL_REELS, BASE_SCATTER, BASE_FREE_SPINS, MAX_TIER, TIER_PAY, TIER_SCATTER, EXPAND_K,
+        ROWS, LINES, CELL, setExpandScale: v => { EXPAND_SCALE = v; }, PAYLINES, PAYLINES6, LADDER, SPECIAL_REELS, BASE_SCATTER, BASE_FREE_SPINS, MAX_TIER, TIER_PAY, TIER_SCATTER, EXPAND_K,
         SYMBOLS, BOOK, NORMALS, SPECIALS, CHAPTERS, STAGE_COUNT, UPGRADES,
         STAMP_RATE, STAMPS_PER_CARD, LATTE_MAX, OVEN_FULL, OVEN_SPINS, BAG_PAY,
         ORB_TABLE, DIFFS, diffOf, rollOrbs, convertMatcha, MATCHA_WAR, ZAFER_MULT, luckFor, LUCK_MAX, lines, upgradeCost, effects, ladderIndex, tierOf, betOptions,
