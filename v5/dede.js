@@ -21,11 +21,39 @@
             } else if (style === 'toprak') { // el yapımı toprak fincan, buğday başağı
                 body = '#B9683A'; rim = '#E8B84A'; saucer = '#D9A070'; c = '#7A3E1C'; l = '#E8B84A';
                 deco = `<g stroke="#E8B84A" stroke-width="2.4" fill="#E8B84A"><path d="M60 82 L60 66" fill="none"/><ellipse cx="56" cy="72" rx="3" ry="5" transform="rotate(-30 56 72)"/><ellipse cx="64" cy="72" rx="3" ry="5" transform="rotate(30 64 72)"/><ellipse cx="60" cy="66" rx="3" ry="5"/></g>`;
+            } else if (style === 'lapis') {   // Mısır: lacivert lapis, altın, Horus gözü
+                body = '#2F4F9F'; rim = '#F2C25A'; saucer = '#F2C25A';
+                deco = `<path d="M42 60 q18 -14 36 0 q-18 14 -36 0z" fill="#F7EFE2" stroke="#F2C25A" stroke-width="2.5"/><circle cx="60" cy="60" r="5" fill="#111"/><path d="M54 68 q-2 8 -8 10" stroke="#F2C25A" stroke-width="2.5" fill="none"/>`;
+            } else if (style === 'amfora') {  // Yunan: pişmiş toprak + menderes
+                body = '#D9822B'; rim = '#2A1A0C'; saucer = '#C66A1E';
+                deco = `<path d="M28 54 h8 v-6 h8 v6 h8 v-6 h8 v6 h8 v-6 h8 v6 h8 v-6 h8 v6 h6" stroke="#111" stroke-width="3" fill="none"/><path d="M34 72 q26 10 52 0" stroke="#111" stroke-width="3" fill="none"/>`;
+            } else if (style === 'run') {     // Viking: ahşap kupa + rünler
+                body = '#8A5A2A'; rim = '#C9CED4'; saucer = '#6E4A22';
+                deco = `<g stroke="#F4E2B8" stroke-width="3" fill="none" stroke-linecap="round"><path d="M40 50 v18 M40 50 l7 6 l-7 6"/><path d="M58 48 v20 M52 54 l12 7"/><path d="M74 50 l6 18 l6 -18"/></g><path d="M26 44 Q60 54 94 44" stroke="#C9CED4" stroke-width="4" fill="none"/>`;
+            } else if (style === 'zafer') {   // Roma: kızıl + altın defne
+                body = '#A8281E'; rim = '#F2C25A'; saucer = '#F2C25A';
+                deco = `<g fill="#F2C25A"><ellipse cx="44" cy="62" rx="6" ry="3" transform="rotate(-40 44 62)"/><ellipse cx="50" cy="70" rx="6" ry="3" transform="rotate(-20 50 70)"/><ellipse cx="76" cy="62" rx="6" ry="3" transform="rotate(40 76 62)"/><ellipse cx="70" cy="70" rx="6" ry="3" transform="rotate(20 70 70)"/></g><text x="60" y="58" text-anchor="middle" font-size="12" font-weight="900" fill="#F2C25A">SPQR</text>`;
+            } else if (style === 'zarf') {    // Osmanlı: porselen fincan + altın zarf
+                rim = '#D9A73A';
+                deco = `<path d="M28 58 Q60 70 92 58 L86 84 Q60 94 34 84Z" fill="#D9A73A" stroke="#8A5A10" stroke-width="2.5"/><g fill="#FFF3C4"><circle cx="44" cy="74" r="2.6"/><circle cx="60" cy="78" r="2.6"/><circle cx="76" cy="74" r="2.6"/><circle cx="52" cy="82" r="1.8"/><circle cx="68" cy="82" r="1.8"/></g><path d="M38 64 q22 8 44 0" stroke="#8A5A10" stroke-width="1.6" fill="none"/>`;
+            } else if (style === 'gul') {     // Viktorya: beyaz porselen, pembe güller
+                rim = '#C9A0B0'; saucer = '#F4EAF0';
+                deco = `<g><circle cx="44" cy="62" r="7" fill="#E88AA6"/><circle cx="44" cy="62" r="3" fill="#C0506E"/><circle cx="76" cy="62" r="7" fill="#E88AA6"/><circle cx="76" cy="62" r="3" fill="#C0506E"/><circle cx="60" cy="70" r="6" fill="#F2B0C4"/></g><g fill="#6FA84A"><ellipse cx="52" cy="66" rx="5" ry="2.5"/><ellipse cx="68" cy="66" rx="5" ry="2.5"/></g>`;
+            } else if (style === 'sevr') {    // Fransa: Sèvres mavisi + altın madalyon
+                body = '#2F4F9F'; rim = '#E8C04A'; saucer = '#E8EEFF';
+                deco = `<ellipse cx="60" cy="62" rx="16" ry="12" fill="#FFFDF8" stroke="#E8C04A" stroke-width="3"/><circle cx="60" cy="62" r="4" fill="#E88AA6"/><path d="M28 46 Q60 56 92 46" stroke="#E8C04A" stroke-width="3" fill="none"/>`;
+            } else if (style === 'majolika') { // İtalya: sarı majolika + mavi kıvrımlar
+                body = '#F2C94C'; rim = '#2F6FB5'; saucer = '#F7E2A0';
+                deco = `<g stroke="#2F6FB5" stroke-width="3" fill="none" stroke-linecap="round"><path d="M34 60 q6 -10 12 0 t12 0 t12 0 t12 0 t12 0"/><path d="M38 74 q6 -8 12 0 t12 0 t12 0 t12 0"/></g><circle cx="60" cy="50" r="4" fill="#C0392B"/>`;
+            } else if (style === 'caz') {     // Caz Çağı: siyah-altın art deco yelpaze
+                body = '#151515'; rim = '#D4A72C'; saucer = '#2A2A2A';
+                deco = `<g stroke="#D4A72C" stroke-width="2.4" fill="none"><path d="M60 84 L36 50 M60 84 L48 46 M60 84 L60 44 M60 84 L72 46 M60 84 L84 50"/><path d="M40 56 Q60 44 80 56"/></g>`;
             } else if (style === 'balkabagi') { // balkabağı fincan: oyulmuş yüz
                 body = '#FF8A1E'; rim = '#3A1A4F'; saucer = '#5A2A7A'; c = '#3A1A4F'; l = '#FFD27A';
                 deco = `<g fill="#3A1A4F"><path d="M40 52 l8 -8 l8 8z"/><path d="M64 52 l8 -8 l8 8z"/><path d="M40 66 q20 12 40 0 l-6 2 l-4 -4 l-4 5 l-6 -5 l-6 5 l-4 -5 l-4 4z"/></g>`;
             }
-            const band = style === 'balkabagi' || style === 'lale' ? '' : `<path d="M26 48 Q60 58 94 48 L93 62 Q60 72 27 62 Z" fill="${c}"/>
+            const NOBAND = ['balkabagi', 'lale', 'lapis', 'amfora', 'run', 'zafer', 'zarf', 'gul', 'sevr', 'majolika', 'caz'];
+            const band = NOBAND.includes(style) ? '' : `<path d="M26 48 Q60 58 94 48 L93 62 Q60 72 27 62 Z" fill="${c}"/>
               <g fill="${l}"><circle cx="38" cy="56" r="3"/><circle cx="50" cy="60" r="3"/><circle cx="62" cy="61" r="3"/><circle cx="74" cy="59" r="3"/><circle cx="85" cy="55" r="3"/></g>
               <path d="M26 46 Q60 56 94 46" stroke="${rim}" stroke-width="2.5" fill="none"/><path d="M27 64 Q60 74 93 64" stroke="${rim}" stroke-width="2.5" fill="none"/>`;
             const ring = style === 'lale' || style === 'balkabagi' ? `<path d="M27 40 Q60 50 93 40" stroke="${c}" stroke-width="4" fill="none"/>` : '';

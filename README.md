@@ -2,7 +2,7 @@
 
 Slot makinesi mekanikleriyle ilerleyen kısa ve sevimli bir kahve macerası. Tek dosya HTML oyun (Three.js r128).
 
-**Bu commit: sürüm 5.5.1** · Geliştirici: Limited Education
+**Bu commit: sürüm 6.1.0** · Geliştirici: Limited Education
 
 ## Oynamak
 `recipes_of_barista_3d_deluxe.html` dosyasını indirip tarayıcıda aç. Tüm görseller, yazı tipleri ve three.js dosyanın içindedir; internet olmadan da çalışır (bulut kaydı ve sıralama hariç).

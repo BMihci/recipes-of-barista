@@ -30,7 +30,7 @@
 
         function newLoyalty() { return { stamps: 0, americano: 0, filtre: false, latte: 0 }; }
         function newSave(name, diff) {
-            return { v: 5, name, diff: diff || 'std', stage: 1, balance: CHAPTERS[1].seed, bet: 0, ups: {}, loy: newLoyalty(), oven: 0, phases: {}, seen: {}, tut: false, finished: false, busts: 0, videos: 0, fs: null, peak: 0, quests: null, dedeGift: false, lastGift: Date.now(), created: Date.now(), updated: Date.now() };
+            return { v: 6, saga: true, name, diff: 'story', treasure: 0, stage: 1, balance: CHAPTERS[1].seed, bet: 0, ups: {}, loy: newLoyalty(), oven: 0, phases: {}, seen: {}, tut: false, finished: false, busts: 0, videos: 0, fs: null, peak: 0, quests: null, dedeGift: false, lastGift: Date.now(), created: Date.now(), updated: Date.now() };
         }
 
         /* Aktif kayıt */
@@ -108,7 +108,7 @@
         let RUN_EFF = Engine.effects({});
         function refreshEff() {
             const ups = (Game.save && Game.save.ups) || {};
-            RUN_EFF = Engine.effects(ups, { latte: gameState.loy.latte, diff: (Game.save && Game.save.diff) || 'std' });
+            RUN_EFF = Engine.effects(ups, { latte: gameState.loy.latte, chapter: gameState.chapter || (Game.save && Game.save.stage) || 1 });
         }
         function upLevel(id) { return (Game.save && Game.save.ups[id]) || 0; }
         function reelCount() { return RUN_EFF.reels || 5; }

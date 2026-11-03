@@ -29,7 +29,8 @@ const Engine = (function () {
     const BASE_FREE_SPINS = 10;
 
     /* Bahis merdiveni (1-2-5 dizisi). Her 3 basamak = 1 "bahis kademesi". */
-    const LADDER = [10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000, 100000, 200000, 500000, 1000000, 2000000, 5000000];
+    const LADDER = [];   // 10 … 50 milyar (Saga'nın son bölümlerine kadar)
+    for (let m = 10; m <= 5e10; m *= 10) LADDER.push(m, m * 2, m * 5);
     const MAX_TIER = 5;
     const TIER_PAY = 0.04;       // kademe başına +%4 kazanç
     const TIER_SCATTER = 0.02;   // kademe başına +%5 (göreli) kitap şansı
@@ -73,12 +74,12 @@ const Engine = (function () {
     /* Zorluk modları (yeni oyunda seçilir; kayıtta saklanır)
        pay: tüm kazançların katsayısı · luck: şans desteği adımı/üst sınırı · orb: Dede çarpanı sıklığı
        gift: iflas/24 saat hediyesi · phase: ara durak ödülü katsayısı */
+    /* v6: zorluk seçimi kaldırıldı — oyun her zaman en kolay "Hikâye" matematiğiyle oynanır
+       (eski Standart/Kumarbaz kayıtları da otomatik olarak Hikâye'ye geçer). */
     const DIFFS = {
-        story:   { pay: 1.29, luckStep: 0.10, luckMax: 0.60, orb: 1.0, gift: 1000, phase: 1.5 },
-        std:     { pay: 1.0, luckStep: LUCK_STEP, luckMax: LUCK_MAX, orb: 1.0, gift: 1000, phase: 1.0 },
-        gambler: { pay: 0.632, luckStep: 0, luckMax: 0, orb: 1.8, gift: 1000, phase: 0.5 }
+        story:   { pay: 1.29, luckStep: 0.10, luckMax: 0.60, orb: 1.0, gift: 1000, phase: 1.5 }
     };
-    function diffOf(d) { return DIFFS[d] || DIFFS.std; }
+    function diffOf() { return DIFFS.story; }
     function luckFor(streak, diff) { const D = typeof diff === 'object' && diff ? diff : diffOf(diff); return Math.min(D.luckMax, D.luckStep * (streak || 0)); }
     function rollOrbs(inFS, rng, orbMul) {
         if (rng() >= (inFS ? ORB_P_FS : ORB_P) * (orbMul || 1)) return [];
@@ -100,9 +101,42 @@ const Engine = (function () {
         2: { id: 2, key: 'matcha',  seed: 20000,   unlockAt: 500000,   price: 400000,   minBet: 100,   maxBet: 50000,   payScale: 0.3482,   specials: true,  boost: {}, phases: [0.5] },
         3: { id: 3, key: 'bakery',  seed: 100000,  unlockAt: 2500000,  price: 2000000,  minBet: 500,   maxBet: 200000,  payScale: 0.3447,   specials: false,  boost: {}, phases: [0.5], oven: true },
         4: { id: 4, key: 'harvest', seed: 500000,  unlockAt: 10000000, price: 8000000,  minBet: 1000,  maxBet: 1000000, payScale: 0.2367,   specials: false,  boost: {}, phases: [0.5], harvest: true },
-        5: { id: 5, key: 'castle',  seed: 2000000, unlockAt: 50000000, price: 50000000, minBet: 2000,  maxBet: 5000000, payScale: 0.073,   specials: false,  boost: { book: 1.5, barista: 1.5, girlfriend: 1.25 }, phases: [0.25, 0.5, 0.75], loyalty: true, final: true }
+        5: { id: 5, key: 'castle',  seed: 2000000, unlockAt: 50000000, price: 50000000, minBet: 2000,  maxBet: 5000000, payScale: 0.073,   specials: false,  boost: { book: 1.5, barista: 1.5, girlfriend: 1.25 }, phases: [0.25, 0.5, 0.75], loyalty: true }
     };
-    const STAGE_COUNT = 5;
+
+    /* ---------------- ZAMAN YOLCULUĞU SAGASI: 6–100. bölümler ----------------
+       Her dönem ~10 bölüm (Osmanlı 15). Dönemin gücü (buff) yalnızca o dönemin bölümlerinde etkindir
+       ve YALNIZCA oyuncunun lehinedir. Bölüm hedefleri yavaşça büyür (bölüm başı ×SAGA_GROWTH);
+       bahisler hedefe oranla ölçeklenir, böylece matematik her bölümde aynı kalır.
+       Zaman makinesine binerken kasa sonraki bölüme en az `start`, en çok `carryMax` olarak taşınır;
+       fazlası "Zaman Hazinesi"ne (skor) aktarılır — böylece bir şanslı bölüm sonraki 10 bölümü bitirmez. */
+    const ERAS = [   // güç değerleri: simülasyonla, dönem bölümleri güçsüze göre ~%20 daha kısa sürecek şekilde ayarlandı (buff_tune.js)
+        { key: 'egypt',     from: 6,  n: 10, buff: { book: 1.05 } },                 // Nil Bereketi: Reçete Kitabı şansı +%5
+        { key: 'greece',    from: 16, n: 10, buff: { orb: 1.3 } },                   // Zeus'un Şimşeği: Dede çarpanları %30 daha sık
+        { key: 'viking',    from: 26, n: 10, buff: { fs: 2 } },                      // Yağma Seferi: her free spin turu +2 spin
+        { key: 'rome',      from: 36, n: 10, buff: { pay: 1.3 } },                   // Zafer Alayı: tüm kazançlar +%30
+        { key: 'ottoman',   from: 46, n: 15, buff: { expand: 1.3, assist: 0.02 } },  // Kahvehane Muhabbeti: genişleyen sembol +%30, kombo +%2
+        { key: 'victorian', from: 61, n: 10, buff: { cash: 0.4 } },                  // Buhar Gücü: kaybeden spinde bahsin %40'ı geri
+        { key: 'france',    from: 71, n: 10, buff: { high: 1.8 } },                  // Procope Salonu: yüksek semboller +%80
+        { key: 'italy',     from: 81, n: 10, buff: { low: 1.7 } },                   // Usta İşi: kahve sembolleri +%70
+        { key: 'jazz',      from: 91, n: 10, buff: { fsOrb: 1.35 } }                 // Swing Ritmi: free spin'de çarpanlar %35 daha sık
+    ];
+    const SAGA_FIRST = 6, STAGE_COUNT = 100, SAGA_GROWTH = 1.075, SAGA_KEEP = 0.2;
+    /* dönem başına ödeme ölçeği: Atölye yükseltmeleri tamamlandıkça oyun kolaylaşmasın diye simülasyonla ayarlandı (saga_tune.js) */
+    /* bölüm başına ince ayar (Atölye'nin pahalı yükseltmeleri bazı bölümleri uzatıyordu): chapter_tune.js */
+    const SAGA_PS_CH = {"6":0.01956,"7":0.01953,"8":0.01949,"9":0.01944,"10":0.01939,"11":0.01856,"12":0.0177,"13":0.01691,"14":0.01594,"15":0.01503,"16":0.01477,"17":0.01457,"18":0.01401,"19":0.01353,"20":0.01307,"21":0.01263,"22":0.01198,"23":0.01141,"24":0.01096,"25":0.01048,"26":0.009731,"27":0.009201,"28":0.008626,"29":0.007972,"30":0.007401,"31":0.007037,"32":0.006586,"33":0.006355,"34":0.0062,"35":0.006049,"36":0.005934,"37":0.005634,"38":0.005348,"39":0.005094,"40":0.004825,"41":0.004579,"42":0.004554,"43":0.004528,"44":0.004449,"45":0.004378,"46":0.004272,"47":0.004177,"48":0.004051,"49":0.004009,"50":0.003932,"51":0.003849,"52":0.003725,"53":0.003634,"54":0.003495,"55":0.003392,"56":0.00332,"57":0.003286,"58":0.003232,"59":0.00322,"60":0.003182,"61":0.003182,"62":0.003168,"63":0.003175,"64":0.00319,"65":0.003243,"66":0.003246,"67":0.003264,"68":0.003264,"69":0.003252,"70":0.00324,"71":0.003209,"72":0.003175,"73":0.003158,"74":0.003147,"75":0.003137,"76":0.003134,"77":0.003134,"78":0.003095,"79":0.003095,"80":0.003095,"81":0.003137,"82":0.0032,"83":0.003304,"84":0.003325,"85":0.003346,"86":0.003346,"87":0.003326,"88":0.003267,"89":0.003228,"90":0.0032,"91":0.003173,"92":0.003146,"93":0.003152,"94":0.003158,"95":0.003153,"96":0.003147,"97":0.003139,"98":0.003139,"99":0.003138,"100":0.003137};
+    const SAGA_PS = [0.09726, 0.07119, 0.05392, 0.01962, 0.0038, 0.00345, 0.00329, 0.00339, 0.0036];
+    function eraOf(ch) { if (ch < SAGA_FIRST) return null; for (let i = ERAS.length - 1; i >= 0; i--) if (ch >= ERAS[i].from) return ERAS[i]; return null; }
+    function eraIndex(ch) { const e = eraOf(ch); return e ? ERAS.indexOf(e) : -1; }
+    const snapLadder = v => { let b = LADDER[0]; for (const x of LADDER) if (x <= v) b = x; return b; };
+    for (let n = SAGA_FIRST; n <= STAGE_COUNT; n++) {
+        const T = Math.round(30000000 * Math.pow(SAGA_GROWTH, n - SAGA_FIRST) / 100000) * 100000;
+        const minBet = snapLadder(T / 15000);
+        const e = eraOf(n), j = n - e.from;
+        CHAPTERS[n] = { id: n, key: e.key, era: e.key, eraStep: j, seed: Math.round(T * 0.04), unlockAt: T, price: Math.round(T * (1 - SAGA_KEEP)),
+            start: Math.round(T * SAGA_KEEP / SAGA_GROWTH), carryMax: Math.round(T * SAGA_KEEP * 1.5 / SAGA_GROWTH), minBet, maxBet: minBet * 2500, get payScale() { return SAGA_PS_CH[n] || SAGA_PS[ERAS.indexOf(e)]; }, specials: false,
+            boost: { book: 1.25, barista: 1.25 }, phases: [0.5], loyalty: true, saga: true, final: n === STAGE_COUNT };
+    }
 
     /* ---------------- Yükseltmeler (Barista Atölyesi) — kasadaki çekirdekle alınır ----------------
        unlock: o aşamaya ulaşınca açılır. Metinler arayüz katmanında (dil dosyası) tutulur. */
@@ -156,11 +190,28 @@ const Engine = (function () {
             bagRate: BAG_RATE + 0.005 * CELL * L('sp_bagrate'),
             bookMult: (1 + 0.015 * L('lx_book')) * (1 + 0.10 * ((extra && extra.latte) || 0))
         };
-        e.diffKey = (extra && extra.diff) || 'std';
-        e.diff = diffOf(e.diffKey);
+        e.diffKey = 'story';
+        e.diff = diffOf();
         e.diffPay = e.diff.pay;
         e.orbMul = e.diff.orb;
+        e.fsOrbMul = 1;
         SYMBOLS.forEach(s => { e.symMult[s.id] = 1 + 0.06 * L('sym_' + s.id); });
+        // dönem gücü (yalnızca o dönemin bölümlerinde)
+        const era = extra && extra.chapter && !(extra && extra.noEra) ? eraOf(extra.chapter) : null;
+        e.era = era ? era.key : null;
+        if (era) {
+            const B = era.buff;
+            if (B.book) e.bookMult *= B.book;
+            if (B.orb) e.orbMul *= B.orb;
+            if (B.fs) e.freeSpins += B.fs;
+            if (B.pay) e.allPay = B.pay;          // tüm kazançlar (hat + genişleyen + bonuslar)
+            if (B.cash) e.cashback += B.cash;     // kaybeden spinde bahsin bir kısmı geri
+            if (B.expand) e.expandMul *= B.expand;
+            if (B.assist) e.assist += B.assist;
+            if (B.fsOrb) e.fsOrbMul *= B.fsOrb;
+            if (B.high) ['barista', 'girlfriend', 'baking_bear', 'portafilter'].forEach(id => { e.symMult[id] *= B.high; });
+            if (B.low) ['v60', 'espresso', 'aeropress', 'golden_bean', 'croissant'].forEach(id => { e.symMult[id] *= B.low; });
+        }
         return e;
     }
 
@@ -170,7 +221,12 @@ const Engine = (function () {
         for (let i = 0; i < LADDER.length; i++) if (LADDER[i] <= bet) idx = i;
         return idx;
     }
-    function tierOf(bet) { return Math.min(MAX_TIER, Math.floor(ladderIndex(bet) / 3)); }
+    function tierOf(bet, chapter) {
+        const ch = chapter && CHAPTERS[chapter];
+        // Saga bölümlerinde kademe, o bölümün en düşük bahsine göre sayılır (5. şubedeki gibi 2.000 = taban)
+        const idx = ch && ch.saga ? ladderIndex(bet) - ladderIndex(ch.minBet) + 7 : ladderIndex(bet);
+        return Math.max(0, Math.min(MAX_TIER, Math.floor(idx / 3)));
+    }
     function betOptions(chapter, balance) {
         const ch = CHAPTERS[chapter];
         return LADDER.filter(b => b >= ch.minBet && b <= ch.maxBet && b <= balance);
@@ -362,7 +418,7 @@ const Engine = (function () {
         const tierBonus = 1 + TIER_PAY * ctx.tier;
         const mult = ctx.mult || 1;                       // Americano: geçici x2
         lineTotal *= (e.payBonus || 1);
-        let total = Math.round(((lineTotal * foamMult + expandPay) * tierBonus + latte + harvest) * mult * (e.diffPay || 1));
+        let total = Math.round(((lineTotal * foamMult + expandPay) * tierBonus + latte + harvest) * mult * (e.diffPay || 1) * (e.allPay || 1));
         // çarpan çekirdekleri
         const orbs = ctx.orbs || [];
         const orbSum = orbs.reduce((a, v) => a + v, 0);
@@ -391,11 +447,11 @@ const Engine = (function () {
        Tek "spin turu": normal spin + tetiklenirse tüm free spin / pasta yağmuru zinciri. */
     function playRound(st, rng) {
         // st: { chapter, bet, eff, ups, balance, [loy], [oven] }
-        const tier = st.tier !== undefined ? st.tier : tierOf(st.bet);
+        const tier = st.tier !== undefined ? st.tier : tierOf(st.bet, st.chapter);
         const ch = CHAPTERS[st.chapter];
         const L = st.loy || (st.loy = { stamps: 0, americano: 0, filtre: false, latte: 0, pick: 0 });
         if (st.oven === undefined) st.oven = 0;
-        const eff = L.latte && st.ups ? effects(st.ups, { latte: L.latte, diff: st.diff }) : st.eff;
+        const eff = L.latte && st.ups ? effects(st.ups, { latte: L.latte, chapter: st.chapter, noEra: st.noEra }) : st.eff;
         const om = eff.orbMul || 1;
         const mult = () => { if (L.americano > 0) { L.americano--; return 2; } return 1; };
         const addStamps = n => {
@@ -450,7 +506,7 @@ const Engine = (function () {
             L.filtre = false;
             while (remaining > 0 && guard++ < 400) {
                 remaining--;
-                const fctx = { chapter: st.chapter, bet: st.bet, tier, eff, expandingSymbolId: exp, mult: mult(), inFS: true, fsMult, orbs: rollOrbs(true, rng, om) };
+                const fctx = { chapter: st.chapter, bet: st.bet, tier, eff, expandingSymbolId: exp, mult: mult(), inFS: true, fsMult, orbs: rollOrbs(true, rng, om * (eff.fsOrbMul || 1)) };
                 const cvf = convertMatcha(genGrid(fctx, rng), fctx, rng);
                 won += addMatcha(cvf.cells.length);
                 const g = cvf.grid;
@@ -473,7 +529,7 @@ const Engine = (function () {
         ROWS, LINES, CELL, setExpandScale: v => { EXPAND_SCALE = v; }, PAYLINES, PAYLINES6, LADDER, SPECIAL_REELS, BASE_SCATTER, BASE_FREE_SPINS, MAX_TIER, TIER_PAY, TIER_SCATTER, EXPAND_K,
         SYMBOLS, BOOK, NORMALS, SPECIALS, CHAPTERS, STAGE_COUNT, UPGRADES,
         STAMP_RATE, STAMPS_PER_CARD, LATTE_MAX, OVEN_FULL, OVEN_SPINS, BAG_PAY,
-        ORB_TABLE, DIFFS, diffOf, rollOrbs, convertMatcha, MATCHA_WAR, ZAFER_MULT, luckFor, LUCK_MAX, lines, upgradeCost, effects, ladderIndex, tierOf, betOptions,
+        ORB_TABLE, DIFFS, diffOf, ERAS, eraOf, eraIndex, SAGA_PS_CH, SAGA_FIRST, SAGA_GROWTH, SAGA_KEEP, SAGA_PS, rollOrbs, convertMatcha, MATCHA_WAR, ZAFER_MULT, luckFor, LUCK_MAX, lines, upgradeCost, effects, ladderIndex, tierOf, betOptions,
         isWild, pickSymbol, genGrid, expandGrid, expandMin, countScatter, stampCount, evaluate, playRound
     };
 })();

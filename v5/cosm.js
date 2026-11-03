@@ -9,6 +9,15 @@
             gece:      { wood: 0x24345C, gold: 0xA9C8FF, glow: 0x0a1a3a, back: 0x0c1428, bulbs: [0xA9C8FF, 0xFFFFFF, 0x7FE3FF, 0xC7B8FF], sw: ['#24345C', '#A9C8FF'] },
             hasat:     { wood: 0x7A4A22, gold: 0xE8B84A, glow: 0x3a2000, back: 0x24140a, bulbs: [0xFFB347, 0xE8B84A, 0xFF7A3D, 0xFFE08A], sw: ['#7A4A22', '#E8B84A'] },
             matcha:    { wood: 0x4F7A52, gold: 0xD9EFA8, glow: 0x1a2a0a, back: 0x14200f, bulbs: [0xD9EFA8, 0xA8F07A, 0xFFF6C8, 0x7FD6A0], sw: ['#4F7A52', '#D9EFA8'] },
+            nil:       { wood: 0x2F4F9F, gold: 0xF2C25A, glow: 0x3a2a00, back: 0x0f1a33, bulbs: [0xF2C25A, 0x7FD6FF, 0xFFE08A, 0x2F7FD8], sw: ['#2F4F9F', '#F2C25A'] },
+            ege:       { wood: 0xF4EFE6, gold: 0x2F86D0, glow: 0x0a2a4a, back: 0x1a2a3a, bulbs: [0x7FC4FF, 0xFFFFFF, 0x2F86D0, 0xBFE6FF], sw: ['#F4EFE6', '#2F86D0'] },
+            fiyort:    { wood: 0x5A4030, gold: 0xC9CED4, glow: 0x1a2a3a, back: 0x101820, bulbs: [0x7FE3FF, 0x9CFFC8, 0xC7B8FF, 0xFFFFFF], sw: ['#5A4030', '#C9CED4'] },
+            sezar:     { wood: 0x8E1E1E, gold: 0xF2C25A, glow: 0x3a1a00, back: 0x200808, bulbs: [0xFFD27A, 0xFF6B4A, 0xFFF3C4, 0xF2C25A], sw: ['#8E1E1E', '#F2C25A'] },
+            cini:      { wood: 0x24508A, gold: 0xE8F2FF, glow: 0x0a1a3a, back: 0x0c1428, bulbs: [0xE63946, 0xFFFFFF, 0x2F7FD8, 0x3FA34D], sw: ['#24508A', '#E8F2FF'] },
+            buhar:     { wood: 0x4A3A2E, gold: 0xB87333, glow: 0x2a1400, back: 0x1a1410, bulbs: [0xFFD27A, 0xFFB347, 0xFFF0C8, 0xE8A33A], sw: ['#4A3A2E', '#B87333'] },
+            versay:    { wood: 0xF4EFE6, gold: 0xE8C04A, glow: 0x3a2a00, back: 0x1a2040, bulbs: [0xFFF3C4, 0xFFC2D6, 0xC9E7FF, 0xE8C04A], sw: ['#F4EFE6', '#E8C04A'] },
+            floransa:  { wood: 0xB8613A, gold: 0xEFE4CF, glow: 0x2a1a0a, back: 0x24160c, bulbs: [0xFFE08A, 0x7FD6A0, 0xFF9F7A, 0xFFFFFF], sw: ['#B8613A', '#EFE4CF'] },
+            deco:      { wood: 0x1A1A22, gold: 0xD4A72C, glow: 0x3a2a00, back: 0x0c0c12, bulbs: [0xFFD86B, 0xFF4FA3, 0x7FE3FF, 0xFFFFFF], sw: ['#1A1A22', '#D4A72C'] },
             balkabagi: { wood: 0x3A1A4F, gold: 0xFF8A1E, glow: 0x3a1400, back: 0x160a1f, bulbs: [0xFF8A1E, 0xB66DFF, 0x9CFF6E, 0xFFD27A], sw: ['#3A1A4F', '#FF8A1E'] }
         };
         /* Görünüm SETLERİ: her şube tamamlanınca yeni bir set (çerçeve + Dede şapkası + fincan) açılır.
@@ -25,6 +34,15 @@
         const COSM = { frame: [], cap: [], cup: [] };
         COSM_SETS.forEach(s => ['frame', 'cap', 'cup'].forEach(k => COSM[k].push({ id: s[k], set: s })));
         HW_LOOKS.forEach(([k, id, f]) => COSM[k].push({ id, event: 'hw', buy: true, f }));
+        /* DÖNEM KOLEKSİYONU: her tarihi döneme özel çerçeve + Dede kıyafeti + fincan. O döneme ulaşınca Mağaza'da satılır. */
+        const ERA_LOOKS = {
+            egypt: { frame: 'nil', cap: 'nemes', cup: 'lapis' }, greece: { frame: 'ege', cap: 'defne', cup: 'amfora' }, viking: { frame: 'fiyort', cap: 'boynuz', cup: 'run' },
+            rome: { frame: 'sezar', cap: 'migfer', cup: 'zafer' }, ottoman: { frame: 'cini', cap: 'kavuk', cup: 'zarf' }, victorian: { frame: 'buhar', cap: 'silindir', cup: 'gul' },
+            france: { frame: 'versay', cap: 'tricorne', cup: 'sevr' }, italy: { frame: 'floransa', cap: 'ronesans', cup: 'majolika' }, jazz: { frame: 'deco', cap: 'fotr', cup: 'caz' }
+        };
+        const ERA_PRICE = { frame: 0.12, cap: 0.06, cup: 0.05 };
+        Object.keys(ERA_LOOKS).forEach(k => ['frame', 'cap', 'cup'].forEach(kind => COSM[kind].push({ id: ERA_LOOKS[k][kind], era: k, buy: true, f: ERA_PRICE[kind] })));
+        function eraReached(k) { const e = Engine.ERAS.find(x => x.key === k), sv = Game.save; return !!(e && sv && (sv.finished || sv.stage >= e.from)); }
         /* Slot makinesi kolu: Atölye'den satın alınır (profilde kalıcı) */
         COSM.lever = [{ id: 'yok' }, { id: 'kirmizi', buy: true, f: 0.03 }, { id: 'portafiltre', buy: true, f: 0.05 }, { id: 'cezve', buy: true, f: 0.06 }, { id: 'cekirdek', buy: true, f: 0.08 }, { id: 'altin', buy: true, f: 0.12 }];
         const LEVER_ICON = { kirmizi: ['#D8DDE3', '#E0262E'], portafiltre: ['#C9CED4', '#1E1A18'], cezve: ['#C77A3A', '#6A3B1C'], cekirdek: ['#E3AE4A', '#5A3016'], altin: ['#F2C25A', '#FFD86B'] };
@@ -40,8 +58,7 @@
         function setOpen(s) {
             if (!s.need) return true;
             const st = Profile.stats || {};
-            if (s.need >= 5) return (st.finished || 0) > 0 || !!(Game.save && Game.save.finished);
-            return Math.max(st.maxStage || 1, (Game.save && Game.save.stage) || 1) > s.need;
+            return Math.max(st.maxStage || 1, (Game.save && Game.save.stage) || 1) > s.need || (st.finished || 0) > 0;
         }
         function cosmUnlocked(kind, id) {
             const it = COSM[kind].find(x => x.id === id);
@@ -58,7 +75,7 @@
         function cosmName(kind, id) { return kind === 'lever' ? L().lever.names[id] : L().cosm.names[kind][id]; }
         function cosmBuyable(kind, id) {
             const it = COSM[kind].find(x => x.id === id);
-            return !!(it && it.buy && Game.save && !cosmUnlocked(kind, id) && (!it.event || eventActive()));
+            return !!(it && it.buy && Game.save && !cosmUnlocked(kind, id) && (!it.event || eventActive()) && (!it.era || eraReached(it.era)));
         }
         function buyCosm(kind, id) {
             if (!cosmBuyable(kind, id)) return;
@@ -129,12 +146,51 @@
                           ${un && !all ? `<button class="btn btn-sm" onclick="equipSet(${i})">${C.wearSet}</button>` : ''}</div>
                         <div class="cz-row">${['frame', 'cap', 'cup'].map(k => czPiece(k, s[k], un)).join('')}</div></div>`;
             });
+            // Dönem koleksiyonu (yalnızca Mağaza'dan, döneme ulaşınca)
+            h += `<h4 class="lb-h">🕰 ${C.eraT}</h4>`;
+            Object.keys(ERA_LOOKS).forEach(k => {
+                const EL = ERA_LOOKS[k], EM = ERA_META[k], reached = eraReached(k);
+                const any = ['frame', 'cap', 'cup'].some(kind => cosmUnlocked(kind, EL[kind]));
+                h += `<div class="cz-set era ${reached ? '' : 'locked'}" style="--c:${EM.col};--c2:${EM.col2}"><div class="cz-sh"><span class="cz-ic">${EM.ic}</span><b>${eraName(k)}</b><small>${reached ? (any ? C.eraOwn : C.eraShop) : tf(C.eraLock, { n: Engine.ERAS.find(e => e.key === k).from })}</small>
+                        ${reached && Game.save ? `<button class="btn btn-sm btn-green" onclick="closeModal('modal-hub');openStore()">🛒</button>` : ''}</div>
+                      ${reached ? `<div class="cz-row">${['frame', 'cap', 'cup'].map(kind => czPiece(kind, EL[kind], cosmUnlocked(kind, EL[kind]))).join('')}</div>` : ''}</div>`;
+            });
             // Cadılar Bayramı: yalnızca mağazadan
             const own = HW_LOOKS.filter(([k, id]) => cosmUnlocked(k, id));
             h += `<div class="cz-set hw"><div class="cz-sh"><span class="cz-ic">🎃</span><b>${C.hwSet}</b><small>${C.hwShop}</small>
                     ${Game.save && eventActive() ? `<button class="btn btn-sm btn-green" onclick="closeModal('modal-hub');openStore()">🛒 ${L().store.title.replace(/^\S+\s/, '')}</button>` : ''}</div>
                   <div class="cz-row">${HW_LOOKS.map(([k, id]) => czPiece(k, id, cosmUnlocked(k, id))).join('')}</div></div>`;
             return h;
+        }
+        /* Mağaza bölümü: dönem koleksiyonu — bulunduğun dönem en üstte, ulaştığın eski dönemler altında */
+        function storeEra() {
+            const S = L().store, C = L().cosm, sv = Game.save;
+            if (!sv) return '';
+            const cur = eraKey(sv.stage), keys = Object.keys(ERA_LOOKS).filter(eraReached).sort((a, b) => (b === cur) - (a === cur));
+            const nextEra = Engine.ERAS.find(e => !eraReached(e.key));
+            let h = `<h4 class="st-h">🕰 ${C.eraT}</h4>`;
+            if (!keys.length) return h + `<div class="st-card soon"><span class="si">⏳</span><div class="sb"><b>${C.eraT}</b><small>${C.eraNone}</small></div></div>`;
+            keys.forEach(k => {
+                const EL = ERA_LOOKS[k], EM = ERA_META[k];
+                h += `<div class="st-era" style="--c:${EM.col};--c2:${EM.col2}"><b class="st-era-h">${EM.ic} ${eraName(k)}${k === cur ? ' · ' + C.eraNow : ''}</b>`;
+                ['frame', 'cap', 'cup'].forEach(kind => {
+                    const id = EL[kind], own = cosmUnlocked(kind, id), on = cosmEquipped(kind) === id, p = cosmPrice(kind, id);
+                    const act = own ? (on ? `<span class="st-tag t2">${C.worn}</span>` : `<button class="btn btn-sm" onclick="equipCosm('${kind}','${id}');buildStore()">${C.wear}</button>`)
+                        : `<button class="btn btn-sm btn-green" ${gameState.balance < p || gameState.isSpinning ? 'disabled' : ''} onclick="buyCosm('${kind}','${id}')">${fmt(p)} ${beanIc()}</button>`;
+                    h += `<div class="st-card era"><span class="si cz-mini cz-${kind}">${cosmPreview(kind, id)}</span><div class="sb"><b>${C.names[kind][id]}</b><small>${C.kinds[kind]}</small></div>${act}</div>`;
+                });
+                h += `<button class="btn btn-sm btn-soft st-era-all" onclick="buyEraSet('${k}')">${C.eraWearAll}</button></div>`;
+            });
+            if (nextEra) h += `<p class="st-sub">🔒 ${tf(C.eraNext, { era: eraName(nextEra.key), n: nextEra.from })}</p>`;
+            return h;
+        }
+        function buyEraSet(k) {   // sahip olunan parçaları birlikte giy
+            const EL = ERA_LOOKS[k];
+            const own = ['frame', 'cap', 'cup'].filter(kind => cosmUnlocked(kind, EL[kind]));
+            if (!own.length) { playSynthNote(200, 0.15, 'triangle', 0.05); return; }
+            Profile.cosm = Object.assign({}, Profile.cosm || {}); own.forEach(kind => { Profile.cosm[kind] = EL[kind]; });
+            saveProfile(); applyCosm(); buildStore();
+            [659, 784, 988].forEach((f, i) => setTimeout(() => playSynthNote(f, 0.12, 'triangle', 0.05), i * 70));
         }
         /* Mağaza bölümü: slot kolları (Atölye › Kol ile aynı) */
         function storeLevers() {

@@ -2,6 +2,21 @@
 
 V7 (“Filtre Kahve”) öncesi sürümler. Her sürüm bir git etiketiyle (tag) işaretlidir.
 
+## 6.1.0 — Espresso Romano (Espresso Romano)
+_2026-11-03_
+
+Bu sürüm 6.0.0 “Dalgona” değişikliklerini de içerir:
+- ⏳ Zaman Makinesi ve 100 bölümlük tarihî Saga Haritası (Mısır, Yunan, Viking, Roma, Osmanlı, Viktorya, Fransa, İtalya, Caz Çağı).
+- ✨ Her döneme özel geçici kazanma gücü.
+- 🛍 Dönem mağazası: çağa özel çerçeve, şapka ve fincanlar.
+- ⚖️ Zorluk seçimi kaldırıldı, yalnızca hikâye modu matematiği.
+
+6.1.0:
+- 🎬 Hikâye baştan üretildi: sevimli 3D animasyonlu sinematik oynatıcı.
+- 🎵 Antik Mısır’dan itibaren her döneme özel müzik ve 3D arka plan.
+- 📱 Mobil ekran ve tasarım iyileştirmeleri; mağazada satın alma penceresi artık üstte açılıyor.
+- 📖 Barista not defterinde “Bugünün özel reçetesi” tasarımlı kapak sayfası.
+
 ## 5.5.1 — Cortado (Cortado)
 _2026-11-01_
 

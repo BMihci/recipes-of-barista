@@ -172,7 +172,7 @@
             if (res.matchaConv) albumAdd('matcha', res.matchaConv);
             if (res.cupcakes > 0 && gameState.chapter === 3) albumAdd('cupcake', res.cupcakes);
             if (res.harvest > 0) { albumAdd('coffeebag', res.bags || 1); s.harvest++; }
-            if (res.stamps > 0 && gameState.chapter === 5) albumAdd('stamp', res.stamps);
+            if (res.stamps > 0 && CHAPTERS[gameState.chapter].loyalty) albumAdd('stamp', res.stamps);
             s.maxBal = Math.max(s.maxBal, Math.floor(gameState.balance));
             // görevler
             questProgress('spins', 1);
@@ -191,7 +191,7 @@
             else if (kind === 'rain') s.rain++;
             else if (kind === 'loy') { s.loy++; questProgress('loy', 1); }
             else if (kind === 'stage') s.maxStage = Math.max(s.maxStage, n);
-            else if (kind === 'finish') { s.finished++; s.maxStage = 5; }
+            else if (kind === 'finish') { s.finished++; s.maxStage = 100; }
             s.maxBal = Math.max(s.maxBal, Math.floor(gameState.balance));
             checkBadges();
             saveProfile();
@@ -201,33 +201,49 @@
            USTA MODU (final sonrası): rekor + günlük görevler
            ===================================================== */
         function ustaActive() { return !!(Game.save && Game.save.finished); }
+        /* Saga skoru: ulaşılan bölüm (bitirince 101) × 1 milyar + Zaman Hazinesi (milyon çekirdek cinsinden) */
+        function sagaTreasure(sv) { return (sv.treasure || 0) + (sv.finished ? (sv.peak || 0) : 0); }
+        function sagaScore(sv) { if (!sv || sv.tainted) return 0; return (sv.finished ? 101 : (sv.stage || 1)) * 1e9 + Math.min(999999999, Math.floor(sagaTreasure(sv) / 1e6)); }
+        function sagaScoreText(s) { const ch = Math.floor(s / 1e9), tr = (s % 1e9) * 1e6; return (ch > 100 ? '🏆 ' + ST().chWord + ' 100 ✓' : ST().chWord + ' ' + ch) + (tr >= 1e6 ? ' · 🏺 ' + fmt(tr) : ''); }
+        function sagaScoreUpdate() {
+            if (!Profile.sagaV) { Profile.sagaV = 1; Profile.best = 0; Profile.bestName = ''; }
+            let best = 0, name = '';
+            SLOTS.forEach(s => { const v = sagaScore(s); if (v > best) { best = v; name = s.name; } });
+            if (Game.save) { const v = sagaScore(Game.save); if (v > best) { best = v; name = Game.save.name; } }
+            if (best > (Profile.best || 0) || Math.floor((Profile.best || 0) / 1e9) > 101) {
+                Profile.best = best; Profile.bestName = name; saveProfile();
+                if (typeof Cloud !== 'undefined') Cloud.scoreDirty = true;
+            }
+        }
         function ustaRecord() {
             const sv = Game.save;
             if (!sv || !sv.finished || sv.tainted) return;   // hile kodu kullanılan kayıt skor tablosuna girmez
             const bal = Math.floor(gameState.balance);
             if (bal > (sv.peak || 0)) {
-                const mode = sv.diff || 'std';
-                const prevBest = Profile.bestBy[mode] || 0;
+                const prev = sagaScore(sv);
                 sv.peak = bal;
-                if (bal > prevBest) {
-                    Profile.bestBy[mode] = bal;
-                    if (mode === 'std') { Profile.best = bal; Profile.bestName = sv.name; }
-                    if (prevBest > 0 && (!gameState.recToastAt || Date.now() - gameState.recToastAt > 60000)) {
+                if (Math.floor(sagaScore(sv) / 1e6) > Math.floor(prev / 1e6) * 1.0 && sagaScore(sv) > (Profile.best || 0)) {
+                    if (prev > 0 && (!gameState.recToastAt || Date.now() - gameState.recToastAt > 60000)) {
                         gameState.recToastAt = Date.now();
                         achToast('goldenbean', tf(L().usta.newRec, { v: fmt(bal) }), '');
                     }
-                    if (typeof Cloud !== 'undefined') Cloud.scoreDirty = true;
                 }
+                sagaScoreUpdate();
             }
         }
         const QUEST_POOL = [
             { id: 'spins', goals: [60, 100, 150] }, { id: 'winx', goals: [20, 30, 50], max: true }, { id: 'fs', goals: [1, 2] },
             { id: 'orbs', goals: [5, 10, 15] }, { id: 'loy', goals: [1, 2] }, { id: 'winsum', goals: [150, 250, 400] }, { id: 'big', goals: [1, 2, 3] }
         ];
-        const QUEST_REWARD = 1500000, QUEST_CHEST = 6000000;
+        /* günlük görevler: Saga'da (6. bölümden itibaren) ve oyun bitince açık; ödül bulunduğun bölüme göre ölçeklenir */
+        function questsOn() { const sv = Game.save; return !!(sv && (sv.finished || sv.stage >= 6)); }
+        function questUnit() { const st = (Game.save && Game.save.stage) || 5; return Math.max(1500000, Math.round(CHAPTERS[st].unlockAt * 0.03 / 1000) * 1000); }
+        let QUEST_REWARD = 1500000, QUEST_CHEST = 6000000;
+        function syncQuestReward() { QUEST_REWARD = questUnit(); QUEST_CHEST = QUEST_REWARD * 4; }
         function ensureQuests() {
             const sv = Game.save;
-            if (!sv || !sv.finished) return null;
+            if (!questsOn()) return null;
+            syncQuestReward();
             const day = dayStr(0);
             if (sv.quests && sv.quests.day === day) return sv.quests;
             const rng = seeded(hashStr(day + ':' + (sv.created || 0)));
@@ -336,7 +352,7 @@
                 b.className = 'tab' + (id === hubTab ? ' on' : '');
                 b.textContent = H.tabs[id];
                 if (id === 'daily' && Game.save && !dailyState().claimed) b.classList.add('dot');
-                if (id === 'quests' && ustaActive()) { const Q = ensureQuests(); if (Q && Q.list.some(q => q.prog >= q.goal && !q.claimed)) b.classList.add('dot'); }
+                if (id === 'quests' && questsOn()) { const Q = ensureQuests(); if (Q && Q.list.some(q => q.prog >= q.goal && !q.claimed)) b.classList.add('dot'); }
                 b.onclick = () => { hubTab = id; playSynthNote(520, 0.04); renderHub(); if (id === 'top') loadWorldTop(); };
                 tabs.appendChild(b);
             });
@@ -396,7 +412,7 @@
         }
         function hubQuests() {
             const Q = L().quests;
-            if (!ustaActive()) return `<div class="hub-lock"><img src="${ASSETS.sym.dede}" alt=""><p>${Q.locked}</p></div>`;
+            if (!questsOn()) return `<div class="hub-lock"><img src="${ASSETS.sym.dede}" alt=""><p>${Q.locked}</p></div>`;
             const D = ensureQuests();
             let h = `<p class="hub-info">${Q.info}</p><div class="quest-list">`;
             D.list.forEach((q, i) => {
@@ -412,17 +428,14 @@
                   <button class="btn btn-sm btn-green" ${!all || D.chest ? 'disabled' : ''} onclick="claimChest()">${D.chest ? Q.chestGot : Q.claim}</button></div>`;
             return h;
         }
-        let worldTop = null, worldErr = false, worldLoading = false, lbMode = 'std';
-        const LB_FIELD = { story: 'bestStory', std: 'best', gambler: 'bestGambler' };
-        function setLbMode(m) { lbMode = m; worldTop = null; playSynthNote(520, 0.04); renderHub(); loadWorldTop(); }
+        let worldTop = null, worldErr = false, worldLoading = false;
+        const LB_FIELD = 'best';   // v6: tek sıralama — Saga ilerlemesi (bölüm) + Zaman Hazinesi
         function hubTop() {
-            const T = L().lb, F = LB_FIELD[lbMode];
-            SLOTS.forEach(s => { if (s && s.finished && !s.tainted) { const k = s.diff || 'std'; if ((s.peak || 0) > (Profile.bestBy[k] || 0)) Profile.bestBy[k] = s.peak; } });
-            Profile.best = Math.max(Profile.best || 0, Profile.bestBy.std || 0);
+            const T = L().lb;
+            sagaScoreUpdate();
             let h = `<p class="hub-info">${T.info}</p>`;
-            h += `<div class="seg lb-seg">${['story', 'std', 'gambler'].map(k => `<button class="${k === lbMode ? 'on' : ''}" onclick="setLbMode('${k}')">${DIFF_ICON[k]} ${L().diff[k][0]}</button>`).join('')}</div>`;
-            const mine = Profile.bestBy[lbMode] || 0;
-            h += `<div class="lb-me"><img src="${avatarSrc()}" alt=""><div><small>${T.me}</small><b>${escapeHtml(nickOf())}</b></div><span>${mine ? fmt(mine) : '—'}</span></div>`;
+            const mine = Profile.best || 0;
+            h += `<div class="lb-me"><img src="${avatarSrc()}" alt=""><div><small>${T.me}</small><b>${escapeHtml(nickOf())}</b></div><span>${mine ? sagaScoreText(mine) : '—'}</span></div>`;
             h += `<h4 class="lb-h">${T.world}</h4>`;
             if (!Cloud.user) h += `<p class="hub-note">${Cloud.available() ? T.login : L().prof.nocfg} <button class="btn btn-sm" onclick="closeHub();openProfile()">👤</button></p>`;
             else if (worldLoading) h += `<p class="hub-note">${T.loading}</p>`;
@@ -430,18 +443,18 @@
             else if (worldTop && worldTop.length) {
                 const myIdx = worldTop.findIndex(r => r.uid === Cloud.user.uid);
                 if (myIdx >= 0) h += `<p class="hub-mid">${tf(T.rank, { n: myIdx + 1 })}</p>`;
-                h += '<ol class="lb-list">' + worldTop.map((r, i) => `<li class="${r.uid === Cloud.user.uid ? 'me' : ''}"><span class="rk">${i < 3 ? ['🥇', '🥈', '🥉'][i] : i + 1}</span><img src="${avatarSrc(r.avatar)}" alt=""><b>${escapeHtml(r.nick || '?')}${r.verified ? ' <i class="vf" title="✓">✓</i>' : ''}</b><span>${fmt(r[F] || 0)}</span></li>`).join('') + '</ol>';
+                h += '<ol class="lb-list">' + worldTop.map((r, i) => `<li class="${r.uid === Cloud.user.uid ? 'me' : ''}"><span class="rk">${i < 3 ? ['🥇', '🥈', '🥉'][i] : i + 1}</span><img src="${avatarSrc(r.avatar)}" alt=""><b>${escapeHtml(r.nick || '?')}${r.verified ? ' <i class="vf" title="✓">✓</i>' : ''}</b><span>${(r.best || 0) >= 1e9 ? sagaScoreText(r.best) : fmt(r.best || 0)}</span></li>`).join('') + '</ol>';
             } else h += `<p class="hub-note">${T.none}</p>`;
-            const local = SLOTS.map((s, i) => s && s.finished && (s.diff || 'std') === lbMode ? { name: nickOf() + ' · ' + slotLabel(i), peak: s.peak || s.balance, i } : null).filter(Boolean).sort((a, b) => b.peak - a.peak);
+            const local = SLOTS.map((s, i) => s && sagaScore(s) ? { name: (s.name || nickOf()) + ' · ' + slotLabel(i), sc: sagaScore(s) } : null).filter(Boolean).sort((a, b) => b.sc - a.sc);
             h += `<h4 class="lb-h">${T.local}</h4>`;
-            h += local.length ? '<ol class="lb-list">' + local.map((r, i) => `<li><span class="rk">${i + 1}</span><img src="${ASSETS.sym.barista}" alt=""><b>${escapeHtml(r.name)}</b><span>${fmt(r.peak)}</span></li>`).join('') + '</ol>' : `<p class="hub-note">${T.none}</p>`;
+            h += local.length ? '<ol class="lb-list">' + local.map((r, i) => `<li><span class="rk">${i + 1}</span><img src="${ASSETS.sym.barista}" alt=""><b>${escapeHtml(r.name)}</b><span>${sagaScoreText(r.sc)}</span></li>`).join('') + '</ol>' : `<p class="hub-note">${T.none}</p>`;
             return h;
         }
         function loadWorldTop() {
             if (!Cloud.user || worldLoading) return;
             worldLoading = true; worldErr = false;
             if (hubTab === 'top') renderHub();
-            Cloud.top(LB_FIELD[lbMode]).then(list => { worldTop = list; }).catch(() => { worldErr = true; }).then(() => { worldLoading = false; if (hubTab === 'top' && $('modal-hub').classList.contains('open')) renderHub(); });
+            Cloud.top(LB_FIELD).then(list => { worldTop = list; }).catch(() => { worldErr = true; }).then(() => { worldLoading = false; if (hubTab === 'top' && $('modal-hub').classList.contains('open')) renderHub(); });
         }
 
         /* =====================================================

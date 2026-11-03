@@ -1,20 +1,62 @@
 {
- "num": "5.5.1",
+ "num": "6.1.0",
  "name": {
-  "tr": "Cortado",
-  "en": "Cortado"
+  "tr": "Espresso Romano",
+  "en": "Espresso Romano"
  },
  "notes": {
   "tr": [
-   "📱 iPhone’da mağaza kapatma tuşuna erişilememesi düzeltildi; mobil boyutlandırma yenilendi.",
-   "🕹 Slot kolları mağazada görünür oldu."
+   "🎬 Hikâye baştan üretildi: sevimli 3D animasyonlu sinematik oynatıcı.",
+   "🎵 Antik Mısır’dan itibaren her döneme özel müzik ve 3D arka plan.",
+   "📱 Mobil ekran ve tasarım iyileştirmeleri; mağazada satın alma penceresi artık üstte açılıyor.",
+   "📖 Barista not defterinde “Bugünün özel reçetesi” tasarımlı kapak sayfası."
   ],
   "en": [
-   "📱 Fixed the unreachable store close button on iPhone; refreshed mobile sizing.",
-   "🕹 Slot levers are now visible in the store."
+   "🎬 Story remade from scratch: cute 3D animated cinematic player.",
+   "🎵 Era-specific music and 3D backdrops from Ancient Egypt onward.",
+   "📱 Mobile layout improvements; purchase pop-up now opens above the store.",
+   "📖 Designed “Today’s special recipe” cover page in the barista notebook."
   ]
  },
  "history": [
+  {
+   "num": "6.0.0",
+   "name": {
+    "tr": "Dalgona",
+    "en": "Dalgona"
+   },
+   "notes": {
+    "tr": [
+     "⏳ Zaman Makinesi ve 100 bölümlük tarihî Saga Haritası (Mısır, Yunan, Viking, Roma, Osmanlı, Viktorya, Fransa, İtalya, Caz Çağı).",
+     "✨ Her döneme özel geçici kazanma gücü.",
+     "🛍 Dönem mağazası: çağa özel çerçeve, şapka ve fincanlar.",
+     "⚖️ Zorluk seçimi kaldırıldı, yalnızca hikâye modu matematiği."
+    ],
+    "en": [
+     "⏳ Time Machine and a 100-chapter historical Saga Map (Egypt, Greece, Vikings, Rome, Ottoman, Victorian, France, Italy, Jazz Age).",
+     "✨ A temporary win power for each era.",
+     "🛍 Era store: era-themed frames, hats and cups.",
+     "⚖️ Difficulty choice removed; story-mode math only."
+    ]
+   }
+  },
+  {
+   "num": "5.5.1",
+   "name": {
+    "tr": "Cortado",
+    "en": "Cortado"
+   },
+   "notes": {
+    "tr": [
+     "📱 iPhone’da mağaza kapatma tuşuna erişilememesi düzeltildi; mobil boyutlandırma yenilendi.",
+     "🕹 Slot kolları mağazada görünür oldu."
+    ],
+    "en": [
+     "📱 Fixed the unreachable store close button on iPhone; refreshed mobile sizing.",
+     "🕹 Slot levers are now visible in the store."
+    ]
+   }
+  },
   {
    "num": "5.5.0",
    "name": {

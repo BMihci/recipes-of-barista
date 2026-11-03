@@ -19,7 +19,10 @@
             Object.keys(older.album).forEach(k => { m.album[k] = Math.max(m.album[k] || 0, older.album[k]); });
             Object.keys(older.stars).forEach(k => { m.stars[k] = Math.max(m.stars[k] || 0, older.stars[k]); });
             Object.keys(older.stats).forEach(k => { m.stats[k] = Math.max(m.stats[k] || 0, older.stats[k] || 0); });
-            if ((older.best || 0) > (m.best || 0)) { m.best = older.best; m.bestName = older.bestName; }
+            // v6: skor = Saga ilerlemesi; eski (v5) skorlar taşınmaz
+            if (!newer.sagaV) { m.best = 0; m.bestName = ''; }
+            if (older.sagaV && (older.best || 0) > (m.best || 0)) { m.best = older.best; m.bestName = older.bestName; }
+            m.sagaV = a.sagaV || b.sagaV || 0;
             ['story', 'std', 'gambler'].forEach(k => { m.bestBy[k] = Math.max(m.bestBy[k] || 0, older.bestBy[k] || 0); });
             if ((older.daily.last || '') > (m.daily.last || '')) m.daily = older.daily;
             m.seenDede = a.seenDede || b.seenDede;
@@ -139,11 +142,11 @@
                 const data = JSON.stringify({ v: 5, slots: SLOTS, profile: Profile });
                 try {
                     await this.ref().set({ data, updatedAt: Date.now() });
-                    const BB = Profile.bestBy || {};
-                    if ((BB.std || 0) + (BB.story || 0) + (BB.gambler || 0) + (Profile.best || 0) > 0 && Date.now() - (this.lastLb || 0) > 25000) {
+                    if (typeof sagaScoreUpdate === 'function') sagaScoreUpdate();
+                    if ((Profile.best || 0) > 0 && Date.now() - (this.lastLb || 0) > 25000) {
                         this.lastLb = Date.now();
                         const avatar = await smallAvatar(Profile.avatar);
-                        await this.db.collection('leaderboard').doc(this.user.uid).set({ nick: (Profile.nick || Profile.bestName || '?').slice(0, 16), avatar, best: Math.floor(Math.max(Profile.best || 0, BB.std || 0)), bestStory: Math.floor(BB.story || 0), bestGambler: Math.floor(BB.gambler || 0), spins: Profile.stats.spins || 0, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+                        await this.db.collection('leaderboard').doc(this.user.uid).set({ nick: (Profile.nick || Profile.bestName || '?').slice(0, 16), avatar, best: Math.floor(Profile.best || 0), bestStory: 0, bestGambler: 0, spins: Profile.stats.spins || 0, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
                         this.scoreDirty = false;
                     }
                     this.lastSync = Date.now(); this.err = false;

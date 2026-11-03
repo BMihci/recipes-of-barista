@@ -1,7 +1,12 @@
         /* =====================================================
            DİL DESTEĞİ (TR / EN)
            ===================================================== */
-        const fmtN = n => Math.floor(n + 1e-9).toLocaleString(CUR_LANG() === 'en' ? 'en-US' : 'tr-TR');
+        /* 10 milyar ve üstü kısaltılır (Saga'nın son bölümleri): 26,9 Mr / 26.9B */
+        const fmtN = n => {
+            const en = CUR_LANG() === 'en', a = Math.abs(n);
+            if (a >= 1e10) { const [d, s] = a >= 1e12 ? [1e12, en ? 'T' : ' Tr'] : [1e9, en ? 'B' : ' Mr']; return (Math.floor(n / d * 100) / 100).toLocaleString(en ? 'en-US' : 'tr-TR') + s; }
+            return Math.floor(n + 1e-9).toLocaleString(en ? 'en-US' : 'tr-TR');
+        };
         const pctS = v => (CUR_LANG() === 'en' ? v + '%' : '%' + v);
         const I18N = {
             tr: {
@@ -23,7 +28,7 @@
                 top: { map: '🗺', mapT: ' HARİTA', shop: '🛠', shopT: ' ATÖLYE', menu: '🏠', menuT: ' MENÜ' },
                 ctl: { bet: 'BAHİS', bank: 'KASA', spin: 'SPİN', auto: 'OTO' },
                 goal: {
-                    buyNext: '🏪 {short} · {price}', buyFinal: '🏰 SATIN AL · {price}',
+                    buyNext: '⏳ {short} · {price}', buyFinal: '🏆 FİNAL · {price}', buyTM: '⏳ ZAMAN MAKİNESİ · {price}',
                     lockedTip: 'Kasan {at} çekirdeği görünce sonraki şubeyi ({place}) {price} çekirdeğe satın alabilirsin. Kalan çekirdekler kasanda kalır.',
                     lockedTipFinal: 'Kasan {at} çekirdeği görünce SyruppoLab’ı {price} çekirdeğe satın alıp kasabayı kurtarabilirsin!',
                     readyTip: 'Hazır! Sonraki şubeyi ({place}) {price} çekirdeğe satın alabilirsin.',
@@ -33,17 +38,20 @@
                 },
                 buy: {
                     t: '{short} SATIN ALINSIN MI?', txt: '<b>{place}</b> için kasandan <b>{price}</b> çekirdek ödenecek. Kalan <b>{left}</b> çekirdek kasanda kalır.<br>Bu aşamaya bir daha dönülmez.', ok: 'SATIN AL',
-                    tF: 'SYRUPPOLAB SATIN ALINSIN MI?', txtF: 'Kasandan <b>{price}</b> çekirdek ödeyerek SyruppoLab’ı satın alacaksın. Kalan <b>{left}</b> çekirdek kasanda kalır ve serbest oyuna devam edebilirsin.', okF: 'SATIN AL VE KURTAR!'
+                    tF: 'SYRUPPOLAB SATIN ALINSIN MI?', txtF: 'Kasandan <b>{price}</b> çekirdek ödeyerek SyruppoLab’ı satın alacaksın. Kalan <b>{left}</b> çekirdek kasanda kalır ve serbest oyuna devam edebilirsin.', okF: 'SATIN AL VE KURTAR!',
+                    txtTM: 'Kasandan <b>{price}</b> çekirdek ödeyerek SyruppoLab’ı satın alacaksın. Sonra Kahve Dede’nin <b>zaman makinesine</b> binip tarihin her döneminde kahve macerasına başlayacaksın! (Kalan: <b>{left}</b>)', okTM: 'SATIN AL VE ZAMANDA YOLCULUK ET! ⏳'
                 },
                 intro: {
                     btn: 'BAŞLA ☕',
+                    saga: '⏳ <b>{era}</b> · {years}<br><b>Kasa: {bal}</b> · Hedef: kasada <b>{at}</b> görüp zaman makinesini <b>{price}</b> çekirdekle bir sonraki bölüme yollamak. Fazla çekirdekler <b>Zaman Hazinesi</b>’ne gider.<br><br>✨ <b>Dönem gücü · {buff}:</b> {buffD}. (Yalnızca bu dönemde.)<br>☕ Sadakat kartı bu bölümde de seninle. Final’e <b>{left}</b> bölüm kaldı!',
+                    eraInfo: '<b>{era}</b> (bölüm {a}–{b})<br>✨ <b>{buff}:</b> {buffD}.<br>Bu güç yalnızca bu dönemin bölümlerinde geçerli ve yalnızca senin lehine çalışır!',
                     1: '<b>Kasa: {bal} çekirdek.</b> Hedef: kasada <b>{at}</b> çekirdek görmek ve ikinci şubeyi <b>{price}</b> çekirdeğe açmak.<br><br>🛠 Kazandığın çekirdeklerle <b>Atölye</b>’de sembollerini kalıcı olarak güçlendirebilirsin. Ne kadar harcayacağın sana kalmış!',
                     2: 'İkinci şubemiz Matcha Caddesi’nde! <b>Kasa: {bal}</b> · Hedef: <b>{at}</b>.<br><br>🍵 SyruppoLab makaralara <b>Matcha</b> sızdırıyor; ama biz gerçek kahveciyiz! Ekrana düşen <b>bütün matchalar aynı anda tek bir kahve sembolüne dönüşür</b>. Matcha hattı asla bozmaz, sadece kazandırır.<br>⚔️ Dönüştürdüğün her matcha <b>Matcha Savaşı</b> sayacını doldurur: 15 matchada <b>Kahve Zaferi</b> = bahsinin 10 katı!<br>🥛 <b>Pitcher</b> (1-3-5. makara) bir <b>jokerdir</b>; ekranda 3 Pitcher = <b>Latte Art Bonusu</b>!',
                     3: 'Pastane Meydanı’nda festival var! <b>Kasa: {bal}</b> · Hedef: <b>{at}</b>.<br><br>🧁 Makaralarda <b>Fırın Keki</b> çıkar. Her kek fırını ısıtır; <b>{full} kek</b> dolunca <b>PASTA YAĞMURU</b> başlar: {spins} bedava spin boyunca kekler <b>JOKER</b> olur ve sık düşer!',
                     4: 'Kendi çekirdeğimizi yetiştirdiğimiz Hasat Tepesi! <b>Kasa: {bal}</b> · Hedef: <b>{at}</b>.<br><br>🌾 <b>Kahve Çuvalı</b> ekranın neresinde olursa olsun öder: 3 çuval = bahsin 2 katı, 4 = 6, 5 = 20, 6 = 60, 7+ = 150 katı!',
                     5: 'SyruppoLab’ın Şurup Kalesi! <b>Kasa: {bal}</b> · Hedef: kasada <b>{at}</b> görüp SyruppoLab’ı satın almak.<br><br><b>Reçete Kitabı</b> ve <b>Bearista</b> +%50, <b>MaviKuş</b> +%25 değerli. Surlar çatladıkça (%25 · %50 · %75) ödül kazanırsın.<br>☕ <b>Sadakat kartı:</b> makarada çıkan damgaları topla; her 10 damgada ücretsiz içeceğini seç!'
                 },
-                map: { title: 'Kasaba Haritası', play: '▶ OYNA', done: '✓ Tamamlandı', locked: '🔒 Kilitli', needs: 'Önceki şubede kasan {at} olunca açılır', story: '📖 Hikâye', shop: '🛠 ATÖLYE', menu: '🏠 MENÜ', here: 'Buradasın', bank: 'Kasa' },
+                map: { title: 'Zaman Haritası', play: '▶ OYNA', done: '✓ Tamamlandı', locked: '🔒 Kilitli', needs: 'Önceki bölümde kasan {at} olunca açılır', story: '📖 Hikâye', shop: '🛠 ATÖLYE', menu: '🏠 MENÜ', here: 'Buradasın', bank: 'Kasa' },
                 shop: { title: '🛠 Barista Atölyesi', bank: 'Kasa', tabs: { symbol: '🍪 Semboller', skill: '⚡ Yetenekler', special: '🍵 Özel', late: '✨ Usta', lever: '🎰 Kol' }, lockSpecial: '🔒 Bazı özel yükseltmeler ilgili aşamaya ulaşınca açılır.', lockLate: '🔒 Usta yükseltmeleri 4. aşamada açılır.', lateInfo: '✨ Usta yükseltmeleri: oyun sonu için pahalı ama güçlü geliştirmeler.', max: 'MAKS', maxed: '★ MAKSİMUM', foot: 'Yükseltmeler kalıcıdır ve kasandaki çekirdekle alınır.', power: 'Atölye gücü: {have} / {total} seviye', spinWait: 'Makaralar dönerken alışveriş yapılamaz.' },
                 up: {
                     sym: { n: s => s + ' Çarpanı', d: l => `Ödemeleri ×${fx(1 + 0.06 * l)}` },
@@ -78,13 +86,13 @@
                 },
                 banner: { fs: 'FREE SPIN! Kalan:', exp: 'Genişleyen sembol:', rain: 'PASTA YAĞMURU! Kalan:', rainInfo: 'Kekler JOKER 🧁', badgeFs: 'FREE SPIN', badgeRain: 'PASTA YAĞMURU', mult: '⚡ TOPLAM ÇARPAN ×{v}' },
                 tier: t => t > 0 ? `⭐ KADEME ${t} · +%${t * 4} KAZANÇ` : '⭐ KADEME 0',
-                nb: { title: 'BARİSTA NOT DEFTERİ!', found: '3 Reçete Kitabı bulundu! Not defteri açılıyor...', picking: 'Not defteri bugünün sembolünü seçiyor...', result: 'Genişleyen sembol: <b>{s}</b>! {n} Free Spin başlıyor{f}.<br><small>Ekranda {min}+ {s} gelirse makarayı kaplar.</small>', filtre: ' (☕ Filtre Kahve)', extra: '(+{k} fazla kitap bonusu)', start: 'FREE SPIN’LERİ BAŞLAT 🚀', cover: 'BARİSTA<br>NOT DEFTERİ', back: 'Bugünün özel reçetesi ✨' },
+                nb: { title: 'BARİSTA NOT DEFTERİ!', found: '3 Reçete Kitabı bulundu! Not defteri açılıyor...', picking: 'Not defteri bugünün sembolünü seçiyor...', result: 'Genişleyen sembol: <b>{s}</b>! {n} Free Spin başlıyor{f}.<br><small>Ekranda {min}+ {s} gelirse makarayı kaplar.</small>', filtre: ' (☕ Filtre Kahve)', extra: '(+{k} fazla kitap bonusu)', start: 'FREE SPIN’LERİ BAŞLAT 🚀', cover: 'BARİSTA<br>NOT DEFTERİ', backTop: 'BUGÜNÜN', back: 'Özel Reçetesi' },
                 oven: { title: 'FIRIN', tip: 'Her kek fırını ısıtır. Dolunca Pasta Yağmuru başlar!' },
                 loy: { title: 'SADAKAT KARTI', tip: 'Sadakat kartı: her 10 damgada ücretsiz içecek', full: 'SADAKAT KARTI DOLDU!', pick: 'Ücretsiz içeceğini seç:', empty: 'Kart dolunca içecek seç',
                        filtreB: '☕ Filtre: sonraki FS 20', americanoB: '☕ Americano ×2 · {n} spin', latteB: '🥛 Latte: Wild +%{n}', maxed: 'En fazla {n} kez seçilebilir',
                        drinks: { filtre: ['Filtre Kahve', 'Sonraki free spin’lerin <b>20</b> tane olur.'], americano: ['Americano', 'Sonraki <b>10 çevirimde ×2</b> çarpan.'], latte: ['Latte', 'Wild (Reçete Kitabı) ihtimali bu aşama boyunca <b>+%10</b>.'] },
                        ready: '{d} hazır!', said: { filtre: 'Sonraki free spin bonusun 20 tur olacak.', americano: 'Sonraki 10 çevirimde kazançların ×2!', latte: 'Reçete Kitabı artık daha sık geliyor (+%10).' } },
-                bust: { t: 'KASAN BOŞALDI!', txt: 'Bütün çekirdeklerin bitti! Oyuna girdiğin her 6 saatte bir kasana <b>{v}</b> çekirdek hediye eklenir. Sıradaki hediyeye kalan süre:', video: '🎬 VİDEO İZLE (+{v})', wait: '⏳ BEKLE', waitMsg: 'Sıradaki hediyene {t} kaldı. Mağazadan video izleyerek hemen çekirdek alabilirsin.' },
+                bust: { rescue: 'Hoop, kasan boşaldı evlat! Yedek depodan sana <b>{v}</b> çekirdek getirdim. (Her bölümde bir kez.)', t: 'KASAN BOŞALDI!', txt: 'Bütün çekirdeklerin bitti! Oyuna girdiğin her 6 saatte bir kasana <b>{v}</b> çekirdek hediye eklenir. Sıradaki hediyeye kalan süre:', video: '🎬 VİDEO İZLE (+{v})', wait: '⏳ BEKLE', waitMsg: 'Sıradaki hediyene {t} kaldı. Mağazadan video izleyerek hemen çekirdek alabilirsin.' },
                 gift: { got: '6 saatlik hediye: kasana +{v} çekirdek eklendi! ☕', video: '🎬 Video izlendi: +{v} çekirdek!' },
                 bigwin: ['BÜYÜK KAZANÇ!', 'MEGA KAZANÇ!', 'EPİK KAZANÇ!'], bigwinTap: 'devam etmek için dokun',
                 fsdone: { t: 'FREE SPIN BİTTİ!', txt: 'Toplam kazancın', mult: 'Toplam çarpan ×{v}', ok: 'DEVAM ET ☕' },
@@ -93,7 +101,8 @@
                 info: {
                     title: '📖 Reçete Kitabı', ok: 'ANLADIM', paysT: '💎 Sembol Çarpanları (çizgi bahsi × değer)',
                     rulesT: '🎯 20 Ödeme Çizgisi & Kurallar',
-                    pages: { rules: 'Kurallar', book: 'Reçete Kitabı', high: 'Yüksek Semboller', low: 'Kahve Sembolleri', special: 'Bu Şubeye Özel', lines: 'Ödeme Çizgileri', keys: 'Tuşlar' },
+                    pages: { era: 'Dönem Gücü', rules: 'Kurallar', book: 'Reçete Kitabı', high: 'Yüksek Semboller', low: 'Kahve Sembolleri', special: 'Bu Şubeye Özel', lines: 'Ödeme Çizgileri', keys: 'Tuşlar' },
+                    eraNote: 'Her tarihi dönemin kendine özgü bir gücü vardır; dönem bitince bu güç kapanır, yenisi başlar. Dönem mağazasında o çağa özel görünümler satılır.',
                     bookTxt: 'Reçete Kitabı hem <b>Wild</b> (her sembolün yerine geçer) hem <b>Scatter</b>dır: ekranın neresinde olursa olsun öder.<br>• <b>3 Kitap</b> = <b>{n} Free Spin</b>.<br>• 3’ün üstündeki <b>her kitap +1 Free Spin</b> verir (4 kitap = {n}+1, 5 kitap = {n}+2…).<br>• Kitap açılır, sayfalar hızla çevrilir ve bir <b>genişleyen sembol</b> seçilir. Free spin’de bu sembol yeterince gelirse makarasını baştan aşağı kaplar ve tüm hatlarda öder.',
                     linesTxt: 'Kazançlar soldan sağa, <b>{n} ödeme çizgisi</b> üzerinde sayılır. Her çizgide en yüksek kazanç ödenir; farklı çizgilerdeki kazançlar toplanır.',
                     rules: (E, s) => `Soldan sağa aktif hatlar üzerinde eşleşen semboller kazanç sağlar. Değerler <b>çizgi bahsi (bahis ÷ 20)</b> ile çarpılır; ödeme tablosunda şu anki bahsine göre çekirdek olarak gösterilir. <b>Reçete Kitabı</b> hem Wild hem Scatter: 3 Reçete Kitabı = <b>${E.freeSpins} Free Spin</b>, 3’ün üstündeki her kitap <b>+1 Free Spin</b>. Free spin sırasında yeniden 3+ Kitap gelirse <b>gelen kitap sayısı kadar</b> free spin eklenir.<br><b>Genişleyen sembol:</b> Not defterinin seçtiği sembol free spin’de ekranda en az <b>2</b> (yüksek semboller) ya da <b>3</b> (diğerleri) kez görünürse bulunduğu makaraları kaplar ve <b>20 hattın hepsinde</b> ödeme yapar.<br><b>Bahis kademesi:</b> bahsini yükselttikçe (her 3 basamakta bir, en fazla 5 kademe) kazançlar +%4 artar ve kitap şansı biraz yükselir.` + (E.reels === 6 ? '<br><b>6. Makara açık:</b> 6’lı eşleşme, 5’li ödemenin 2,5 katını öder.' : ''),
@@ -154,7 +163,7 @@
                 top: { map: '🗺', mapT: ' MAP', shop: '🛠', shopT: ' WORKSHOP', menu: '🏠', menuT: ' MENU' },
                 ctl: { bet: 'BET', bank: 'BANK', spin: 'SPIN', auto: 'AUTO' },
                 goal: {
-                    buyNext: '🏪 {short} · {price}', buyFinal: '🏰 BUY · {price}',
+                    buyNext: '⏳ {short} · {price}', buyFinal: '🏆 FINALE · {price}', buyTM: '⏳ TIME MACHINE · {price}',
                     lockedTip: 'When your bank shows {at} beans you can buy the next branch ({place}) for {price} beans. The rest stays in your bank.',
                     lockedTipFinal: 'When your bank shows {at} beans you can buy out SyruppoLab for {price} beans and save the town!',
                     readyTip: 'Ready! You can buy the next branch ({place}) for {price} beans.',
@@ -164,10 +173,13 @@
                 },
                 buy: {
                     t: 'BUY {short}?', txt: '<b>{price}</b> beans will be paid from your bank for <b>{place}</b>. The remaining <b>{left}</b> beans stay in your bank.<br>You can’t return to this stage.', ok: 'BUY',
-                    tF: 'BUY OUT SYRUPPOLAB?', txtF: 'You will pay <b>{price}</b> beans to buy out SyruppoLab. The remaining <b>{left}</b> beans stay in your bank and you can keep playing freely.', okF: 'BUY & SAVE THE TOWN!'
+                    tF: 'BUY OUT SYRUPPOLAB?', txtF: 'You will pay <b>{price}</b> beans to buy out SyruppoLab. The remaining <b>{left}</b> beans stay in your bank and you can keep playing freely.', okF: 'BUY & SAVE THE TOWN!',
+                    txtTM: 'You’ll pay <b>{price}</b> beans to buy SyruppoLab. Then you’ll board Grandpa Brew’s <b>time machine</b> for a coffee adventure across every era of history! (Left: <b>{left}</b>)', okTM: 'BUY AND TRAVEL IN TIME! ⏳'
                 },
                 intro: {
                     btn: 'START ☕',
+                    saga: '⏳ <b>{era}</b> · {years}<br><b>Bank: {bal}</b> · Goal: reach <b>{at}</b> and send the time machine to the next chapter for <b>{price}</b> beans. Extra beans go to your <b>Time Treasure</b>.<br><br>✨ <b>Era power · {buff}:</b> {buffD}. (This era only.)<br>☕ Your loyalty card comes along too. <b>{left}</b> chapters to the finale!',
+                    eraInfo: '<b>{era}</b> (chapters {a}–{b})<br>✨ <b>{buff}:</b> {buffD}.<br>This power works only in this era’s chapters and only in your favour!',
                     1: '<b>Bank: {bal} beans.</b> Goal: see <b>{at}</b> beans in your bank and open the second branch for <b>{price}</b>.<br><br>🛠 Spend your winnings in the <b>Workshop</b> to upgrade your symbols permanently. How much you invest is up to you!',
                     2: 'Our second branch is on Matcha Street! <b>Bank: {bal}</b> · Goal: <b>{at}</b>.<br><br>🍵 SyruppoLab sneaks <b>Matcha</b> onto the reels, but we are real baristas! <b>All matchas on screen turn into one and the same coffee symbol</b>. Matcha never breaks a line, it only adds wins.<br>⚔️ Every matcha you convert fills the <b>Matcha War</b> meter: 15 matchas = <b>Coffee Victory</b>, 10× your bet!<br>🥛 <b>Pitcher</b> (reels 1-3-5) is a <b>joker</b>; 3 Pitchers on screen = <b>Latte Art Bonus</b>!',
                     3: 'It’s festival time on Bakery Square! <b>Bank: {bal}</b> · Goal: <b>{at}</b>.<br><br>🧁 <b>Oven Cupcakes</b> land on the reels. Each one heats the oven; at <b>{full} cupcakes</b> the <b>CAKE RAIN</b> begins: for {spins} free spins cupcakes become <b>JOKERS</b> and land often!',
@@ -209,13 +221,13 @@
                 },
                 banner: { fs: 'FREE SPINS! Left:', exp: 'Expanding symbol:', rain: 'CAKE RAIN! Left:', rainInfo: 'Cupcakes are JOKERS 🧁', badgeFs: 'FREE SPIN', badgeRain: 'CAKE RAIN', mult: '⚡ TOTAL MULTIPLIER ×{v}' },
                 tier: t => t > 0 ? `⭐ TIER ${t} · +${t * 4}% WINS` : '⭐ TIER 0',
-                nb: { title: 'BARISTA NOTEBOOK!', found: '3 Recipe Books found! The notebook is opening...', picking: 'The notebook is choosing today’s symbol...', result: 'Expanding symbol: <b>{s}</b>! {n} Free Spins begin{f}.<br><small>If {min}+ {s} land on screen, it fills the reels.</small>', filtre: ' (☕ Filter Coffee)', extra: '(+{k} extra book bonus)', start: 'START FREE SPINS 🚀', cover: 'BARISTA<br>NOTEBOOK', back: 'Today’s special recipe ✨' },
+                nb: { title: 'BARISTA NOTEBOOK!', found: '3 Recipe Books found! The notebook is opening...', picking: 'The notebook is choosing today’s symbol...', result: 'Expanding symbol: <b>{s}</b>! {n} Free Spins begin{f}.<br><small>If {min}+ {s} land on screen, it fills the reels.</small>', filtre: ' (☕ Filter Coffee)', extra: '(+{k} extra book bonus)', start: 'START FREE SPINS 🚀', cover: 'BARISTA<br>NOTEBOOK', backTop: 'TODAY’S', back: 'Special Recipe' },
                 oven: { title: 'OVEN', tip: 'Each cupcake heats the oven. When full, Cake Rain begins!' },
                 loy: { title: 'LOYALTY CARD', tip: 'Loyalty card: a free drink every 10 stamps', full: 'LOYALTY CARD FULL!', pick: 'Choose your free drink:', empty: 'Pick a drink when the card is full',
                        filtreB: '☕ Filter: next FS 20', americanoB: '☕ Americano ×2 · {n} spins', latteB: '🥛 Latte: Wild +{n}%', maxed: 'Can be chosen at most {n} times',
                        drinks: { filtre: ['Filter Coffee', 'Your next free spins will be <b>20</b>.'], americano: ['Americano', '<b>×2</b> on your next <b>10 spins</b>.'], latte: ['Latte', 'Wild (Recipe Book) chance <b>+10%</b> for this stage.'] },
                        ready: '{d} is ready!', said: { filtre: 'Your next free spin bonus will last 20 spins.', americano: 'Your wins are ×2 for the next 10 spins!', latte: 'Recipe Books now land more often (+10%).' } },
-                bust: { t: 'YOUR BANK IS EMPTY!', txt: 'You’re out of beans! Every 6 hours you play, <b>{v}</b> beans are gifted to your bank. Time until the next gift:', video: '🎬 WATCH VIDEO (+{v})', wait: '⏳ WAIT', waitMsg: 'Your next gift arrives in {t}. Watch a video in the Shop to get beans right away.' },
+                bust: { rescue: 'Whoops, your bank is empty, kiddo! I brought you <b>{v}</b> beans from my reserve. (Once per chapter.)', t: 'YOUR BANK IS EMPTY!', txt: 'You’re out of beans! Every 6 hours you play, <b>{v}</b> beans are gifted to your bank. Time until the next gift:', video: '🎬 WATCH VIDEO (+{v})', wait: '⏳ WAIT', waitMsg: 'Your next gift arrives in {t}. Watch a video in the Shop to get beans right away.' },
                 gift: { got: '6-hour gift: +{v} beans added to your bank! ☕', video: '🎬 Video watched: +{v} beans!' },
                 bigwin: ['BIG WIN!', 'MEGA WIN!', 'EPIC WIN!'], bigwinTap: 'tap to continue',
                 fsdone: { t: 'FREE SPINS OVER!', txt: 'Your total win', mult: 'Total multiplier ×{v}', ok: 'CONTINUE ☕' },
@@ -224,7 +236,8 @@
                 info: {
                     title: '📖 Recipe Book', ok: 'GOT IT', paysT: '💎 Symbol Payouts (line bet × value)',
                     rulesT: '🎯 20 Paylines & Rules',
-                    pages: { rules: 'Rules', book: 'Recipe Book', high: 'High Symbols', low: 'Coffee Symbols', special: 'This Branch Only', lines: 'Paylines', keys: 'Buttons' },
+                    pages: { era: 'Era Power', rules: 'Rules', book: 'Recipe Book', high: 'High Symbols', low: 'Coffee Symbols', special: 'This Branch Only', lines: 'Paylines', keys: 'Buttons' },
+                    eraNote: 'Every era of history has its own power; it ends with the era and the next one begins. The era shop sells looks from that age.',
                     bookTxt: 'The Recipe Book is both <b>Wild</b> (substitutes for every symbol) and <b>Scatter</b>: it pays anywhere on the screen.<br>• <b>3 Books</b> = <b>{n} Free Spins</b>.<br>• <b>Every book above 3 adds +1 Free Spin</b> (4 books = {n}+1, 5 books = {n}+2…).<br>• The book opens, its pages flip fast and an <b>expanding symbol</b> is picked. If it lands often enough during free spins it fills its reels top to bottom and pays on every line.',
                     linesTxt: 'Wins are counted left to right on <b>{n} paylines</b>. Only the highest win per line is paid; wins on different lines are added together.',
                     rules: (E, s) => `Matching symbols on active lines from left to right pay. Values are multiplied by the <b>line bet (bet ÷ 20)</b>; the paytable shows them in beans for your current bet. The <b>Recipe Book</b> is both Wild and Scatter: 3 Recipe Books = <b>${E.freeSpins} Free Spins</b>, and each book above 3 adds <b>+1 Free Spin</b>. If 3+ Books land again during free spins, <b>that many</b> free spins are added.<br><b>Expanding symbol:</b> if the notebook’s symbol lands at least <b>2</b> (high symbols) or <b>3</b> (others) times during free spins, it fills its reels and pays on <b>all 20 lines</b>.<br><b>Bet tier:</b> raising your bet (every 3 steps, up to 5 tiers) adds +4% to wins and slightly raises the Book chance.` + (E.reels === 6 ? '<br><b>6th reel active:</b> 6 of a kind pays 2.5× the 5-of-a-kind prize.' : ''),

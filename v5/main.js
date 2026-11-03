@@ -16,7 +16,6 @@
             document.body.dataset.mode = isGame ? 'game' : 'menu';
             $('bg-menu').classList.toggle('on', !isGame);
             $('bg-game').classList.toggle('on', isGame);
-            if (screenId !== 'screen-story' && typeof StoryPlayer !== 'undefined') StoryPlayer.stop();
 
             if (isGame) {
                 startCasinoMusic();
@@ -45,8 +44,10 @@
         document.addEventListener('click', e => { const m = e.target; if (m && m.classList && m.classList.contains('modal') && m.classList.contains('open') && BACKDROP_CLOSE[m.id]) BACKDROP_CLOSE[m.id](); });
         /* body.modal-open: eski iOS Safari ':has()' desteklemediği için pencere açıkken ses düğmesi vb. buna göre gizlenir */
         function syncModalClass() { document.body.classList.toggle('modal-open', !!document.querySelector('.modal.open')); }
-        function openModal(id) { setAppH(); const m = $(id); m.classList.add('open'); const p = m.querySelector('.panel'); if (p) p.scrollTop = 0; m.scrollTop = 0; syncModalClass(); }
-        function closeModal(id) { $(id).classList.remove('open'); syncModalClass(); }
+        /* Pencere yığını: en son açılan pencere her zaman en üstte (ör. Mağaza'nın üstündeki satın alma onayı) */
+        let modalZ = 60;
+        function openModal(id) { setAppH(); const m = $(id); m.style.zIndex = String(++modalZ); m.classList.add('open'); const p = m.querySelector('.panel'); if (p) p.scrollTop = 0; m.scrollTop = 0; syncModalClass(); }
+        function closeModal(id) { const m = $(id); m.classList.remove('open'); m.style.zIndex = ''; if (!document.querySelector('.modal.open')) modalZ = 60; syncModalClass(); }
         function anyModalOpen() { return !!document.querySelector('.modal.open'); }
         function whenNoModal(fn) {
             const go = () => { if (anyModalOpen()) { setTimeout(go, 350); return; } fn(); };
@@ -73,7 +74,7 @@
         function slotSummary(sv) {
             return diffLabel(sv) + ' · ' + tf(L().slots.info, { stage: stageLabel(sv.stage), bal: fmt(sv.balance) });
         }
-        function stageLabel(n) { return `${L().stageWord} ${n} · ${stageName(n)}`; }
+        function stageLabel(n) { return `${n >= 6 ? ST().chWord : L().stageWord} ${n} · ${stageName(n)}`; }
 
         function renderMenu() {
             applyStaticI18n();
@@ -105,7 +106,7 @@
             SLOTS.forEach((sv, i) => {
                 const card = document.createElement('div');
                 card.className = 'slot-card' + (sv ? '' : ' empty');
-                const icon = sv ? (sv.finished ? '🏆' : ['☕', '🍵', '🧁', '🌾', '🏰'][sv.stage - 1]) : '➕';
+                const icon = sv ? (sv.finished ? '🏆' : sv.stage <= 5 ? ['☕', '🍵', '🧁', '🌾', '🏰'][sv.stage - 1] : ERA_META[eraKey(sv.stage)].ic) : '➕';
                 const date = sv ? new Date(sv.updated).toLocaleDateString(CUR_LANG() === 'en' ? 'en-US' : 'tr-TR') : '';
                 card.innerHTML = `<div class="si">${icon}</div><div class="sb"><b>${sv ? slotLabel(i) : L().slots.empty}</b><small>${sv ? (sv.finished ? L().slots.fin + ' · ' : '') + slotSummary(sv) + ' · ' + date : ''}</small></div>`;
                 const acts = document.createElement('div');
@@ -151,7 +152,7 @@
             pendingSlot = slot;
             closeModal('modal-slots');
             playSynthNote(500, 0.05);
-            if (Profile.nick) { openDiff(Profile.nick); return; }
+            if (Profile.nick) { beginNewSave(Profile.nick); return; }
             $('player-name-input').value = guestName();
             openModal('modal-name');
             setTimeout(() => { try { $('player-name-input').select(); } catch (e) {} }, 50);
@@ -162,10 +163,10 @@
             closeNameModal();
             Profile.nick = name; saveProfile();
             renderProfileChip();
-            openDiff(name);
+            beginNewSave(name);
         }
-        /* ---------- ZORLUK SEÇİMİ (yeni oyunda bir kez) ---------- */
-        const DIFF_ICON = { story: '📖', std: '☕', gambler: '🎲' };
+        /* v6: zorluk seçimi kaldırıldı — her kayıt Hikâye matematiğiyle oynanır */
+        const DIFF_ICON = { story: '📖', std: '📖', gambler: '📖' };
         let pendingName = '';
         function openDiff(name) {
             pendingName = name;
@@ -184,10 +185,10 @@
             $('df-cancel').textContent = L().name.cancel;
             openModal('modal-diff');
         }
-        function diffLabel(sv) { const k = (sv && sv.diff) || 'std'; return DIFF_ICON[k] + ' ' + L().diff[k][0]; }
-        function beginNewSave(name, diff) {
+        function diffLabel(sv) { const k = sv && eraKey(sv.stage); return k ? ERA_META[k].ic + ' ' + eraName(k) : '☕ ' + (CUR_LANG() === 'en' ? 'Coffee Town' : 'Kahve Kasabası'); }
+        function beginNewSave(name) {
             Game.slot = pendingSlot;
-            Game.save = newSave(name, diff);
+            Game.save = newSave(name);
             loadIntoState(Game.save);
             persist();
             $('hud-player-name').textContent = nickOf();
@@ -199,6 +200,8 @@
             Game.slot = i;
             Game.save = sv;
             sv.phases = sv.phases || {}; sv.seen = sv.seen || {}; sv.ups = sv.ups || {};
+            migrateSaga(sv);
+            if (sv.stage >= Engine.SAGA_FIRST && !(sv.ups.lx_reel6 > 0)) sv.ups.lx_reel6 = 1;   // v6.2: Saga'da 6. makara herkese
             loadIntoState(sv);
             Settings.last = i; saveSettings();
             $('hud-player-name').textContent = nickOf();
@@ -208,92 +211,121 @@
         /* =====================================================
            KASABA HARİTASI
            ===================================================== */
-        const MAP_NODES = [
-            { x: 170, y: 492, color: '#F2B84B', img: 'espresso' },
-            { x: 390, y: 400, color: '#8FCB6B', img: 'matcha' },
-            { x: 590, y: 470, color: '#FF9FBF', img: 'cupcake' },
-            { x: 760, y: 300, color: '#B7D96A', img: 'coffeebag' },
-            { x: 880, y: 138, color: '#9A7BC9', img: 'book' },
-            { x: 650, y: 118, color: '#F2C25A', img: 'goldenbean', usta: true }
-        ];
+        /* Saga haritası: 100 bölüm + (bitince) Usta Kafesi. Aşağıdan yukarı kıvrılan yol; dönemler renkli bantlar.
+           Hafif tutulur: düğümlerde resim yok (emoji/rakam), yalnızca oyuncu jetonu resimli. */
+        const MAP_W = 1000, MAP_STEP = 150, MAP_PAD = 210;
+        const TOWN_META = { ic: '☕', col: '#F2B84B', col2: '#C0782A', ground: '#CDEBB4' };
+        const TOWN_ICONS = { 1: '☕', 2: '🍵', 3: '🧁', 4: '🌾', 5: '🏰' };
+        const ERA_DECO = { egypt: ['🐪', '🌴', '🏺', '🐫'], greece: ['🫒', '🏺', '⚱️', '🦉'], viking: ['🛶', '❄️', '🐺', '⛰️'], rome: ['🍇', '🛡️', '🐎', '🏛️'], ottoman: ['🌷', '🕌', '☕', '🐈'],
+                           victorian: ['🎩', '🚂', '☂️', '🕰️'], france: ['🥐', '🎈', '🌹', '🎭'], italy: ['🎨', '🍝', '🚣', '🍕'], jazz: ['🎺', '🎷', '🗽', '🌃'] };
+        const MAP_GAP = 130;   // dönem geçişlerinde başlık için boşluk
+        const MAP_H = MAP_PAD * 2 + 100 * MAP_STEP + 10 * MAP_GAP;
+        function mapBand(n) { if (n <= 5) return 0; if (n > 100) return 10; return Engine.eraIndex(n) + 1; }
+        function mapNodeXY(n) {   // n: 1..101
+            return { x: MAP_W / 2 + Math.sin(n * 0.85) * 250 + Math.sin(n * 0.31) * 40, y: MAP_H - MAP_PAD - (n - 1) * MAP_STEP - mapBand(n) * MAP_GAP };
+        }
         function mapSVG() {
-            const sv = Game.save, cur = sv.stage, fin = sv.finished;
-            const S = (k) => ASSETS.sym[k];
-            let h = `<svg viewBox="0 0 1000 620" class="map-svg" role="img" aria-label="${L().map.title}">
-              <defs>
-                <pattern id="mp-dots" width="14" height="14" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.4" fill="#E9D4AE"/></pattern>
-                <filter id="mp-sh" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#5a3412" flood-opacity=".35"/></filter>
-              </defs>
-              <rect width="1000" height="620" rx="34" fill="#FBEFD8"/><rect width="1000" height="620" rx="34" fill="url(#mp-dots)"/>
-              <path d="M-20 250 C120 230 170 330 300 300 S480 200 560 260 S720 380 1020 330" fill="none" stroke="#A9DDF0" stroke-width="46" stroke-linecap="round" opacity=".9"/>
-              <path d="M-20 250 C120 230 170 330 300 300 S480 200 560 260 S720 380 1020 330" fill="none" stroke="#D6F1FA" stroke-width="14" stroke-linecap="round" stroke-dasharray="2 26" class="map-water"/>
-              <g fill="#BFE3A4" stroke="#8DBB6B" stroke-width="3"><path d="M600 620 Q700 360 1000 300 V620Z"/><path d="M0 620 Q120 520 340 560 T700 620Z" fill="#CDEBB4"/></g>
-              <g class="map-castle-hill"><path d="M760 230 Q880 40 1000 120 V250 Q880 210 760 230Z" fill="#CDB4E6" stroke="#9A7BC9" stroke-width="3"/></g>`;
-            // ağaçlar ve evler
-            const trees = [[70, 380], [110, 420], [260, 560], [300, 470], [470, 560], [500, 330], [660, 560], [700, 420], [930, 470], [860, 560], [640, 190], [560, 140], [240, 140], [120, 120]];
-            trees.forEach(([x, y], i) => { h += `<g class="map-tree" style="animation-delay:${(i % 5) * 0.4}s"><rect x="${x - 4}" y="${y}" width="8" height="18" fill="#9A6236"/><circle cx="${x}" cy="${y - 6}" r="20" fill="${i % 3 ? '#7FBF6A' : '#93CC79'}" stroke="#5E8C61" stroke-width="3"/></g>`; });
-            const houses = [[300, 150, '#FF9FBF'], [360, 120, '#F2B84B'], [420, 160, '#A9DDF0'], [110, 300, '#FFD27A'], [470, 420, '#F7C6A3']];
-            houses.forEach(([x, y, c]) => { h += `<g stroke="#7A4B2A" stroke-width="3" stroke-linejoin="round"><rect x="${x - 18}" y="${y}" width="36" height="28" fill="#FFF6EA"/><polygon points="${x - 24},${y + 2} ${x},${y - 20} ${x + 24},${y + 2}" fill="${c}"/><rect x="${x - 5}" y="${y + 12}" width="10" height="16" fill="#C99A66"/></g>`; });
-            // bulutlar
-            h += `<g class="map-cloud" fill="#fff" opacity=".9"><ellipse cx="180" cy="60" rx="46" ry="18"/><ellipse cx="210" cy="48" rx="30" ry="16"/></g><g class="map-cloud c2" fill="#fff" opacity=".85"><ellipse cx="600" cy="80" rx="52" ry="18"/><ellipse cx="630" cy="66" rx="32" ry="16"/></g>`;
-            // yol
-            const d = MAP_NODES.slice(0, 5).map((n, i) => (i ? 'L' : 'M') + n.x + ' ' + n.y).join(' ') + ` M${MAP_NODES[4].x} ${MAP_NODES[4].y} L${MAP_NODES[5].x} ${MAP_NODES[5].y}`;
-            h += `<path d="${d}" fill="none" stroke="#C99A66" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" opacity=".55"/>`;
-            h += `<path d="${d}" fill="none" stroke="#FFF6EA" stroke-width="5" stroke-dasharray="14 14" stroke-linecap="round"/>`;
-            // düğümler
-            MAP_NODES.forEach((n, i) => {
-                const st = i + 1;
-                const done = st < cur || (st === 5 && fin);
-                const here = n.usta ? fin : (st === cur && !fin);
-                const locked = n.usta ? !fin : st > cur;
-                h += `<g class="map-node ${done ? 'done' : ''} ${here ? 'here' : ''} ${locked ? 'locked' : ''}" data-stage="${st}" tabindex="0" filter="url(#mp-sh)">`;
-                if (here) h += `<circle cx="${n.x}" cy="${n.y}" r="70" class="map-glow" fill="none" stroke="#FFD27A" stroke-width="10"/>`;
-                h += `<circle cx="${n.x}" cy="${n.y}" r="56" fill="${locked ? '#D8CBB8' : n.color}" stroke="#FFF6EA" stroke-width="8"/>
-                      <circle cx="${n.x}" cy="${n.y}" r="56" fill="none" stroke="#7A4B2A" stroke-width="3"/>
-                      <image href="${S(n.img)}" x="${n.x - 38}" y="${n.y - 40}" width="76" height="76" ${locked ? 'opacity=".45"' : ''}/>
-                      <circle cx="${n.x + 42}" cy="${n.y - 42}" r="17" fill="${done ? '#5E8C61' : here ? '#E63946' : '#9C8B74'}" stroke="#fff" stroke-width="4"/>
-                      <text x="${n.x + 42}" y="${n.y - 36}" text-anchor="middle" font-size="18" font-weight="800" fill="#fff" font-family="Baloo 2, Nunito, sans-serif">${n.usta ? (locked ? '🔒' : '∞') : done ? '✓' : locked ? '🔒' : st}</text>
-                      <g transform="translate(${n.x},${n.y + 78})"><rect x="-92" y="-17" width="184" height="34" rx="17" fill="#FFF6EA" stroke="#C99A66" stroke-width="3"/>
-                      <text y="7" text-anchor="middle" font-size="18" font-weight="700" fill="#6B4226" font-family="Baloo 2, Nunito, sans-serif">${escapeHtml(n.usta ? L().usta.place : L().stage[st].place)}</text></g>
-                    </g>`;
+            const sv = Game.save, cur = sv.stage, fin = sv.finished, H = MAP_H;
+            const bandY = n => mapNodeXY(n).y + MAP_STEP / 2 + (n > 1 && mapBand(n) !== mapBand(n - 1) ? MAP_GAP : 0);   // n bölümünün alt sınırı (dönem başında başlık boşluğu dahil)
+            let h = `<svg viewBox="0 0 ${MAP_W} ${H}" class="map-svg saga" role="img" aria-label="${L().map.title}">
+              <defs><filter id="mp-sh" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#3a2410" flood-opacity=".35"/></filter></defs>`;
+            // bantlar: kasaba (1–5) + dönemler
+            const bands = [{ from: 1, to: 5, M: TOWN_META, name: CUR_LANG() === 'en' ? 'Coffee Town' : 'Kahve Kasabası', years: '' }]
+                .concat(Engine.ERAS.map(e => ({ from: e.from, to: e.from + e.n - 1, M: ERA_META[e.key], key: e.key, name: eraName(e.key), years: ERA_META[e.key].years[CUR_LANG()] })));
+            bands.forEach((B, bi) => {
+                const y0 = B.to === 100 ? 0 : bandY(B.to + 1), y1 = B.from === 1 ? H : bandY(B.from), ground = B.M.ground || '#E9D4AE';
+                h += `<rect x="0" y="${y0}" width="${MAP_W}" height="${y1 - y0}" fill="${ground}"/>
+                      <rect x="0" y="${y0}" width="${MAP_W}" height="${y1 - y0}" fill="${B.M.col}" opacity=".18"/>`;
+                // süs emojileri
+                const deco = B.key ? ERA_DECO[B.key] : ['🌳', '🏡', '🌼', '☕'], rr = seeded(hashStr('deco' + bi));
+                const count = Math.round((y1 - y0) / 90);
+                for (let i = 0; i < count; i++) {
+                    const y = y0 + 70 + rr() * (y1 - y0 - 160), side = i % 2 ? 1 : -1, x = MAP_W / 2 + side * (410 + rr() * 50);
+                    h += `<text x="${x}" y="${y}" font-size="${50 + rr() * 30}" text-anchor="middle" opacity=".8">${deco[i % deco.length]}</text>`;
+                }
+                // dönem başlığı
+                const ty = y1 - MAP_GAP / 2 - 6;
+                h += `<g transform="translate(${MAP_W / 2},${ty})"><rect x="-430" y="-40" width="860" height="72" rx="36" fill="${B.M.col}" stroke="${B.M.col2}" stroke-width="6"/>
+                      <text y="10" text-anchor="middle" font-size="36" font-weight="800" fill="#2A1A0C" font-family="Baloo 2, Nunito, sans-serif">${B.M.ic} ${escapeHtml(B.name)}${B.years ? ' · ' + B.years : ''}</text></g>`;
             });
+            // yol
+            let d = '';
+            for (let n = 1; n <= (fin ? 101 : 100); n++) { const p = mapNodeXY(n); d += (n === 1 ? 'M' : 'L') + p.x.toFixed(0) + ' ' + p.y.toFixed(0) + ' '; }
+            h += `<path d="${d}" fill="none" stroke="#7A4B2A" stroke-width="20" stroke-linecap="round" stroke-linejoin="round" opacity=".35"/>
+                  <path d="${d}" fill="none" stroke="#FFF6EA" stroke-width="6" stroke-dasharray="14 16" stroke-linecap="round"/>`;
+            // düğümler
+            for (let n = 1; n <= 101; n++) {
+                if (n === 101 && !fin) break;
+                const p = mapNodeXY(n), usta = n === 101;
+                const done = !usta && (n < cur || (n === 100 && fin)), here = usta ? fin : (n === cur && !fin), locked = !usta && n > cur;
+                const k = !usta && eraKey(n), M = usta ? { col: '#F2C25A', col2: '#8A5A10' } : k ? ERA_META[k] : TOWN_META;
+                const icon = usta ? '∞' : n <= 5 ? TOWN_ICONS[n] : (k && Engine.eraOf(n).from === n ? ERA_META[k].ic : n);
+                const r = here ? 64 : (k && Engine.eraOf(n).from === n) || n <= 5 || usta ? 56 : 46;
+                h += `<g class="map-node ${done ? 'done' : ''} ${here ? 'here' : ''} ${locked ? 'locked' : ''}" data-stage="${n}" tabindex="0" filter="url(#mp-sh)">`;
+                if (here) h += `<circle cx="${p.x}" cy="${p.y}" r="${r + 14}" class="map-glow" fill="none" stroke="#FFD27A" stroke-width="9"/>`;
+                h += `<circle cx="${p.x}" cy="${p.y}" r="${r}" fill="${locked ? '#D8CBB8' : M.col}" stroke="#FFF6EA" stroke-width="6"/>
+                      <circle cx="${p.x}" cy="${p.y}" r="${r}" fill="none" stroke="${locked ? '#9C8B74' : M.col2}" stroke-width="3"/>
+                      <text x="${p.x}" y="${p.y + (typeof icon === 'number' ? 15 : 18)}" text-anchor="middle" font-size="${typeof icon === 'number' ? 42 : 52}" font-weight="800" fill="${locked ? '#8A7A64' : '#2A1A0C'}" font-family="Baloo 2, Nunito, sans-serif" ${locked ? 'opacity=".7"' : ''}>${icon}</text>`;
+                if (done) h += `<circle cx="${p.x + r * 0.75}" cy="${p.y - r * 0.75}" r="20" fill="#5E8C61" stroke="#fff" stroke-width="4"/><text x="${p.x + r * 0.75}" y="${p.y - r * 0.75 + 8}" text-anchor="middle" font-size="24" font-weight="800" fill="#fff">✓</text>`;
+                if (here || usta || n <= 5 || (k && Engine.eraOf(n).from === n)) {
+                    const lbl = usta ? L().usta.place : stageName(n), side = p.x > MAP_W / 2 ? -1 : 1, lx = p.x + side * (r + 16);
+                    const lw = 380;
+                    h += `<g transform="translate(${lx},${p.y})"><rect x="${side > 0 ? 0 : -lw}" y="-28" width="${lw}" height="56" rx="28" fill="#FFF6EA" stroke="#C99A66" stroke-width="4"/>
+                          <text x="${side > 0 ? lw / 2 : -lw / 2}" y="10" text-anchor="middle" font-size="30" font-weight="800" fill="#6B4226" font-family="Baloo 2, Nunito, sans-serif">${escapeHtml(((usta ? '' : n + ' · ') + lbl).slice(0, 22))}</text></g>`;
+                }
+                h += `</g>`;
+            }
             // oyuncu jetonu
-            const cn = fin ? MAP_NODES[5] : MAP_NODES[Math.min(cur, 5) - 1];
-            h += `<g class="map-token"><image href="${S('barista')}" x="${cn.x - 34}" y="${cn.y - 150}" width="68" height="68"/><polygon points="${cn.x - 9},${cn.y - 84} ${cn.x + 9},${cn.y - 84} ${cn.x},${cn.y - 70}" fill="#E63946"/></g>`;
+            const cn = mapNodeXY(fin ? 101 : cur);
+            h += `<g class="map-token"><image href="${ASSETS.sym.barista}" x="${cn.x - 55}" y="${cn.y - 190}" width="110" height="110"/><polygon points="${cn.x - 14},${cn.y - 84} ${cn.x + 14},${cn.y - 84} ${cn.x},${cn.y - 68}" fill="#E63946"/></g>`;
             h += `</svg>`;
             return h;
         }
         function openMap() {
             if (!Game.save) { switchScreen('screen-menu'); renderMenu(); return; }
+            if (gameState.isSpinning && document.body.dataset.mode === 'game') { setMessage(CUR_LANG() === 'en' ? 'Wait for the reels to stop ☕' : 'Makaralar dursun, sonra geç ☕'); return; }
             persist();
             applyStaticI18n();
             $('map-name').textContent = nickOf();
             checkDailyGift();
             $('map-bank').innerHTML = `${beanIc()} ${fmt(gameState.balance)}`;
-            $('map-holder').innerHTML = mapSVG();
-            $('map-holder').querySelectorAll('.map-node').forEach(g => {
+            const holder = $('map-holder');
+            holder.classList.add('saga');
+            holder.innerHTML = mapSVG();
+            holder.querySelectorAll('.map-node').forEach(g => {
                 const st = +g.dataset.stage;
                 const go = () => mapClick(st);
                 g.addEventListener('click', go);
                 g.addEventListener('keydown', e => { if (e.key === 'Enter') go(); });
             });
-            const cur = Game.save.stage;
-            $('map-info').innerHTML = Game.save.finished ? `<b>${L().usta.place}</b> · ${L().map.here}` : `<b>${stageLabel(cur)}</b> · ${L().map.here}`;
+            const sv = Game.save, cur = sv.stage;
+            $('map-info').innerHTML = sv.finished ? `<b>${L().usta.place}</b> · ${L().map.here}` : `<b>${stageLabel(cur)}</b>${eraKey(cur) ? ' · ' + ERA_META[eraKey(cur)].ic + ' ' + eraName(eraKey(cur)) : ''} · ${L().map.here}`;
             $('map-play').textContent = L().map.play;
             switchScreen('screen-map');
+            // bulunduğun bölüme kaydır
+            requestAnimationFrame(() => {
+                const svg = holder.querySelector('svg'); if (!svg) return;
+                const p = mapNodeXY(sv.finished ? 101 : cur), H = MAP_H, scale = svg.getBoundingClientRect().height / H;
+                holder.scrollTop = Math.max(0, p.y * scale - holder.clientHeight * 0.6);
+            });
+            if (sv.pendingTM) {   // v5'te oyunu bitirmiş kayıt: zaman makinesi hikâyesini bir kez göster
+                sv.pendingTM = false; persist();
+                setTimeout(() => Comic.play('tm', () => Comic.play('era:' + Engine.ERAS[0].key, () => openMap())), 500);
+                return;
+            }
             maybeAutoDaily();
         }
         function mapClick(st) {
             const sv = Game.save;
             playSynthNote(600, 0.05);
-            if (st === 6) {   // Usta Kafesi: final sonrası sonsuz rekor modu (yalnızca Final mekanikleri)
-                if (sv.finished) { enterStage(5); return; }
-                $('map-info').innerHTML = `<b>${L().usta.place}</b> · ${L().map.locked} — ${L().usta.lockTxt}`;
+            if (st === 101) {   // Usta Kafesi: 100. bölümden sonra sonsuz rekor modu
+                if (sv.finished) { enterStage(100); return; }
                 return;
             }
             if (st === sv.stage && !sv.finished) { enterStage(st); return; }
-            if (st < sv.stage || (st === 5 && sv.finished)) {
-                $('map-info').innerHTML = `<b>${stageLabel(st)}</b> · ${L().map.done} <button class="btn btn-sm btn-soft" onclick="playStory(${st})">${L().map.story}</button>`;
+            if (st < sv.stage || (st === 100 && sv.finished)) {
+                const replay = CHAPTERS[st].saga ? `replayChapterStory(${st})` : `playStory(${st})`;
+                $('map-info').innerHTML = `<b>${stageLabel(st)}</b> · ${L().map.done} <button class="btn btn-sm btn-soft" onclick="${replay}">${L().map.story}</button>`;
                 return;
             }
             const prev = CHAPTERS[st - 1];
@@ -320,6 +352,8 @@
             if (!gameState.bet || gameState.bet < c.minBet || gameState.bet > c.maxBet) gameState.bet = recommendedBet(n, gameState.balance);
             clampBet();
             document.body.dataset.chapter = n;
+            document.body.dataset.era = eraKey(n) || '';
+            setTimeout(() => applyEraBackdrop(n), 30);   // bölüme özel 3D dönem arka planı
             gameState.autoSpinActive = false;
             gameState.isSpinning = false;
             gameState.reelsPending = false;
@@ -360,6 +394,7 @@
         function showChapterIntro(n) {
             const art = $('ci-art');
             art.innerHTML = '';
+            if (CHAPTERS[n].saga) { showSagaIntro(n); return; }
             const arts = { 1: ['barista', 'cozybear'], 2: ['matcha', 'pitcher'], 3: ['bakingbear', 'cupcake'], 4: ['coffeebag', 'cozybear'], 5: ['barista', 'stamp', 'cozybear'] }[n];
             arts.forEach(k => { const im = document.createElement('img'); im.src = ASSETS.sym[k]; im.alt = ''; art.appendChild(im); });
             const c = CHAPTERS[n];
@@ -372,7 +407,7 @@
             closeModal('modal-chapter-intro');
             const n = gameState.chapter;
             if (n === 1 && Game.save && !Game.save.tut) setTimeout(showTutorial, 350);
-            const ns = L().newStage[n];
+            const ns = L().newStage[n] || (CHAPTERS[n].saga && sagaLine(n));
             if (ns) setTimeout(() => showDialog(ns[0], ns[1], ns[2]), 600);
         }
 
@@ -418,6 +453,7 @@
         window.addEventListener('resize', () => positionTutorial());
 
         function returnToMenu() {
+            if (gameState.isSpinning && document.body.dataset.mode === 'game') { setMessage(CUR_LANG() === 'en' ? 'Wait for the reels to stop ☕' : 'Makaralar dursun, sonra geç ☕'); return; }
             nbClear();
             if (Game.save) persist();
             stopCasinoMusic();
@@ -494,7 +530,9 @@
                     <p class="ip-txt sp-note">${I.specialNote}</p>`]);
             if (st === 3) infoPages.push(['🧁', P.special, `<div class="ip-hero"><img class="ip-hi" src="${ASSETS.sym.cupcake}" alt=""></div><h4 class="ip-h">${I.ovenT}</h4><div class="ip-txt">${I.oven(E)}</div>`]);
             if (st === 4) infoPages.push(['🌾', P.special, `<div class="ip-hero"><img class="ip-hi" src="${ASSETS.sym.coffeebag}" alt=""></div><h4 class="ip-h">${I.bagT}</h4><div class="ip-txt">${I.bag(E)}</div>`]);
-            if (st === 5) infoPages.push(['☕', P.special, `<div class="ip-hero"><img class="ip-hi" src="${ASSETS.sym.stamp}" alt=""></div><h4 class="ip-h">${I.loyT}</h4><div class="ip-txt">${I.loy}</div>`]);
+            if (CHAPTERS[st].saga) { const ek = eraKey(st), EM = ERA_META[ek], T2 = ST().era[ek];
+                infoPages.push([EM.ic, P.era, `<div class="ip-hero"><div class="era-badge big" style="--c:${EM.col};--c2:${EM.col2}">${EM.ic}</div></div><h4 class="ip-h">${eraName(ek)} · ${EM.years[CUR_LANG()]}</h4><div class="ip-txt"><b>${ST().buffWord}: ${T2.buff}</b><br>${T2.buffD}.<br>${I.eraNote}</div>`]); }
+            if (st === 5 || CHAPTERS[st].saga) infoPages.push(['☕', CHAPTERS[st].saga ? I.loyT.replace(/\s*\(.*\)/, '').replace(/^\S+\s/, '') : P.special, `<div class="ip-hero"><img class="ip-hi" src="${ASSETS.sym.stamp}" alt=""></div><h4 class="ip-h">${I.loyT}</h4><div class="ip-txt">${I.loy}</div>`]);
             infoPages.push(['〰️', P.lines, `<p class="ip-txt">${tf(I.linesTxt, { n: Engine.LINES })}</p><div class="ip-lines">${linesSVG()}</div>`]);
             infoPages.push(['🎮', P.keys, `<div class="keys">${I.keys.map(k => `<div class="key-row"><span class="kk">${k[0]}</span><span>${k[1]}</span></div>`).join('')}</div>`]);
             infoIdx = Math.min(infoIdx, infoPages.length - 1);
@@ -588,7 +626,7 @@
             const p = goalProgress();
             $('goal-fill').style.width = (p * 100) + '%';
             bar.classList.toggle('done', !!sv.finished);
-            $('goal-title').textContent = GOAL_ICON[n] + ' ' + stageName(n);
+            $('goal-title').textContent = (GOAL_ICON[n] || ERA_META[eraKey(n)].ic) + ' ' + stageName(n);
             const pct = p * 100;
             $('goal-num').textContent = sv.finished ? '' : fmt(gameState.balance) + ' / ' + fmt(c.unlockAt);
             $('goal-pct').textContent = sv.finished ? '🏆' : pctS(pct < 10 ? fx(Math.floor(pct * 10) / 10) : Math.floor(pct));
@@ -601,12 +639,12 @@
                 return;
             }
             const ready = gameState.balance >= c.unlockAt && !freeActive();
-            const shortN = n < 5 ? L().stage[n + 1].short : '';
-            btn.textContent = n < 5 ? tf(L().goal.buyNext, { short: shortN, price: fmt(c.price) }) : tf(L().goal.buyFinal, { price: fmt(c.price) });
+            const last = n >= Engine.STAGE_COUNT, shortN = !last ? L().stage[n + 1].short : '';
+            btn.textContent = n === 5 ? tf(L().goal.buyTM, { price: fmt(c.price) }) : !last ? tf(L().goal.buyNext, { short: shortN, price: fmt(c.price) }) : tf(L().goal.buyFinal, { price: fmt(c.price) });
             btn.classList.toggle('locked', !ready);
             btn.classList.toggle('ready', ready);
-            const place = n < 5 ? L().stage[n + 1].place : 'SyruppoLab';
-            const tip = n === 5 ? tf(L().goal.lockedTipFinal, { at: fmt(c.unlockAt), price: fmt(c.price) })
+            const place = !last ? L().stage[n + 1].place : 'SyruppoLab';
+            const tip = (n === 5 || last) && !ready ? tf(L().goal.lockedTipFinal, { at: fmt(c.unlockAt), price: fmt(c.price) })
                 : ready ? tf(L().goal.readyTip, { place, price: fmt(c.price) })
                 : tf(L().goal.lockedTip, { at: fmt(c.unlockAt), place, price: fmt(c.price) });
             wrap.title = tip;
@@ -622,7 +660,9 @@
             }
             gameState.autoSpinActive = false; updateAutoSpinButtonUI();
             const left = fmt(gameState.balance - c.price);
-            if (n < 5) {
+            if (n === 5) {
+                confirmBox({ title: L().buy.tF, text: tf(L().buy.txtTM, { price: fmt(c.price), left }), art: ['barista', 'book', 'dede'], ok: L().buy.okTM, good: true, onOk: () => doBuy() });
+            } else if (n < Engine.STAGE_COUNT) {
                 const nx = L().stage[n + 1];
                 confirmBox({ title: tf(L().buy.t, { short: nx.short.toLocaleUpperCase(CUR_LANG() === 'en' ? 'en-US' : 'tr-TR') }), text: tf(L().buy.txt, { place: nx.place, price: fmt(c.price), left }), art: ['barista', 'coffeebag', 'cozybear'], ok: L().buy.ok, good: true, onOk: () => doBuy() });
             } else {
@@ -631,25 +671,37 @@
         }
         function doBuy() {
             const n = gameState.chapter, c = CHAPTERS[n], sv = Game.save;
+            gameState.bonusLock = true;   // yeni bölüme girilene kadar spin yok (hikâye açılırken çift spin olmasın)
             gameState.balance -= c.price;
             [523, 659, 784, 1047, 1319].forEach((f, i) => setTimeout(() => playSynthNote(f, 0.3, 'sine', 0.07), i * 130));
             celebrate(gameState.bet * 100);
-            if (n < 5) {
+            if (n < Engine.STAGE_COUNT) {
+                const nx = CHAPTERS[n + 1];
                 gameState.chapter = n + 1;
                 sv.stage = n + 1;
+                // zaman makinesi makineye 6. makarayı takar (Saga'nın matematiği 6 makaraya göre ayarlı)
+                if (n + 1 === Engine.SAGA_FIRST && !(sv.ups.lx_reel6 > 0)) { sv.ups.lx_reel6 = 1; setTimeout(() => achToast('espresso', L().up.lx_reel6.n, '⏳ ' + (CUR_LANG() === 'en' ? 'A gift from the time machine!' : 'Zaman makinesinden hediye!')), 3400); }
+                // zaman makinesi: kasa yeni bölüme en az `start`, en çok `carryMax` taşınır; fazlası Zaman Hazinesi'ne
+                // kasaya taşınan miktar sınırlı: şanslı bir seri sonraki bölümü (hikâyesi ve mekaniğiyle) atlatmasın; fazlası Zaman Hazinesi'ne
+                const cap = nx.saga ? nx.carryMax : Math.round(nx.unlockAt * 0.6);
+                const extra = Math.max(0, gameState.balance - cap);
+                if (extra > 0) { sv.treasure = (sv.treasure || 0) + extra; setTimeout(() => achToast('goldenbean', '🏺 ' + ST().treasure, '+' + fmt(extra)), 2600); }
+                gameState.balance = Math.min(cap, nx.saga ? Math.max(gameState.balance, nx.start) : gameState.balance);
                 gameState.loy = newLoyalty();
                 gameState.oven = 0;
                 gameState.bet = 0;
                 refreshEff();
                 persist();
                 metaEvent('stage', n + 1);
-                setTimeout(() => playStory(n + 1), 900);
+                if (typeof sagaScoreUpdate === 'function') sagaScoreUpdate();
+                setTimeout(() => playChapterStory(n + 1), 900);
             } else {
                 sv.finished = true;
                 sv.peak = Math.floor(gameState.balance);
                 persist();
                 metaEvent('finish');
-                setTimeout(() => playStory(6), 900);
+                if (typeof sagaScoreUpdate === 'function') sagaScoreUpdate();
+                setTimeout(() => Comic.play('finale', () => openMap()), 900);
             }
         }
 
@@ -696,14 +748,17 @@
             $('hud-balance').textContent = fmt(gameState.balance);
             updateGoalBar();
             $('hud-bet').textContent = fmt(gameState.bet);
-            const tier = Engine.tierOf(gameState.bet);
+            ['hud-bet', 'hud-balance'].forEach(id => { const e = $(id); e.style.fontSize = e.textContent.length > 12 ? '.74em' : e.textContent.length > 9 ? '.86em' : ''; });
+            const tier = Engine.tierOf(gameState.bet, gameState.chapter);
             const tb = $('tier-badge');
             tb.textContent = L().tier(tier);
             tb.classList.toggle('hi', tier > 0);
             const isLocked = (freeActive() || gameState.autoSpinActive);
             $('bet-minus-btn').disabled = isLocked;
             $('bet-plus-btn').disabled = isLocked;
-            $('hud-stage').textContent = `${Game.save && Game.save.cheat ? '🧪 ' : ''}${DIFF_ICON[(Game.save && Game.save.diff) || 'std']} ${L().stageWord} ${gameState.chapter}`;
+            const ek = eraKey(gameState.chapter);
+            $('hud-stage').textContent = `${Game.save && Game.save.cheat ? '🧪 ' : ''}${ek ? ERA_META[ek].ic : '☕'} ${ek ? ST().chWord : L().stageWord} ${gameState.chapter}`;
+            updateEraChip();
         }
 
         function toggleAutoSpin() {
@@ -748,7 +803,8 @@
                 if (p < ph || gameState.phasesShown[i]) return;
                 gameState.phasesShown[i] = true;
                 const key = c.id + ':' + i;
-                const talk = L().phase[c.id][i];
+                const sl = !(L().phase[c.id] && L().phase[c.id][i]) && sagaLine(c.id);
+                const talk = (L().phase[c.id] && L().phase[c.id][i]) || (sl ? [sl[0], sl[1], (CUR_LANG() === 'en' ? 'Halfway there! ' : 'Yolun yarısı! ') + sl[2]] : ['barista', 'Bearista', '']);
                 let extra = '';
                 if (!sv.phases[key]) {
                     sv.phases[key] = true;
@@ -792,7 +848,7 @@
             $('lc-buffs').innerHTML = buffs.join('') || `<span class="buff off">${T.empty}</span>`;
         }
         function addStamps(n) {
-            if (!n || gameState.chapter !== 5) return false;
+            if (!n || !CHAPTERS[gameState.chapter].loyalty) return false;
             const before = gameState.loy.stamps;
             gameState.loy.stamps += n;
             [0, 1].forEach(k => setTimeout(() => { playSynthNote(180 - k * 30, 0.1, 'square', 0.05); }, k * 90));
@@ -940,6 +996,7 @@
         }
 
         let curSpin = null;
+        let spinToken = 0;
         function spinReels() {
             if (gameState.isSpinning) { if (curSpin && curSpin.slam) curSpin.slam(); return; }
             if (gameState.bonusLock) return;          // 3 kitap → not defteri / free spin bitişi arasında spin yok
@@ -971,8 +1028,8 @@
             let mult = 1;
             if (gameState.loy.americano > 0) { mult = 2; gameState.loy.americano--; updateLoyaltyUI(); }
 
-            const ctx = { chapter: gameState.chapter, bet: gameState.bet, tier: Engine.tierOf(gameState.bet), eff: RUN_EFF, expandingSymbolId: fsSpin ? gameState.expandingSymbolId : null, ovenRain: rainSpin, mult,
-                          inFS: fsSpin, fsMult: fsSpin ? (gameState.fsMult || 0) : 0, orbs: Engine.rollOrbs(fsSpin, Math.random, RUN_EFF.orbMul),
+            const ctx = { chapter: gameState.chapter, bet: gameState.bet, tier: Engine.tierOf(gameState.bet, gameState.chapter), eff: RUN_EFF, expandingSymbolId: fsSpin ? gameState.expandingSymbolId : null, ovenRain: rainSpin, mult,
+                          inFS: fsSpin, fsMult: fsSpin ? (gameState.fsMult || 0) : 0, orbs: Engine.rollOrbs(fsSpin, Math.random, RUN_EFF.orbMul * (fsSpin ? RUN_EFF.fsOrbMul || 1 : 1)),
                           luck: free ? 0 : Engine.luckFor(gameState.streak || 0, RUN_EFF.diff) };
             clearOrbs();
             const pending = { g: Engine.genGrid(ctx, Math.random), ctx };
@@ -1018,7 +1075,10 @@
             Lever.pull(teaseFrom >= 0 ? stopAt[teaseFrom] : stopAt[N - 1], fast);   // kol: hızla in, makaralarla birlikte yavaşça kalk
             orbsDropped = false;
 
+            const token = ++spinToken, landedR = new Array(N).fill(false);
             const onLand = (r) => {
+                if (token !== spinToken || landedR[r]) return;   // eski / çift geri çağrı: yok say
+                landedR[r] = true;
                 setTease(r, false);
                 for (let row = 0; row < Engine.ROWS; row++) gameState.grid[r][row] = pending.g[r][row];
                 const hasBook = pending.g[r].some(s => s.id === 'book');
@@ -1054,7 +1114,18 @@
                 Lever.release();
             } };
             const spinInterval = setInterval(() => {
+                if (token !== spinToken) { clearInterval(spinInterval); return; }
                 elapsed += 40;
+                // emniyet: bir makara beklenenden çok geç kalırsa (ör. sekme arka plandaydı) sonucu doğrudan yerleştir
+                if (elapsed > stopAt[N - 1] + 9000) {
+                    for (let r = 0; r < N; r++) if (!landedR[r]) {
+                        requested[r] = true;
+                        if (drums[r]) { drums[r].onLand = null; drums[r].pending = false; drums[r].mode = 'idle'; }
+                        for (let row = 0; row < Engine.ROWS; row++) { const m = meshAt(r, row); if (m) setFace(m, pending.g[r][row], false); }
+                        onLand(r);
+                    }
+                    return;
+                }
                 for (let r = 0; r < N; r++) {
                     if (!requested[r] && elapsed >= stopAt[r]) {
                         requested[r] = true;
@@ -1234,7 +1305,7 @@
             if (res.harvest > 0) parts.push(tf(M.harvest, { n: res.bags, v: fmt(res.harvest) }));
             const extras = [];
             if (res.cashback > 0) extras.push(tf(M.cash, { v: fmt(res.cashback) }));
-            if (res.stamps > 0 && gameState.chapter === 5) extras.push(tf(M.stamps, { n: res.stamps }));
+            if (res.stamps > 0 && CHAPTERS[gameState.chapter].loyalty) extras.push(tf(M.stamps, { n: res.stamps }));
             if (res.cupcakes > 0 && gameState.chapter === 3 && !p.ctx.ovenRain) extras.push(tf(M.cupcakes, { n: res.cupcakes }));
 
             const show = () => {
@@ -1286,7 +1357,23 @@
             if (typeof Notify !== 'undefined') Notify.plan();
             if ($('modal-bust').classList.contains('open') && gameState.balance >= CHAPTERS[gameState.chapter].minBet) closeBust();
         }
+        /* Kasa boşalırsa: her bölümde bir kez Kahve Dede yedek depodan çekirdek verir (oyuncu 6 saat beklemek zorunda kalmasın;
+           Saga'nın büyük bölümlerinde en düşük bahisle yeniden tırmanmak imkânsızlaşıyordu). İkinci iflasta hediye/video ekranı. */
+        function sagaRescue() {
+            const sv = Game.save, n = gameState.chapter, C = CHAPTERS[n];
+            if (!sv || sv.finished) return false;
+            sv.rescued = sv.rescued || {};
+            if (sv.rescued[n]) return false;
+            sv.rescued[n] = 1;
+            const v = Math.round((C.saga ? C.start : C.seed) * 0.5);
+            gameState.balance += v;
+            gameState.bet = recommendedBet(n, gameState.balance);
+            persist(); refreshBank();
+            showDialog('dede', castName('dede'), tf(L().bust.rescue, { v: fmt(v) }));
+            return true;
+        }
         function showBust() {
+            if (sagaRescue()) return;
             const B = L().bust;
             $('bust-title').textContent = B.t;
             $('bust-text').innerHTML = tf(B.txt, { v: fmt(giftAmt()) });
@@ -1342,6 +1429,7 @@
                   <button class="btn btn-sm btn-green" ${vl > 0 ? 'disabled' : ''} onclick="watchVideo()">${vl > 0 ? tf(S.wait, { t: Math.ceil(vl / 1000) }) : '+' + fmt(giftAmt())}</button></div>
                 <div class="st-card"><span class="si">⏰</span><div class="sb"><b>${S.free}</b><small>${tf(S.freeTxt, { v: fmt(giftAmt()) })}</small></div>
                   <span class="st-tag t2">${gl > 0 ? fmtTime(gl) : S.ready}</span></div>
+                ${storeEra()}
                 ${storeLevers()}
                 ${storeLooks()}
                 <h4 class="st-h">${S.soonT}</h4>${soon}`;
@@ -1547,7 +1635,7 @@
             gameState.expandingSymbolId = randomSym.id;
             $('nb-title').textContent = L().nb.title;
             $('nb-cover').innerHTML = L().nb.cover;
-            $('nb-back').textContent = L().nb.back;
+            $('nb-back').textContent = L().nb.back; $('nb-back-a').textContent = L().nb.backTop;
             $('bonus-start-btn').textContent = L().nb.start;
             openModal('modal-bonus-intro');
             runNotebookReveal(randomSym, eligibleSymbols);
@@ -1598,7 +1686,7 @@
                     nbLater(tick, delay);
                 };
                 tick();
-            }, 500 + 1500);
+            }, 500 + 2300);
             function landed() {
                 card.classList.remove('shuffling');
                 card.classList.add('landed'); $('bk-scene').classList.add('landed');
