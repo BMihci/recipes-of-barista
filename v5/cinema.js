@@ -17,7 +17,55 @@
                 return R;
             }
             const col = c => srgb(typeof c === 'string' ? parseInt(c.slice(1), 16) : c);
-            const std = (c, o) => new THREE.MeshStandardMaterial(Object.assign({ color: col(c), roughness: 0.62, metalness: 0.04 }, o || {}));
+            /* çizgi roman modu: düz (cel) gölgelendirme + mürekkep kontur */
+            let TOON = false, GRAD = null;
+            function gradMap() {
+                if (GRAD || !THREE.DataTexture) return GRAD;
+                GRAD = new THREE.DataTexture(new Uint8Array([105, 105, 105, 255, 178, 178, 178, 255, 255, 255, 255, 255]), 3, 1, THREE.RGBAFormat);
+                GRAD.minFilter = GRAD.magFilter = THREE.NearestFilter; GRAD.generateMipmaps = false; GRAD.needsUpdate = true;
+                return GRAD;
+            }
+            const TOON_KEYS = ['transparent', 'opacity', 'side', 'map', 'emissive', 'emissiveIntensity'];
+            const std = (c, o) => {
+                if (TOON && THREE.MeshToonMaterial) {
+                    const p = { color: col(c), gradientMap: gradMap() };
+                    if (o) TOON_KEYS.forEach(k => { if (o[k] !== undefined) p[k] = o[k]; });
+                    return new THREE.MeshToonMaterial(p);
+                }
+                return new THREE.MeshStandardMaterial(Object.assign({ color: col(c), roughness: 0.62, metalness: 0.04 }, o || {}));
+            };
+            const INK = 0x16110d, OLX = {};
+            let OLF = null;
+            function olMat(th) {   // normal yönünde şişirilmiş arka yüz = kontur
+                const k = th.toFixed(3);
+                if (OLX[k]) return OLX[k];
+                const m = new THREE.MeshBasicMaterial({ color: INK, side: THREE.BackSide });
+                m.onBeforeCompile = s => { s.vertexShader = s.vertexShader.replace('#include <begin_vertex>', 'vec3 transformed = vec3(position) + normal * ' + k + ';'); };
+                m.customProgramCacheKey = () => 'ol' + k; m.userData.shared = true;
+                return (OLX[k] = m);
+            }
+            function olFlat() { if (!OLF) { OLF = new THREE.MeshBasicMaterial({ color: INK, side: THREE.BackSide }); OLF.userData.shared = true; } return OLF; }
+            function inkScene(g, ground) {
+                const list = [];
+                g.traverse(o => {
+                    if (!o.isMesh || o === ground || o.userData.ol) return;
+                    const geo = o.geometry; if (!geo || geo.type === 'PlaneGeometry') return;
+                    const m0 = [].concat(o.material)[0]; if (m0 && (m0.isMeshBasicMaterial || (m0.transparent && m0.opacity < 0.9))) return;
+                    if (!geo.boundingSphere) { if (!geo.computeBoundingSphere) return; geo.computeBoundingSphere(); }
+                    const s = Math.max(Math.abs(o.scale.x), Math.abs(o.scale.y), Math.abs(o.scale.z)) || 1, r = geo.boundingSphere.radius * s;
+                    if (r < 0.06) return;
+                    list.push([o, r, s]);
+                });
+                list.forEach(([o, r, s]) => {
+                    const w = r > 3 ? 0.06 : r > 0.9 ? 0.04 : r > 0.3 ? 0.026 : 0.018, geo = o.geometry, P = geo.parameters || {};
+                    let ol;
+                    if (geo.type === 'BoxGeometry') { ol = new THREE.Mesh(geo, olFlat()); ol.scale.set(1 + 2 * w / (P.width * Math.abs(o.scale.x) || 1), 1 + 2 * w / (P.height * Math.abs(o.scale.y) || 1), 1 + 2 * w / (P.depth * Math.abs(o.scale.z) || 1)); }
+                    else if (geo.type === 'CylinderGeometry' && !P.openEnded) { const rr = Math.max(P.radiusTop, P.radiusBottom) || 1; ol = new THREE.Mesh(geo, olFlat()); ol.scale.set(1 + w / (rr * Math.abs(o.scale.x)), 1 + 2 * w / (P.height * Math.abs(o.scale.y) || 1), 1 + w / (rr * Math.abs(o.scale.z))); }
+                    else ol = new THREE.Mesh(geo, olMat(Math.round(w / s * 1000) / 1000));
+                    ol.userData.ol = true; ol.castShadow = false; ol.receiveShadow = false; ol.raycast = () => {};
+                    o.add(ol);
+                });
+            }
             const basic = (c, o) => new THREE.MeshBasicMaterial(Object.assign({ color: col(c) }, o || {}));
             function canvasTex(w, h, draw, rep) {
                 const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
@@ -248,6 +296,7 @@
 
             /* sahne kur: spec → { scene, cam, update } */
             function build(spec, aspect) {
+                TOON = !!spec.toon;
                 const r = rnd((spec.seed || 1) * 7919 + 13);
                 const scene = new THREE.Scene(), fx = [];
                 let env = (ENV[spec.sc] || ENV.town).slice();
@@ -287,6 +336,8 @@
                 if (spec.fx === 'cakes') rainOf(g, r, fx, '#FFB3C8', 'cup');
                 if (spec.fx === 'stamps') rainOf(g, r, fx, '#E63946');
                 g.traverse(o => { if (o.isMesh && !o.castShadow && o !== ground && o.geometry && o.geometry.type !== 'PlaneGeometry') { o.castShadow = !!spec.shadows; o.receiveShadow = true; } });
+                if (TOON) inkScene(g, ground);
+                TOON = false;
                 // kamera hareketi
                 const cam = new THREE.PerspectiveCamera(48, aspect, 0.1, 220);
                 const M = CAMS[spec.cam || 'push'] || CAMS.push, orb = spec.orbit || 0;
@@ -333,7 +384,7 @@
                     }
                     fx.forEach(f => f(t, dt));
                 }
-                return { scene, cam, update };
+                return { scene, cam, update, toon: !!spec.toon };
             }
             const CAMS = {
                 push:  { f: [0, 1.9, 7.2], t: [0, 1.5, 4.4], l: [0, 1.15, 0], fov: 46 },
@@ -346,7 +397,13 @@
                 hero:  { f: [1.9, 0.7, 4.9], t: [1.2, 0.8, 4.1], l: [0, 1.7, -0.5], fov: 52, roll: -0.1 },
                 bg:    { f: [0, 2.2, 12], t: [0, 2.2, 12], l: [0, 3.4, -12], fov: 58 }
             };
-            function dispose(o) { o.traverse(n => { if (n.geometry) n.geometry.dispose(); if (n.material) [].concat(n.material).forEach(m => { if (m.map) m.map.dispose(); m.dispose(); }); }); if (o.background && o.background.dispose) o.background.dispose(); }
+            function dispose(o) { o.traverse(n => { if (n.geometry) n.geometry.dispose(); if (n.material) [].concat(n.material).forEach(m => { if (m.userData && m.userData.shared) return; if (m.map) m.map.dispose(); m.dispose(); }); }); if (o.background && o.background.dispose) o.background.dispose(); }
+            /* çizgi romanda düz renkler (ton eşleme yok), oyun arka planında ACES */
+            function render(W) {
+                const R = renderer(), tm = W.toon ? THREE.NoToneMapping : THREE.ACESFilmicToneMapping;
+                if (tm !== undefined && R.toneMapping !== tm) R.toneMapping = tm;
+                R.render(W.scene, W.cam);
+            }
             /* dönem arka planı: bölüme göre kamera açısı ve günün saati değişir */
             const bgCache = {};
             function backdrop(n, w, h) {
@@ -358,13 +415,15 @@
                 const W = build(spec, w / h);
                 W.update(2.5, 0.016, 1, null);
                 if (R.shadowMap) R.shadowMap.enabled = false;
-                R.setSize(w, h, false); R.render(W.scene, W.cam);
+                R.setSize(w, h, false); render(W);
                 if (R.shadowMap) R.shadowMap.enabled = true;
                 const url = R.domElement.toDataURL('image/jpeg', 0.82);
                 dispose(W.scene);
+                // bellek: en fazla 4 arka plan resmi tut (en eskisini at)
+                const ks = Object.keys(bgCache); if (ks.length >= 4) delete bgCache[ks[0]];
                 return (bgCache[k] = url);
             }
-            return { renderer, build, dispose, backdrop, CHARS };
+            return { renderer, build, dispose, backdrop, render, CHARS };
         })();
 
         /* ---------- hikâye senaryoları (dil bağımsız sahne düzeni; metinler STORY_TXT ve SAGA_TXT'te) ---------- */
@@ -426,25 +485,68 @@
             }
             if (id.startsWith('ch:')) {
                 const n = +id.slice(3), k = eraKey(n), lines = ST().lines[k], ln = lines[n % lines.length];
-                return { title: stageName(n), issue: `${ERA_META[k].ic} ${eraName(k)} · ${ST().chWord} ${n}`, era: k, short: true, shots: [
+                return { title: stageName(n), issue: `${eraName(k)} · ${ST().chWord} ${n}`, era: k, short: true, shots: [
                     { sc: k, cam: ['wide', 'crane', 'orbit'][n % 3], orbit: ((n * 37) % 100 / 100 - 0.5) * 1.2, seed: n * 3, tm: n % 2 === 0, narr: `${ERA_META[k].years[CUR_LANG()]} · ${stageName(n)}` },
                     { sc: k, cam: ['close', 'hero', 'push'][n % 3], orbit: ((n * 53) % 100 / 100 - 0.5) * 0.8, seed: n * 3 + 1, actors: [[ln[0], 'wave']], bub: [ln[0], ln[1]] }] };
             }
             return null;
         }
 
-        /* ---------- oynatıcı ---------- */
+        /* ---------- oynatıcı: Marvel tarzı çizgi roman sayfası ----------
+           Çekimler sayfalara bölünür; her sayfada paneller sırayla açılır. Sıradaki panelde canlı 3D
+           (cel gölgeli + mürekkep konturlu) sahne oynar; bitince o kare dondurulup panele basılır.
+           Altyazı kutuları, konuşma balonları ve ses efektleri gerçek çizgi roman harfleme stilinde. */
+        const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+        function letterHTML(txt) {   // vurgular: isimler, sayılar ve ünlemden önceki kelime kalın-italik
+            let h = esc(txt);
+            const names = ['Bearista', 'SyruppoLab', 'Syruppolab', 'MaviKuş', 'BlueBird', 'Kahve Dede', 'Grandpa Brew', 'Fırıncı Ayı', 'Baker Bear'];
+            names.forEach(n => { h = h.split(n).join('\u0001' + n + '\u0002'); });
+            h = h.replace(/(\d[\d.,]*)/g, '\u0001$1\u0002');
+            h = h.replace(/([^\s\u0001\u0002]+)(?=[!?]+(\s|$))/gu, '\u0001$1\u0002');
+            return h.replace(/\u0001/g, '<em>').replace(/\u0002/g, '</em>').replace(/<em>([^<]*)<em>/g, '<em>$1').replace(/<\/em>([^<]*)<\/em>/g, '$1</em>');
+        }
+        function comicPages(n, portrait) {
+            const out = []; let k = n;
+            while (k > 0) { const c = portrait ? (k === 4 ? 2 : Math.min(3, k)) : (k === 5 ? 3 : Math.min(4, k)); out.push(c); k -= c; }
+            return out;
+        }
+        function comicLayout(shots, portrait) {
+            const n = shots.length, L = s => ((s.narr || '').length + (s.bub ? s.bub[1].length : 0));
+            if (portrait) {
+                if (n === 1) return { a: "'a'", r: '1fr', c: '1fr' };
+                if (n === 2) return { a: "'a' 'b'", r: '1fr 1fr', c: '1fr' };
+                if (L(shots[1]) < 95 && L(shots[2]) < 95) return { a: "'a a' 'b c'", r: '1.15fr 1fr', c: '1fr 1fr' };
+                return { a: "'a' 'b' 'c'", r: '1fr 1fr 1fr', c: '1fr' };
+            }
+            if (n === 1) return { a: "'a'", r: '1fr', c: '1fr' };
+            if (n === 2) return { a: "'a b'", r: '1fr', c: '1.2fr 1fr' };
+            if (n === 3) return { a: "'a b' 'a c'", r: '1fr 1fr', c: '1.35fr 1fr' };
+            return { a: "'a a b' 'c d d'", r: '1fr 1fr', c: '1fr 1fr 1fr' };
+        }
+        const COVER_TXT = {
+            tr: { saga: 'ZAMAN YOLCULUĞU SAGASI', price: '5<small>ÇEKİRDEK</small>', presents: 'BEARISTA VE EKİBİ', cover: 'KAPAK', finale: 'BÜYÜK FİNAL!', tm: 'YENİ MACERA BAŞLIYOR!' },
+            en: { saga: 'THE TIME-TRAVEL SAGA', price: '5<small>BEANS</small>', presents: 'BEARISTA & CREW IN', cover: 'COVER', finale: 'THE GRAND FINALE!', tm: 'A NEW ADVENTURE BEGINS!' }
+        };
+        function coverSpec(id) {   // kapak yalnızca büyük anlarda: zaman makinesi, her dönem girişi, final
+            const CT = () => COVER_TXT[CUR_LANG()] || COVER_TXT.tr;
+            if (id === 'tm') return { shot: { sc: 'vortex', cam: 'low', actors: ALL4.map(k => [k, 'cheer']), fx: 'sparks', seed: 590 }, icon: () => ICON.hourglass(64), tag: () => CT().tm, music: 'heroic' };
+            if (id === 'finale') return { shot: { sc: 'liberty', cam: 'low', vil: 'big', actors: [['barista', 'cheer'], ['cozybear', 'jump']], fx: 'sparks', seed: 990 }, icon: () => ICON.skyscraper(64), tag: () => CT().finale, music: 'battle' };
+            if (id.startsWith('era:')) {
+                const k = id.slice(4), ei = Engine.ERAS.findIndex(e => e.key === k);
+                return { shot: { sc: k, cam: ei % 2 ? 'low' : 'hero', actors: ALL4.map(k2 => [k2, 'cheer']), fx: 'sparks', tm: true, tmX: -3.2, seed: 690 + ei * 10 }, icon: () => eraIcon(k, 64), tag: () => ERA_META[k].years[CUR_LANG()] };
+            }
+            return null;
+        }
         const Cinema = {
             script: null, i: 0, t0: 0, raf: null, W: null, done: null, typing: null, dur: 6, last: 0, theme: null, eraN: 0,
+            pages: [], pg: 0, pi: 0, panel: null, turnT: 0,
             el() {
                 let m = $('cine');
                 if (m) return m;
                 m = document.createElement('div'); m.id = 'cine'; m.className = 'cine'; m.setAttribute('role', 'dialog');
-                m.innerHTML = `<canvas id="cn-cv"></canvas><div class="cn-bar t"></div><div class="cn-bar b"></div>
+                m.innerHTML = `<div class="kp-top"><span class="kp-pn" id="cn-pn"></span><span class="cn-dots" id="cn-dots"></span><button class="cn-skip" id="cn-skip" type="button"></button></div>
+                    <div class="kp-book" id="kp-book"></div>
                     <div class="cn-title" id="cn-title"><small id="cn-issue"></small><b id="cn-ttl"></b></div>
-                    <div class="cn-narr" id="cn-narr"></div><div class="cn-sfx" id="cn-sfx"></div>
-                    <div class="cn-sub" id="cn-sub"><i id="cn-who"></i><span id="cn-txt"></span></div>
-                    <div class="cn-top"><span class="cn-dots" id="cn-dots"></span><button class="cn-skip" id="cn-skip" type="button"></button></div>
                     <button class="btn cn-go" id="cn-go" type="button"></button>`;
                 document.body.appendChild(m);
                 m.addEventListener('click', e => { if (e.target.closest('.cn-skip') || e.target.closest('.cn-go')) return; Cinema.tap(); });
@@ -452,88 +554,164 @@
                 $('cn-go').onclick = () => Cinema.finish();
                 return m;
             },
+            portrait() { const w = window.innerWidth, h = (window.visualViewport && window.visualViewport.height) || window.innerHeight; return w / h < 0.95; },
             play(id, done) {
                 const sc = cinemaScript(id);
                 if (!sc || !window.THREE) { if (done) done(); return; }
                 this.script = sc; this.done = done; this.id = id;
                 const m = this.el();
+                m.setAttribute('lang', CUR_LANG());
                 $('cn-skip').textContent = ST().comic.skip;
                 $('cn-go').textContent = sc.cta || ST().comic.go;
-                $('cn-go').classList.remove('show');
-                $('cn-dots').innerHTML = sc.shots.map(() => '<i></i>').join('');
+                $('cn-go').classList.remove('show'); m.classList.remove('end');
                 $('cn-issue').textContent = sc.issue || ''; $('cn-ttl').textContent = sc.title || '';
                 m.classList.add('open'); document.body.classList.add('cine-open');
                 stopCasinoMusic(); stopBonusMusic();
-                const cv = $('cn-cv'), R = World3D.renderer();
-                if (R.domElement !== cv) { cv.replaceWith(R.domElement); R.domElement.id = 'cn-cv'; }
-                this.resize();
+                // sayfalar
+                const sizes = comicPages(sc.shots.length, this.portrait());
+                let k = 0; this.pages = sizes.map(c => { const r = []; for (let j = 0; j < c; j++) r.push(k++); return r; });
+                $('cn-dots').innerHTML = this.pages.map(() => '<i></i>').join('');
                 window.addEventListener('resize', this._rs || (this._rs = () => this.resize()));
                 $('cn-title').classList.remove('show'); void $('cn-title').offsetWidth;
-                if (!sc.short) $('cn-title').classList.add('show');
+                this.cover = !!coverSpec(id);
+                if (!sc.short && !this.cover) $('cn-title').classList.add('show');
                 this.theme = null;
                 if (sc.era) { this.eraN = this.id.startsWith('ch:') ? +this.id.slice(3) : Engine.ERAS.find(e => e.key === sc.era).from; }
-                this.show(0);
+                if (this.cover) this.openCover(); else this.openPage(0);
                 if (!this.raf) this.raf = requestAnimationFrame(t => this.frame(t));
             },
-            resize() {
-                const R = World3D.renderer(), w = window.innerWidth, h = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
-                const q = lowFx() ? 0.7 : 1;
+            /* dönem kapağı: tam sayfa, canlı 3D kapak resmi + başlık logosu, sayı numarası, fiyat etiketi */
+            openCover() {
+                const sc = this.script, spec = coverSpec(this.id), book = $('kp-book'), CT = COVER_TXT[CUR_LANG()] || COVER_TXT.tr;
+                const iss = String(sc.issue || '').split('·'), no = (iss[0] || '').replace(/[^#0-9]/g, '') || '#';
+                const pg = document.createElement('div'); pg.className = 'kp-page cover';
+                pg.innerHTML = `<div class="kp kp-cv in live" data-i="cover"><div class="kp-art"></div><div class="kp-tone"></div>
+                    <div class="cv-mast"><small>${CT.saga}</small><b>RECIPES OF BARISTA</b></div>
+                    <div class="cv-no"><b>${esc(no)}</b><small>${esc((iss[1] || '').trim())}</small></div>
+                    <div class="cv-price">${CT.price}</div>
+                    <div class="cv-ttl"><small>${CT.presents}</small><b>${esc(sc.title || '')}</b>${spec.tag ? `<i>${esc(spec.tag())}</i>` : ''}</div>
+                    <div class="cv-corner">${spec.icon()}</div></div>`;
+                book.appendChild(pg);
+                $('cn-pn').textContent = CT.cover; $('cn-dots').querySelectorAll('i').forEach(d => d.classList.remove('on'));
+                this.i = -1; this.pi = -1; this.pg = -1; this.t0 = performance.now(); this.typing = null;
+                this.panel = pg.querySelector('.kp');
+                const asp = this.mount() || 0.7;
+                if (this.W) World3D.dispose(this.W.scene);
+                this.W = World3D.build(Object.assign({ shadows: !lowFx(), toon: true }, spec.shot), asp);
+                this.music(spec.music || null);
+                this.dur = 4.2;
+                playSynthNote(98, 0.3, 'sawtooth', 0.05); playSynthNote(196, 0.4, 'triangle', 0.06);
+            },
+            openPage(p) {
+                this.pg = p; this.turnT = 0;
+                const sc = this.script, idx = this.pages[p], shots = idx.map(i => sc.shots[i]), port = this.portrait(), lay = comicLayout(shots, port);
+                const book = $('kp-book'), old = book.querySelector('.kp-page');
+                if (old) { old.classList.add('out'); setTimeout(() => old.remove(), 600); }
+                const pg = document.createElement('div');
+                pg.className = 'kp-page' + (p === 0 && !sc.short ? ' first' : '');
+                const head = p === 0 && !sc.short ? `<div class="kp-head"><small>${esc(sc.issue || '')}</small><b>${esc(sc.title || '')}</b></div>` : '';
+                pg.innerHTML = head + `<div class="kp-grid" style="grid-template-areas:${lay.a};grid-template-rows:${lay.r};grid-template-columns:${lay.c}">` + idx.map((si, j) => {
+                    const s = sc.shots[si], area = 'abcd'[j], evil = s.bub && s.bub[0] === 'villain';
+                    return `<div class="kp" data-i="${si}" style="grid-area:${area}"><div class="kp-art"></div><div class="kp-tone"></div><div class="kp-lines"></div>
+                        ${s.narr ? `<div class="kp-cap">${s.tag ? `<i class="kp-tag">${esc(s.tag)}</i>` : ''}${letterHTML(s.narr)}</div>` : ''}
+                        ${s.bub ? `<div class="kp-bub ${evil ? 'evil' : ''} ${(si % 2) ? 'l' : 'r'}"><b class="kp-who">${esc(castName(s.bub[0]))}</b><span></span></div>` : ''}
+                        ${s.sfx ? `<div class="kp-sfx">${esc(s.sfx)}</div>` : ''}</div>`;
+                }).join('') + '</div>';
+                book.appendChild(pg);
+                $('cn-pn').textContent = (p + 1) + '/' + this.pages.length;
+                $('cn-dots').querySelectorAll('i').forEach((d, k) => d.classList.toggle('on', k <= p));
+                if (p > 0) playPageFlip();
+                this.show(idx[0], p === 0 && !sc.short ? 1500 : 450);
+            },
+            /* aktif panele canlı 3D tuvali yerleştir */
+            mount() {
+                const P = this.panel; if (!P) return;
+                const art = P.querySelector('.kp-art'), R = World3D.renderer(), cv = R.domElement;
+                if (cv.parentNode !== art) art.appendChild(cv);
+                const w = Math.max(40, art.clientWidth), h = Math.max(40, art.clientHeight), q = lowFx() ? 0.7 : 1;
                 R.setPixelRatio(Math.min(1.5, (window.devicePixelRatio || 1)) * q);
-                R.setSize(w, h, false); R.domElement.style.width = w + 'px'; R.domElement.style.height = h + 'px';
+                R.setSize(w, h, false); cv.style.width = '100%'; cv.style.height = '100%';
                 if (this.W) { this.W.cam.aspect = w / h; this.W.cam.updateProjectionMatrix(); }
+                return w / h;
+            },
+            resize() { if (this.isOpen()) this.mount(); },
+            freeze() {   // biten paneli dondur: son kare panele basılır
+                const P = this.panel; if (!P || !this.W) return;
+                try { World3D.render(this.W); P.querySelector('.kp-art').style.backgroundImage = `url(${World3D.renderer().domElement.toDataURL('image/jpeg', 0.84)})`; } catch (e) {}
+                P.classList.add('done'); P.classList.remove('live');
+                const b = P.querySelector('.kp-bub span'); if (b && this.typing && this.typing.panel === P) { this.typing.done = true; b.innerHTML = letterHTML(this.typing.txt); }
+                P.querySelectorAll('.kp-cap,.kp-bub,.kp-sfx').forEach(x => x.classList.add('show'));
             },
             music(name) {
                 if (isMuted) return;
                 if (this.script.era && !name) { StoryMusic.stop(); if (typeof startEraMusic === 'function') startEraMusic(this.eraN); this.theme = 'era'; return; }
                 if (name && name !== this.theme) { GameMusic.stop(); StoryMusic.start(name); this.theme = name; }
             },
-            show(i) {
+            show(i, delay) {
                 const sh = this.script.shots[i];
-                this.i = i; this.t0 = performance.now(); this.typing = null;
-                if (this.W) World3D.dispose(this.W.scene);
-                const w = window.innerWidth, h = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
-                this.W = World3D.build(Object.assign({ shadows: !lowFx() }, sh), w / h);
-                this.music(sh.music || (i === 0 && !this.script.era ? 'cozy' : null));
-                $('cn-dots').querySelectorAll('i').forEach((d, k) => d.classList.toggle('on', k <= i));
-                const narr = $('cn-narr'), sub = $('cn-sub'), sfx = $('cn-sfx');
-                narr.classList.remove('show'); sub.classList.remove('show'); sfx.classList.remove('show');
-                narr.textContent = sh.narr || ''; sfx.textContent = sh.sfx || '';
-                const delay = i === 0 && !this.script.short ? 1500 : 350;
+                this.i = i; this.pi = this.pages[this.pg].indexOf(i); this.t0 = performance.now(); this.typing = null; this.turnT = 0;
                 this.timers = (this.timers || []).filter(x => { clearTimeout(x); return false; });
-                if (sh.narr) this.timers.push(setTimeout(() => narr.classList.add('show'), delay));
-                if (sh.sfx) this.timers.push(setTimeout(() => { sfx.classList.add('show'); playSynthNote(110, 0.25, 'sawtooth', 0.06); playSynthNote(70, 0.35, 'sine', 0.08); buzz(30); }, delay + 700));
+                if (this.W) World3D.dispose(this.W.scene);
+                const P = $('kp-book').querySelector(`.kp-page:not(.out) .kp[data-i="${i}"]`);
+                this.panel = P; P.classList.add('live', 'in');
+                delay = delay || 350;
+                const asp = this.mount() || 1;
+                this.W = World3D.build(Object.assign({ shadows: !lowFx(), toon: true }, sh), asp);
+                this.music(sh.music || (i === 0 && !this.script.era ? 'cozy' : null));
+                const cap = P.querySelector('.kp-cap'), bub = P.querySelector('.kp-bub'), sfx = P.querySelector('.kp-sfx');
+                if (cap) this.timers.push(setTimeout(() => cap.classList.add('show'), delay));
+                if (sfx) this.timers.push(setTimeout(() => { sfx.classList.add('show'); P.classList.add('slam'); playSynthNote(110, 0.25, 'sawtooth', 0.06); playSynthNote(70, 0.35, 'sine', 0.08); buzz(30); }, delay + 650));
                 let textLen = (sh.narr || '').length;
-                if (sh.bub) {
-                    const [who, txt] = sh.bub;
-                    $('cn-who').textContent = castName(who); sub.classList.toggle('evil', who === 'villain');
-                    $('cn-txt').textContent = '';
-                    textLen += txt.length;
-                    this.timers.push(setTimeout(() => { sub.classList.add('show'); this.type(txt, who); }, delay + (sh.narr ? 1100 : 300)));
+                if (bub && sh.bub) {
+                    textLen += sh.bub[1].length;
+                    this.timers.push(setTimeout(() => { bub.classList.add('show'); this.type(sh.bub[1], sh.bub[0], bub.querySelector('span'), P); }, delay + (sh.narr ? 1000 : 300)));
                 }
-                if (i > 0) playPageFlip();
-                this.dur = Math.max(5.2, 2.4 + textLen * 0.045 + delay / 1000);
-                if (i === this.script.shots.length - 1) this.timers.push(setTimeout(() => $('cn-go').classList.add('show'), this.dur * 1000 * 0.6));
+                this.dur = Math.max(4.6, 2.2 + textLen * 0.045 + delay / 1000);
+                if (i === this.script.shots.length - 1) this.timers.push(setTimeout(() => { $('cn-go').classList.add('show'); $('cine').classList.add('end'); this.mount(); }, this.dur * 1000 * 0.6));
             },
-            type(txt, who) {
-                const node = $('cn-txt'); let k = 0;
-                this.typing = { txt, who, done: false };
+            type(txt, who, node, P) {
+                let k = 0;
+                this.typing = { txt, who, done: false, panel: P };
                 const job = this.typing;
-                const tick = () => { if (job !== this.typing || job.done) return; k += 2; node.textContent = txt.slice(0, k); if (k % 6 === 0) playSynthNote(who === 'villain' ? 180 : 620 + (k % 4) * 40, 0.03, 'triangle', 0.015); if (k >= txt.length) { job.done = true; return; } setTimeout(tick, 28); };
+                const tick = () => { if (job !== this.typing || job.done) return; k += 2; node.textContent = txt.slice(0, k); if (k % 6 === 0) playSynthNote(who === 'villain' ? 180 : 620 + (k % 4) * 40, 0.03, 'triangle', 0.015); if (k >= txt.length) { job.done = true; node.innerHTML = letterHTML(txt); return; } setTimeout(tick, 28); };
                 tick();
+            },
+            next() {   // sıradaki panel / sayfa
+                if (this.cover) { this.cover = false; this.freeze(); this.openPage(0); return; }
+                const idx = this.pages[this.pg];
+                this.freeze();
+                if (this.pi < idx.length - 1) { playSynthNote(620, 0.04); this.show(idx[this.pi + 1], 300); return; }
+                if (this.pg < this.pages.length - 1) { this.openPage(this.pg + 1); return; }
+                this.finish();
             },
             frame(now) {
                 this.raf = null;
-                if (!$('cine') || !$('cine').classList.contains('open')) return;
+                if (!this.isOpen()) return;
                 this.raf = requestAnimationFrame(t => this.frame(t));
+                if (document.hidden) return;
+                if (this.last && now - this.last < 30) return;   // hikâye 30 kare/sn: çizgi film akıcılığı, yarı GPU yükü
                 const dt = this.last ? Math.min(0.05, (now - this.last) / 1000) : 0.016; this.last = now;
                 const t = (now - this.t0) / 1000, u = t / this.dur;
-                if (this.W) { this.W.update(t, dt, Math.min(1, u), this.typing && !this.typing.done ? this.typing.who : (this.script.shots[this.i].bub && t > 1.5 ? this.script.shots[this.i].bub[0] : null)); World3D.renderer().render(this.W.scene, this.W.cam); }
-                if (u >= 1 && this.i < this.script.shots.length - 1) this.show(this.i + 1);
+                if (this.cover) {
+                    if (this.W) { this.W.update(t, dt, Math.min(1, u), null); World3D.render(this.W); }
+                    if (u >= 1) this.next();
+                    return;
+                }
+                if (this.W && this.panel && !this.panel.classList.contains('done')) {
+                    const sh = this.script.shots[this.i];
+                    this.W.update(t, dt, Math.min(1, u), this.typing && !this.typing.done ? this.typing.who : (sh.bub && t > 1.5 ? sh.bub[0] : null));
+                    World3D.render(this.W);
+                }
+                if (u >= 1) {
+                    const last = this.i === this.script.shots.length - 1, endOfPage = this.pi === this.pages[this.pg].length - 1;
+                    if (last) { if (!this.panel.classList.contains('done') && u >= 1.6) this.freeze(); return; }   // son kare: oyuncu "devam"a basana kadar bekler
+                    if (endOfPage) { if (!this.turnT) this.turnT = now; if (now - this.turnT < 1100) return; }   // sayfa bitti: bir an bakılsın
+                    this.next();
+                }
             },
             tap() {
-                if (this.typing && !this.typing.done) { this.typing.done = true; $('cn-txt').textContent = this.typing.txt; $('cn-narr').classList.add('show'); return; }
-                if (this.i < this.script.shots.length - 1) { playSynthNote(620, 0.04); this.show(this.i + 1); }
-                else this.finish();
+                if (this.typing && !this.typing.done) { this.typing.done = true; const P = this.typing.panel, n = P && P.querySelector('.kp-bub span'); if (n) n.innerHTML = letterHTML(this.typing.txt); if (P) P.querySelectorAll('.kp-cap').forEach(x => x.classList.add('show')); return; }
+                this.next();
             },
             finish() {
                 (this.timers || []).forEach(clearTimeout); this.timers = [];
@@ -541,6 +719,9 @@
                 document.body.classList.remove('cine-open');
                 if (this.raf) cancelAnimationFrame(this.raf); this.raf = null; this.last = 0;
                 if (this.W) { World3D.dispose(this.W.scene); this.W = null; }
+                const cv = World3D.renderer().domElement; if (cv.parentNode) cv.parentNode.removeChild(cv);
+                const book = $('kp-book'); if (book) book.innerHTML = '';   // dondurulmuş kareleri bellekten at
+                this.panel = null; this.typing = null;
                 try { StoryMusic.stop(); } catch (e) {}
                 if (this.theme === 'era') GameMusic.stop();
                 const d = this.done; this.done = null;

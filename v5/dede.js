@@ -9,6 +9,8 @@
             style = style || (typeof cosmEquipped === 'function' ? cosmEquipped('cup') : 'klasik');
             let [c, l] = CUP_COL[tier] || CUP_COL.o1;
             let body = '#FFFDF8', rim = '#D9A73A', saucer = '#E9DCC6', deco = '';
+            let gold = false;   // Zaman Hazinesi: dönem fincanlarının altın sürümü (h_egypt …)
+            if (style && style.indexOf('h_') === 0 && typeof ERA_LOOKS !== 'undefined' && ERA_LOOKS[style.slice(2)]) { gold = true; style = ERA_LOOKS[style.slice(2)].cup; }
             if (style === 'lale') {         // lale motifli İznik fincanı
                 body = '#F6FBFF'; deco = `<g stroke="${c}" stroke-width="2.4" fill="${l}"><path d="M44 66 q-6 -12 0 -18 q4 6 0 18z"/><path d="M60 70 q-7 -14 0 -21 q7 7 0 21z"/><path d="M76 66 q6 -12 0 -18 q-4 6 0 18z"/></g><path d="M44 66 q16 8 32 0" stroke="#3FA34D" stroke-width="2.5" fill="none"/>`;
             } else if (style === 'altin') { // altın gövde, beyaz kuşak
@@ -48,11 +50,24 @@
             } else if (style === 'caz') {     // Caz Çağı: siyah-altın art deco yelpaze
                 body = '#151515'; rim = '#D4A72C'; saucer = '#2A2A2A';
                 deco = `<g stroke="#D4A72C" stroke-width="2.4" fill="none"><path d="M60 84 L36 50 M60 84 L48 46 M60 84 L60 44 M60 84 L72 46 M60 84 L84 50"/><path d="M40 56 Q60 44 80 56"/></g>`;
+            } else if (style === 'kumsaati') { // Zaman Bekçisi: mor-altın, kum saati amblemi
+                body = '#2A1E3A'; rim = '#C9963A'; saucer = '#3A2A55';
+                deco = `<g stroke="#C9963A" stroke-width="2.6" fill="none"><path d="M46 50 h28 M46 82 h28"/><path d="M49 50 Q49 62 60 66 Q71 62 71 50 M49 82 Q49 70 60 66 Q71 70 71 82"/></g><path d="M52 54 Q60 62 68 54Z M53 80 Q60 72 67 80Z" fill="#F2C25A"/><g fill="#7FE3FF"><circle cx="36" cy="58" r="2"/><circle cx="84" cy="62" r="2"/><circle cx="40" cy="76" r="1.5"/><circle cx="82" cy="78" r="1.5"/></g>`;
+            } else if (style === 'destekci') { // Destekçi: gül-altın, kalp latte art
+                body = '#FFE3EA'; rim = '#F7C873'; saucer = '#F7C873';
+                deco = `<path d="M60 76 C46 62 40 52 50 46 C56 42 60 48 60 52 C60 48 64 42 70 46 C80 52 74 62 60 76 Z" fill="#FF6F91" stroke="#8A2A40" stroke-width="2.5"/><path d="M52 50 q3 -3 6 0" stroke="#fff" stroke-width="2.4" fill="none"/><g fill="#F7C873"><circle cx="36" cy="60" r="3"/><circle cx="84" cy="60" r="3"/><circle cx="40" cy="74" r="2"/><circle cx="80" cy="74" r="2"/></g>`;
+            } else if (style === 'dost') {    // Dost: iki fincan tokuşturan mavi fincan
+                body = '#DCEBFF'; rim = '#3A6EA5'; saucer = '#BFD7F5';
+                deco = `<g stroke="#1E3A5F" stroke-width="2.4"><path d="M38 56 h18 v14 q-9 7 -18 0z" fill="#FFF6E4"/><path d="M64 56 h18 v14 q-9 7 -18 0z" fill="#FFF6E4"/></g><path d="M60 50 c-3 -5 -10 -2 -6 3 l6 5 l6 -5 c4 -5 -3 -8 -6 -3z" fill="#FF6F91"/><path d="M40 82 q20 6 40 0" stroke="#3A6EA5" stroke-width="3" fill="none"/>`;
+            } else if (style === 'beta') {    // Beta tester: laboratuvar fincanı, yeşil iksir, β rozeti
+                body = '#DFF6EE'; rim = '#1F8A70'; saucer = '#BFE8DA'; c = '#1F8A70'; l = '#E9FFE8';
+                deco = `<path d="M30 64 Q60 76 90 64 L86 84 Q60 94 34 84Z" fill="#59D29A" opacity=".85"/><g fill="#E9FFE8"><circle cx="46" cy="76" r="3"/><circle cx="70" cy="80" r="2.2"/><circle cx="58" cy="70" r="1.8"/></g><circle cx="60" cy="52" r="11" fill="#1F8A70" stroke="#0F4A3A" stroke-width="2.5"/><path d="M56 61 V47 Q56 43 60 43 Q64 43 64 46.5 Q64 49.5 60.5 50.5 Q65 51 65 55 Q65 59.5 60 59.5 Q57.5 59.5 56 58" fill="none" stroke="#E9FFE8" stroke-width="2.4" stroke-linecap="round"/>`;
             } else if (style === 'balkabagi') { // balkabağı fincan: oyulmuş yüz
                 body = '#FF8A1E'; rim = '#3A1A4F'; saucer = '#5A2A7A'; c = '#3A1A4F'; l = '#FFD27A';
                 deco = `<g fill="#3A1A4F"><path d="M40 52 l8 -8 l8 8z"/><path d="M64 52 l8 -8 l8 8z"/><path d="M40 66 q20 12 40 0 l-6 2 l-4 -4 l-4 5 l-6 -5 l-6 5 l-4 -5 l-4 4z"/></g>`;
             }
-            const NOBAND = ['balkabagi', 'lale', 'lapis', 'amfora', 'run', 'zafer', 'zarf', 'gul', 'sevr', 'majolika', 'caz'];
+            if (gold) { body = '#F2C25A'; rim = '#FFF3C4'; saucer = '#F7D27A'; deco += `<g fill="#FFFFFF"><path d="M32 46 l2 5 l5 2 l-5 2 l-2 5 l-2 -5 l-5 -2 l5 -2z"/><path d="M86 70 l1.5 4 l4 1.5 l-4 1.5 l-1.5 4 l-1.5 -4 l-4 -1.5 l4 -1.5z"/></g>`; }
+            const NOBAND = ['beta', 'destekci', 'dost', 'balkabagi', 'lale', 'lapis', 'amfora', 'run', 'zafer', 'zarf', 'gul', 'sevr', 'majolika', 'caz', 'kumsaati'];
             const band = NOBAND.includes(style) ? '' : `<path d="M26 48 Q60 58 94 48 L93 62 Q60 72 27 62 Z" fill="${c}"/>
               <g fill="${l}"><circle cx="38" cy="56" r="3"/><circle cx="50" cy="60" r="3"/><circle cx="62" cy="61" r="3"/><circle cx="74" cy="59" r="3"/><circle cx="85" cy="55" r="3"/></g>
               <path d="M26 46 Q60 56 94 46" stroke="${rim}" stroke-width="2.5" fill="none"/><path d="M27 64 Q60 74 93 64" stroke="${rim}" stroke-width="2.5" fill="none"/>`;

@@ -13,6 +13,8 @@
 
             const isGame = screenId === 'screen-game';
             document.body.dataset.screen = screenId;
+            // bellek: harita (~3000 SVG düğümü) her açılışta yeniden çizilir; ayrılınca boşalt
+            if (screenId !== 'screen-map') { const mh = $('map-holder'); if (mh && mh.firstChild) mh.innerHTML = ''; }
             document.body.dataset.mode = isGame ? 'game' : 'menu';
             $('bg-menu').classList.toggle('on', !isGame);
             $('bg-game').classList.toggle('on', isGame);
@@ -106,7 +108,7 @@
             SLOTS.forEach((sv, i) => {
                 const card = document.createElement('div');
                 card.className = 'slot-card' + (sv ? '' : ' empty');
-                const icon = sv ? (sv.finished ? '🏆' : sv.stage <= 5 ? ['☕', '🍵', '🧁', '🌾', '🏰'][sv.stage - 1] : ERA_META[eraKey(sv.stage)].ic) : '➕';
+                const icon = sv ? (sv.finished ? `<img src="${ASSETS.sym.goldenbean}" alt="">` : sv.stage <= 5 ? `<img src="${ASSETS.sym[['espresso', 'matcha', 'cupcake', 'coffeebag', 'book'][sv.stage - 1]]}" alt="">` : eraIcon(eraKey(sv.stage), 30)) : '➕';
                 const date = sv ? new Date(sv.updated).toLocaleDateString(CUR_LANG() === 'en' ? 'en-US' : 'tr-TR') : '';
                 card.innerHTML = `<div class="si">${icon}</div><div class="sb"><b>${sv ? slotLabel(i) : L().slots.empty}</b><small>${sv ? (sv.finished ? L().slots.fin + ' · ' : '') + slotSummary(sv) + ' · ' + date : ''}</small></div>`;
                 const acts = document.createElement('div');
@@ -185,7 +187,7 @@
             $('df-cancel').textContent = L().name.cancel;
             openModal('modal-diff');
         }
-        function diffLabel(sv) { const k = sv && eraKey(sv.stage); return k ? ERA_META[k].ic + ' ' + eraName(k) : '☕ ' + (CUR_LANG() === 'en' ? 'Coffee Town' : 'Kahve Kasabası'); }
+        function diffLabel(sv) { const k = sv && eraKey(sv.stage); return k ? eraName(k) : '☕ ' + (CUR_LANG() === 'en' ? 'Coffee Town' : 'Kahve Kasabası'); }
         function beginNewSave(name) {
             Game.slot = pendingSlot;
             Game.save = newSave(name);
@@ -214,10 +216,7 @@
         /* Saga haritası: 100 bölüm + (bitince) Usta Kafesi. Aşağıdan yukarı kıvrılan yol; dönemler renkli bantlar.
            Hafif tutulur: düğümlerde resim yok (emoji/rakam), yalnızca oyuncu jetonu resimli. */
         const MAP_W = 1000, MAP_STEP = 150, MAP_PAD = 210;
-        const TOWN_META = { ic: '☕', col: '#F2B84B', col2: '#C0782A', ground: '#CDEBB4' };
-        const TOWN_ICONS = { 1: '☕', 2: '🍵', 3: '🧁', 4: '🌾', 5: '🏰' };
-        const ERA_DECO = { egypt: ['🐪', '🌴', '🏺', '🐫'], greece: ['🫒', '🏺', '⚱️', '🦉'], viking: ['🛶', '❄️', '🐺', '⛰️'], rome: ['🍇', '🛡️', '🐎', '🏛️'], ottoman: ['🌷', '🕌', '☕', '🐈'],
-                           victorian: ['🎩', '🚂', '☂️', '🕰️'], france: ['🥐', '🎈', '🌹', '🎭'], italy: ['🎨', '🍝', '🚣', '🍕'], jazz: ['🎺', '🎷', '🗽', '🌃'] };
+        const TOWN_META = { ic: 'town', col: '#F2B84B', col2: '#C0782A', ground: '#CDEBB4' };
         const MAP_GAP = 130;   // dönem geçişlerinde başlık için boşluk
         const MAP_H = MAP_PAD * 2 + 100 * MAP_STEP + 10 * MAP_GAP;
         function mapBand(n) { if (n <= 5) return 0; if (n > 100) return 10; return Engine.eraIndex(n) + 1; }
@@ -228,7 +227,8 @@
             const sv = Game.save, cur = sv.stage, fin = sv.finished, H = MAP_H;
             const bandY = n => mapNodeXY(n).y + MAP_STEP / 2 + (n > 1 && mapBand(n) !== mapBand(n - 1) ? MAP_GAP : 0);   // n bölümünün alt sınırı (dönem başında başlık boşluğu dahil)
             let h = `<svg viewBox="0 0 ${MAP_W} ${H}" class="map-svg saga" role="img" aria-label="${L().map.title}">
-              <defs><filter id="mp-sh" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#3a2410" flood-opacity=".35"/></filter></defs>`;
+              <defs><filter id="mp-sh" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#3a2410" flood-opacity=".35"/></filter>
+              ${artSymbols(Object.keys(ERA_DECO_ART).concat(...Object.values(ERA_DECO_ART)).filter((v, i, a) => a.indexOf(v) === i))}</defs>`;
             // bantlar: kasaba (1–5) + dönemler
             const bands = [{ from: 1, to: 5, M: TOWN_META, name: CUR_LANG() === 'en' ? 'Coffee Town' : 'Kahve Kasabası', years: '' }]
                 .concat(Engine.ERAS.map(e => ({ from: e.from, to: e.from + e.n - 1, M: ERA_META[e.key], key: e.key, name: eraName(e.key), years: ERA_META[e.key].years[CUR_LANG()] })));
@@ -237,16 +237,18 @@
                 h += `<rect x="0" y="${y0}" width="${MAP_W}" height="${y1 - y0}" fill="${ground}"/>
                       <rect x="0" y="${y0}" width="${MAP_W}" height="${y1 - y0}" fill="${B.M.col}" opacity=".18"/>`;
                 // süs emojileri
-                const deco = B.key ? ERA_DECO[B.key] : ['🌳', '🏡', '🌼', '☕'], rr = seeded(hashStr('deco' + bi));
+                const deco = ERA_DECO_ART[B.key || 'town'], rr = seeded(hashStr('deco' + bi));
                 const count = Math.round((y1 - y0) / 90);
                 for (let i = 0; i < count; i++) {
                     const y = y0 + 70 + rr() * (y1 - y0 - 160), side = i % 2 ? 1 : -1, x = MAP_W / 2 + side * (410 + rr() * 50);
-                    h += `<text x="${x}" y="${y}" font-size="${50 + rr() * 30}" text-anchor="middle" opacity=".8">${deco[i % deco.length]}</text>`;
+                    const sz = 62 + rr() * 30;
+                    h += `<use href="#art-${deco[i % deco.length]}" x="${(x - sz / 2).toFixed(0)}" y="${(y - sz / 2).toFixed(0)}" width="${sz.toFixed(0)}" height="${sz.toFixed(0)}" opacity=".85"/>`;
                 }
                 // dönem başlığı
                 const ty = y1 - MAP_GAP / 2 - 6;
                 h += `<g transform="translate(${MAP_W / 2},${ty})"><rect x="-430" y="-40" width="860" height="72" rx="36" fill="${B.M.col}" stroke="${B.M.col2}" stroke-width="6"/>
-                      <text y="10" text-anchor="middle" font-size="36" font-weight="800" fill="#2A1A0C" font-family="Baloo 2, Nunito, sans-serif">${B.M.ic} ${escapeHtml(B.name)}${B.years ? ' · ' + B.years : ''}</text></g>`;
+                      <use href="#art-${B.key || 'town'}" x="-410" y="-34" width="60" height="60"/>
+                      <text y="10" text-anchor="middle" font-size="36" font-weight="800" fill="#2A1A0C" font-family="Baloo 2, Nunito, sans-serif">${escapeHtml(B.name)}${B.years ? ' · ' + B.years : ''}</text></g>`;
             });
             // yol
             let d = '';
@@ -259,13 +261,15 @@
                 const p = mapNodeXY(n), usta = n === 101;
                 const done = !usta && (n < cur || (n === 100 && fin)), here = usta ? fin : (n === cur && !fin), locked = !usta && n > cur;
                 const k = !usta && eraKey(n), M = usta ? { col: '#F2C25A', col2: '#8A5A10' } : k ? ERA_META[k] : TOWN_META;
-                const icon = usta ? '∞' : n <= 5 ? TOWN_ICONS[n] : (k && Engine.eraOf(n).from === n ? ERA_META[k].ic : n);
+                const artIc = !usta && k && Engine.eraOf(n).from === n ? k : null;
+                const icon = usta ? '∞' : n;
                 const r = here ? 64 : (k && Engine.eraOf(n).from === n) || n <= 5 || usta ? 56 : 46;
                 h += `<g class="map-node ${done ? 'done' : ''} ${here ? 'here' : ''} ${locked ? 'locked' : ''}" data-stage="${n}" tabindex="0" filter="url(#mp-sh)">`;
                 if (here) h += `<circle cx="${p.x}" cy="${p.y}" r="${r + 14}" class="map-glow" fill="none" stroke="#FFD27A" stroke-width="9"/>`;
                 h += `<circle cx="${p.x}" cy="${p.y}" r="${r}" fill="${locked ? '#D8CBB8' : M.col}" stroke="#FFF6EA" stroke-width="6"/>
                       <circle cx="${p.x}" cy="${p.y}" r="${r}" fill="none" stroke="${locked ? '#9C8B74' : M.col2}" stroke-width="3"/>
-                      <text x="${p.x}" y="${p.y + (typeof icon === 'number' ? 15 : 18)}" text-anchor="middle" font-size="${typeof icon === 'number' ? 42 : 52}" font-weight="800" fill="${locked ? '#8A7A64' : '#2A1A0C'}" font-family="Baloo 2, Nunito, sans-serif" ${locked ? 'opacity=".7"' : ''}>${icon}</text>`;
+                      ${artIc ? `<use href="#art-${artIc}" x="${p.x - r * 0.72}" y="${p.y - r * 0.72}" width="${r * 1.44}" height="${r * 1.44}" ${locked ? 'opacity=".55"' : ''}/>`
+                        : `<text x="${p.x}" y="${p.y + 15}" text-anchor="middle" font-size="${usta ? 52 : 42}" font-weight="800" fill="${locked ? '#8A7A64' : '#2A1A0C'}" font-family="Baloo 2, Nunito, sans-serif" ${locked ? 'opacity=".7"' : ''}>${icon}</text>`}`;
                 if (done) h += `<circle cx="${p.x + r * 0.75}" cy="${p.y - r * 0.75}" r="20" fill="#5E8C61" stroke="#fff" stroke-width="4"/><text x="${p.x + r * 0.75}" y="${p.y - r * 0.75 + 8}" text-anchor="middle" font-size="24" font-weight="800" fill="#fff">✓</text>`;
                 if (here || usta || n <= 5 || (k && Engine.eraOf(n).from === n)) {
                     const lbl = usta ? L().usta.place : stageName(n), side = p.x > MAP_W / 2 ? -1 : 1, lx = p.x + side * (r + 16);
@@ -299,7 +303,7 @@
                 g.addEventListener('keydown', e => { if (e.key === 'Enter') go(); });
             });
             const sv = Game.save, cur = sv.stage;
-            $('map-info').innerHTML = sv.finished ? `<b>${L().usta.place}</b> · ${L().map.here}` : `<b>${stageLabel(cur)}</b>${eraKey(cur) ? ' · ' + ERA_META[eraKey(cur)].ic + ' ' + eraName(eraKey(cur)) : ''} · ${L().map.here}`;
+            $('map-info').innerHTML = sv.finished ? `<b>${L().usta.place}</b> · ${L().map.here}` : `<b>${stageLabel(cur)}</b>${eraKey(cur) ? ' · ' + eraIcon(eraKey(cur), 18) + ' ' + eraName(eraKey(cur)) : ''} · ${L().map.here}`;
             $('map-play').textContent = L().map.play;
             switchScreen('screen-map');
             // bulunduğun bölüme kaydır
@@ -354,6 +358,7 @@
             document.body.dataset.chapter = n;
             document.body.dataset.era = eraKey(n) || '';
             setTimeout(() => applyEraBackdrop(n), 30);   // bölüme özel 3D dönem arka planı
+            renderOrder();
             gameState.autoSpinActive = false;
             gameState.isSpinning = false;
             gameState.reelsPending = false;
@@ -531,7 +536,7 @@
             if (st === 3) infoPages.push(['🧁', P.special, `<div class="ip-hero"><img class="ip-hi" src="${ASSETS.sym.cupcake}" alt=""></div><h4 class="ip-h">${I.ovenT}</h4><div class="ip-txt">${I.oven(E)}</div>`]);
             if (st === 4) infoPages.push(['🌾', P.special, `<div class="ip-hero"><img class="ip-hi" src="${ASSETS.sym.coffeebag}" alt=""></div><h4 class="ip-h">${I.bagT}</h4><div class="ip-txt">${I.bag(E)}</div>`]);
             if (CHAPTERS[st].saga) { const ek = eraKey(st), EM = ERA_META[ek], T2 = ST().era[ek];
-                infoPages.push([EM.ic, P.era, `<div class="ip-hero"><div class="era-badge big" style="--c:${EM.col};--c2:${EM.col2}">${EM.ic}</div></div><h4 class="ip-h">${eraName(ek)} · ${EM.years[CUR_LANG()]}</h4><div class="ip-txt"><b>${ST().buffWord}: ${T2.buff}</b><br>${T2.buffD}.<br>${I.eraNote}</div>`]); }
+                infoPages.push([eraIcon(ek, 20), P.era, `<div class="ip-hero"><div class="era-badge big" style="--c:${EM.col};--c2:${EM.col2}">${eraIcon(ek, 72)}</div></div><h4 class="ip-h">${eraName(ek)} · ${EM.years[CUR_LANG()]}</h4><div class="ip-txt"><b>${ST().buffWord}: ${T2.buff}</b><br>${T2.buffD}.<br>${I.eraNote}</div>`]); }
             if (st === 5 || CHAPTERS[st].saga) infoPages.push(['☕', CHAPTERS[st].saga ? I.loyT.replace(/\s*\(.*\)/, '').replace(/^\S+\s/, '') : P.special, `<div class="ip-hero"><img class="ip-hi" src="${ASSETS.sym.stamp}" alt=""></div><h4 class="ip-h">${I.loyT}</h4><div class="ip-txt">${I.loy}</div>`]);
             infoPages.push(['〰️', P.lines, `<p class="ip-txt">${tf(I.linesTxt, { n: Engine.LINES })}</p><div class="ip-lines">${linesSVG()}</div>`]);
             infoPages.push(['🎮', P.keys, `<div class="keys">${I.keys.map(k => `<div class="key-row"><span class="kk">${k[0]}</span><span>${k[1]}</span></div>`).join('')}</div>`]);
@@ -626,7 +631,8 @@
             const p = goalProgress();
             $('goal-fill').style.width = (p * 100) + '%';
             bar.classList.toggle('done', !!sv.finished);
-            $('goal-title').textContent = (GOAL_ICON[n] || ERA_META[eraKey(n)].ic) + ' ' + stageName(n);
+            if (GOAL_ICON[n]) $('goal-title').textContent = GOAL_ICON[n] + ' ' + stageName(n);
+            else $('goal-title').innerHTML = eraIcon(eraKey(n), 18) + ' ' + escapeHtml(stageName(n));
             const pct = p * 100;
             $('goal-num').textContent = sv.finished ? '' : fmt(gameState.balance) + ' / ' + fmt(c.unlockAt);
             $('goal-pct').textContent = sv.finished ? '🏆' : pctS(pct < 10 ? fx(Math.floor(pct * 10) / 10) : Math.floor(pct));
@@ -685,7 +691,7 @@
                 // kasaya taşınan miktar sınırlı: şanslı bir seri sonraki bölümü (hikâyesi ve mekaniğiyle) atlatmasın; fazlası Zaman Hazinesi'ne
                 const cap = nx.saga ? nx.carryMax : Math.round(nx.unlockAt * 0.6);
                 const extra = Math.max(0, gameState.balance - cap);
-                if (extra > 0) { sv.treasure = (sv.treasure || 0) + extra; setTimeout(() => achToast('goldenbean', '🏺 ' + ST().treasure, '+' + fmt(extra)), 2600); }
+                if (extra > 0) { addTreasure(extra); setTimeout(() => achToast('goldenbean', ST().treasure, '+' + fmt(extra)), 2600); }
                 gameState.balance = Math.min(cap, nx.saga ? Math.max(gameState.balance, nx.start) : gameState.balance);
                 gameState.loy = newLoyalty();
                 gameState.oven = 0;
@@ -753,11 +759,12 @@
             const tb = $('tier-badge');
             tb.textContent = L().tier(tier);
             tb.classList.toggle('hi', tier > 0);
+            renderOrder();
             const isLocked = (freeActive() || gameState.autoSpinActive);
             $('bet-minus-btn').disabled = isLocked;
             $('bet-plus-btn').disabled = isLocked;
             const ek = eraKey(gameState.chapter);
-            $('hud-stage').textContent = `${Game.save && Game.save.cheat ? '🧪 ' : ''}${ek ? ERA_META[ek].ic : '☕'} ${ek ? ST().chWord : L().stageWord} ${gameState.chapter}`;
+            $('hud-stage').innerHTML = `${Game.save && Game.save.cheat ? '🧪 ' : ''}${ek ? eraIcon(ek, 16) : '☕'} ${ek ? ST().chWord : L().stageWord} ${gameState.chapter}`;
             updateEraChip();
         }
 
@@ -1169,6 +1176,11 @@
             $('spin-btn').classList.remove('spinning');
             $('spin-lbl').textContent = L().ctl.spin;
             if (res.p) metaOnSpin(res, res.p);
+            if (res.p && !res.p.ctx.inFS && !res.p.ctx.ovenRain) {
+                orderTick(res);
+                const sv = Game.save;   // Zaman İksiri: normal spinlerde azalır
+                if (sv && sv.potion > 0) { sv.potion--; if (!sv.potion) refreshEff(); renderOrder(); }
+            }
 
             if (addStamps(res.stamps)) setTimeout(() => { if (!$('modal-drink').classList.contains('open')) openDrinkChoice(); }, 450);
             addCupcakes(res.cupcakes);
@@ -1334,7 +1346,17 @@
         /* ---------- HEDİYE EKONOMİSİ: 6 saatte bir ücretsiz hediye · istediğin an reklam izle ---------- */
         const GIFT_MS = 6 * 3600 * 1000, VIDEO_CD = 30 * 1000;
         // 1.000 çekirdek; Final'de en düşük bahis 2.000 olduğu için hediye en az bir spin'e yetecek kadardır
-        function giftAmt() { return Math.max((RUN_EFF.diff && RUN_EFF.diff.gift) || 1000, CHAPTERS[gameState.chapter || 1].minBet); }
+        /* video ve 6 saatlik hediye: bulunduğun bölümün BAŞLANGIÇ tutarı kadar
+           (ör. 100.000'e ulaşıp 80.000'e yeni bölümü açınca başlangıç 20.000'dir) */
+        function chapterStart(n) {
+            const C = CHAPTERS[n];
+            if (!C) return 1000;
+            if (n === 1) return C.seed;
+            if (C.saga) return C.start;
+            const P = CHAPTERS[n - 1];
+            return Math.max(C.minBet, P.unlockAt - P.price);
+        }
+        function giftAmt() { return Math.max(1000, chapterStart(gameState.chapter || (Game.save && Game.save.stage) || 1)); }
         let bustTimer = null;
         function giftLeft() { const sv = Game.save; if (!sv) return GIFT_MS; return Math.max(0, (sv.lastGift || sv.created || Date.now()) + GIFT_MS - Date.now()); }
         function videoLeft() { return Math.max(0, ((Game.save && Game.save.lastVideo) || 0) + VIDEO_CD - Date.now()); }
@@ -1429,6 +1451,7 @@
                   <button class="btn btn-sm btn-green" ${vl > 0 ? 'disabled' : ''} onclick="watchVideo()">${vl > 0 ? tf(S.wait, { t: Math.ceil(vl / 1000) }) : '+' + fmt(giftAmt())}</button></div>
                 <div class="st-card"><span class="si">⏰</span><div class="sb"><b>${S.free}</b><small>${tf(S.freeTxt, { v: fmt(giftAmt()) })}</small></div>
                   <span class="st-tag t2">${gl > 0 ? fmtTime(gl) : S.ready}</span></div>
+                ${storeTreasure()}
                 ${storeEra()}
                 ${storeLevers()}
                 ${storeLooks()}
@@ -1756,10 +1779,10 @@
             $('shop-bank').innerHTML = `${S.bank}: ${beanIc()} ${fmt(gameState.balance)}`;
             const tabs = $('shop-tabs');
             tabs.innerHTML = '';
-            ['symbol', 'skill', 'special', 'late', 'lever'].forEach(id => {
+            ['symbol', 'skill', 'special', 'late', 'era', 'lever'].forEach(id => {
                 const b = document.createElement('button');
                 b.className = 'tab' + (id === shopTab ? ' on' : '');
-                b.textContent = S.tabs[id];
+                if (id === 'era') b.innerHTML = ICON.hourglass(16) + ' ' + S.tabs[id]; else b.textContent = S.tabs[id];
                 b.onclick = () => setShopTab(id);
                 tabs.appendChild(b);
             });
@@ -1771,6 +1794,7 @@
             if (gameState.isSpinning) note(S.spinWait);
             if (shopTab === 'special' && ups.some(u => !stageUnlocked(u.unlock || 1))) note(S.lockSpecial);
             if (shopTab === 'late') note(stageUnlocked(4) ? S.lateInfo : S.lockLate);
+            if (shopTab === 'era') note(stageUnlocked(Engine.SAGA_FIRST) ? ST().upInfo : ST().upLock);
             ups.forEach(u => {
                 const lvl = upLevel(u.id);
                 const locked = u.unlock && !stageUnlocked(u.unlock);
@@ -1790,7 +1814,7 @@
                     (maxed ? `<small class="nxt">${S.maxed}</small>` : `<small class="nxt">➜ ${upDesc(u, lvl + 1)}</small>`);
                 const btn = document.createElement('button');
                 btn.className = 'btn btn-sm' + (maxed ? ' btn-green' : '');
-                if (locked) { btn.textContent = `🔒 ${L().stageWord} ${u.unlock}`; btn.disabled = true; }
+                if (locked) { btn.textContent = `🔒 ${u.unlock >= Engine.SAGA_FIRST ? ST().chWord : L().stageWord} ${u.unlock}`; btn.disabled = true; }
                 else if (maxed) { btn.textContent = S.max; btn.disabled = true; }
                 else {
                     btn.innerHTML = `${fmt(cost)} ${beanIc()}`;
@@ -1814,7 +1838,7 @@
                 const own = cosmUnlocked('lever', it.id), on = cosmEquipped('lever') === it.id, p = it.buy ? cosmPrice('lever', it.id) : 0;
                 const act = on ? `<button class="btn btn-sm btn-green" disabled>${C.worn}</button>`
                     : own ? `<button class="btn btn-sm" onclick="equipCosm('lever','${it.id}');buildShop()">${it.id === 'yok' ? V.remove : C.wear}</button>`
-                    : `<button class="btn btn-sm" ${gameState.balance < p || gameState.isSpinning ? 'disabled' : ''} onclick="buyCosm('lever','${it.id}')">${fmt(p)} ${beanIc()}</button>`;
+                    : `<button class="btn btn-sm" ${!cosmAfford('lever', it.id) || gameState.isSpinning ? 'disabled' : ''} onclick="buyCosm('lever','${it.id}')">${fmt(p)} ${beanIc()}</button>`;
                 h += `<div class="up-card lv ${on ? 'maxed' : ''}">${it.id === 'yok' ? '<span class="lv-none">🚫</span>' : leverSVG(it.id)}<div class="ub"><b>${V.names[it.id]}</b><small class="cur">${V.desc[it.id]}</small></div>${act}</div>`;
             });
             list.innerHTML = h;

@@ -1,24 +1,65 @@
 {
- "num": "6.1.0",
+ "num": "6.2.0",
  "name": {
-  "tr": "Espresso Romano",
-  "en": "Espresso Romano"
+  "tr": "Flat White",
+  "en": "Flat White"
  },
  "notes": {
   "tr": [
-   "🎬 Hikâye baştan üretildi: sevimli 3D animasyonlu sinematik oynatıcı.",
-   "🎵 Antik Mısır’dan itibaren her döneme özel müzik ve 3D arka plan.",
-   "📱 Mobil ekran ve tasarım iyileştirmeleri; mağazada satın alma penceresi artık üstte açılıyor.",
-   "📖 Barista not defterinde “Bugünün özel reçetesi” tasarımlı kapak sayfası."
+   "📚 Hikâyeler artık Marvel tarzı çizgi roman sayfası: paneller, altyazı kutuları, konuşma balonları, ses efektleri ve mürekkep çizgili 3D kareler.",
+   "🗞 Zaman makinesi, her dönem girişi ve final için tam sayfa çizgi roman kapakları.",
+   "📚 Kupa Odası › Çizgi Roman: açtığın sayıları istediğin zaman yeniden oku.",
+   "🧾 Sipariş fişleri: normal spinlerde küçük hedefler; 3 sipariş üst üste = bahşiş kavanozu.",
+   "⏳ Atölye’de “Dönem” sekmesi; son dönemlerin yükseltmeleri %30 ucuzladı.",
+   "💰 Zaman Hazinesi harcanabiliyor: Zaman Bekçisi seti, altın dönem fincanları, Hazine Sandığı ve Zaman İksiri.",
+   "🎁 Günlük ödül, video ve 6 saatlik hediye artık bulunduğun bölüme göre büyüyor.",
+   "🌱 Kasaba şubeleri (1–5) kısaldı ve daha dengeli.",
+   "💚 Beta testerlara özel görünüm seti (test kodu ile).",
+   "🎃 Cadılar Bayramı etkinliği sona erdi; görünümler artık satılmıyor (sahip olanlar giymeye devam eder).",
+   "🎨 Saga haritası ve rozetlerde emoji yerine oyuna özel çizimler.",
+   "⚡ Daha hızlı ve hafif: çizim yükü ~%65 azaldı, telefon zorlanırsa hafif mod kendiliğinden açılıyor.",
+   "🐞 Saga’nın yarısındaki çökme, hikâye açılırken makara takılması ve 6. makara bildirimi düzeltildi.",
+   "📜 Ayarlar › Sürüm geçmişi."
   ],
   "en": [
-   "🎬 Story remade from scratch: cute 3D animated cinematic player.",
-   "🎵 Era-specific music and 3D backdrops from Ancient Egypt onward.",
-   "📱 Mobile layout improvements; purchase pop-up now opens above the store.",
-   "📖 Designed “Today’s special recipe” cover page in the barista notebook."
+   "📚 Stories are now Marvel-style comic pages: panels, caption boxes, speech balloons, sound effects and inked 3D art.",
+   "🗞 Full-page comic covers for the time machine, every era opening and the finale.",
+   "📚 Trophy Room › Comics: reread any issue you’ve unlocked.",
+   "🧾 Order tickets: small goals on normal spins; 3 orders in a row = tip jar.",
+   "⏳ New “Era” tab in the Workshop; late-era upgrades are 30% cheaper.",
+   "💰 The Time Treasure can be spent: Time Keeper set, golden era cups, Treasure Chest and Time Potion.",
+   "🎁 Daily reward, video and 6-hour gifts now scale with your chapter.",
+   "🌱 Town branches (1–5) are shorter and more even.",
+   "💚 A special look set for beta testers (with the test code).",
+   "🎃 The Halloween event has ended; its looks are no longer sold (owners can keep wearing them).",
+   "🎨 Custom drawings instead of emoji on the Saga map and badges.",
+   "⚡ Faster and lighter: ~65% less drawing work; light mode turns on by itself if your phone struggles.",
+   "🐞 Fixed the Saga halfway crash, reels sticking while a story opened, and the 6th-reel toast.",
+   "📜 Settings › Version history."
   ]
  },
  "history": [
+  {
+   "num": "6.1.0",
+   "name": {
+    "tr": "Espresso Romano",
+    "en": "Espresso Romano"
+   },
+   "notes": {
+    "tr": [
+     "🎬 Hikâye baştan üretildi: sevimli 3D animasyonlu sinematik oynatıcı.",
+     "🎵 Antik Mısır’dan itibaren her döneme özel müzik ve 3D arka plan.",
+     "📱 Mobil ekran ve tasarım iyileştirmeleri; mağazada satın alma penceresi artık üstte açılıyor.",
+     "📖 Barista not defterinde “Bugünün özel reçetesi” tasarımlı kapak sayfası."
+    ],
+    "en": [
+     "🎬 Story remade from scratch: cute 3D animated cinematic player.",
+     "🎵 Era-specific music and 3D backdrops from Ancient Egypt onward.",
+     "📱 Mobile layout improvements; purchase pop-up now opens above the store.",
+     "📖 Designed “Today’s special recipe” cover page in the barista notebook."
+    ]
+   }
+  },
   {
    "num": "6.0.0",
    "name": {

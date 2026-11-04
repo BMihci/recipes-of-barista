@@ -28,7 +28,7 @@ t = t[:b0] + open('v5/body.html', encoding='utf-8').read() + '\n' + t[b1:]
 # ---------- betikler ----------
 j0 = t.index("        /* =====================================================\n           OYUN VERİSİ")
 j1 = t.index("    </script>\n</body>")
-parts = ''.join(open('v5/' + f, encoding='utf-8').read().rstrip('\n') + '\n\n' for f in ['i18n.js', 'i18n_meta.js', 'data.js', 'meta.js', 'saga.js', 'cosm.js', 'notify.js', 'cloud.js', '3d.js', 'story_head.js', 'story_body.js', 'cinema.js', 'saga_flow.js', 'main.js', 'dede_svg.js', 'dede.js'])
+parts = ''.join(open('v5/' + f, encoding='utf-8').read().rstrip('\n') + '\n\n' for f in ['i18n.js', 'i18n_meta.js', 'data.js', 'meta.js', 'saga.js', 'icons.js', 'cosm.js', 'notify.js', 'cloud.js', '3d.js', 'story_head.js', 'story_body.js', 'cinema.js', 'saga_flow.js', 'extras.js', 'main.js', 'dede_svg.js', 'dede.js'])
 boot = """        /* =====================================================
            KLAVYE (PC): Boşluk = Spin
            ===================================================== */

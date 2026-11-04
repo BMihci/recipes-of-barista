@@ -62,6 +62,40 @@
   <ellipse cx="122" cy="70" rx="86" ry="14" fill="#5A5E66" stroke="#2A2C30" stroke-width="4"/>
 `;
 
+        DEDE_HATS.pilot = `  <!-- zaman pilotu: deri pilot başlığı + pirinç gözlük -->
+  <path d="M68 74 Q66 22 122 18 Q178 22 176 74 Q150 62 122 62 Q94 62 68 74Z" fill="#7A4A26" stroke="#3A2010" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M122 20 L122 60" stroke="#3A2010" stroke-width="3" opacity=".55"/>
+  <path d="M70 72 Q60 90 66 104" stroke="#7A4A26" stroke-width="10" fill="none" stroke-linecap="round"/><path d="M174 72 Q184 90 178 104" stroke="#7A4A26" stroke-width="10" fill="none" stroke-linecap="round"/>
+  <path d="M74 52 Q122 40 170 52" stroke="#2A1A10" stroke-width="7" fill="none"/>
+  <g stroke="#8A5A10" stroke-width="4"><circle cx="100" cy="48" r="15" fill="#C9963A"/><circle cx="144" cy="48" r="15" fill="#C9963A"/></g>
+  <circle cx="100" cy="48" r="9.5" fill="#7FE3FF" stroke="#3A2010" stroke-width="2.5"/><circle cx="144" cy="48" r="9.5" fill="#9F7BFF" stroke="#3A2010" stroke-width="2.5"/>
+  <path d="M95 43 l5 -3 M139 43 l5 -3" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+  <path d="M115 48 q7 -6 14 0" stroke="#8A5A10" stroke-width="4" fill="none"/>
+`;
+        DEDE_HATS.beta = `  <!-- beta tester: yeşil bere + laboratuvar gözlüğü + β rozeti -->
+  <path d="M64 70 Q60 24 122 18 Q184 24 180 70 Q150 58 122 58 Q94 58 64 70Z" fill="#1F8A70" stroke="#0F4A3A" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M66 68 Q122 50 178 68 L178 78 Q122 62 66 78Z" fill="#E9FFE8" stroke="#0F4A3A" stroke-width="3"/>
+  <circle cx="122" cy="14" r="10" fill="#E9FFE8" stroke="#0F4A3A" stroke-width="3"/>
+  <circle cx="150" cy="42" r="14" fill="#F2C25A" stroke="#6A4A10" stroke-width="3"/>
+  <path d="M146 51 V37 Q146 33 150 33 Q154 33 154 36.5 Q154 39.5 150.5 40.5 Q155 41 155 45 Q155 49.5 150 49.5 Q147.5 49.5 146 48" fill="none" stroke="#3A2410" stroke-width="2.6" stroke-linecap="round"/>
+  <g stroke="#0F4A3A" stroke-width="4"><rect x="80" y="36" width="26" height="18" rx="7" fill="#BFF5E0" fill-opacity=".85"/><rect x="112" y="36" width="26" height="18" rx="7" fill="#BFF5E0" fill-opacity=".85"/></g>
+  <path d="M106 44 h6" stroke="#0F4A3A" stroke-width="4"/><path d="M85 40 l6 -2 M117 40 l6 -2" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+`;
+        DEDE_HATS.destekci = `  <!-- destekçi: gül-altın barista tacı + kalp -->
+  <path d="M70 70 L62 26 L92 46 L122 14 L152 46 L182 26 L174 70 Z" fill="#F7C873" stroke="#8A5A10" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M70 70 Q122 58 174 70 L174 80 Q122 68 70 80 Z" fill="#6A2C3E" stroke="#3A1420" stroke-width="3"/>
+  <g fill="#FF6F91" stroke="#8A2A40" stroke-width="2"><circle cx="62" cy="26" r="6"/><circle cx="182" cy="26" r="6"/></g>
+  <path d="M122 30 C112 18 96 30 106 42 L122 56 L138 42 C148 30 132 18 122 30 Z" fill="#FF6F91" stroke="#8A2A40" stroke-width="3"/>
+  <path d="M110 34 q4 -4 8 0" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round"/>
+`;
+        DEDE_HATS.dost = `  <!-- dost: mavi bere + dostluk rozeti (iki fincan) -->
+  <path d="M64 72 Q60 26 122 20 Q184 26 180 72 Q150 60 122 60 Q94 60 64 72Z" fill="#3A6EA5" stroke="#1E3A5F" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M66 70 Q122 52 178 70 L178 80 Q122 64 66 80Z" fill="#FFD27A" stroke="#8A5A10" stroke-width="3"/>
+  <circle cx="122" cy="16" r="10" fill="#FF8FAB" stroke="#1E3A5F" stroke-width="3"/>
+  <circle cx="150" cy="44" r="15" fill="#FFF6E4" stroke="#1E3A5F" stroke-width="3"/>
+  <g stroke="#8A5A30" stroke-width="2.4" fill="#C98A50"><path d="M140 40 h8 v8 q-4 4 -8 0z"/><path d="M152 40 h8 v8 q-4 4 -8 0z"/></g>
+  <path d="M148 36 c-2 -3 -6 -1 -4 2 l4 3 l4 -3 c2 -3 -2 -5 -4 -2z" fill="#FF6F91"/>
+`;
         DEDE_HATS.bandana = `  <!-- yeşil bandana -->
   <path d="M60 72 Q62 34 120 30 Q178 32 182 70 Q150 60 120 60 Q90 60 60 72 Z" fill="#5FA463" stroke="#2C5A2E" stroke-width="4" stroke-linejoin="round"/>
   <g fill="#E9F7DA" opacity=".9"><circle cx="92" cy="50" r="4"/><circle cx="118" cy="42" r="4"/><circle cx="146" cy="48" r="4"/><circle cx="104" cy="56" r="2.6"/><circle cx="134" cy="55" r="2.6"/><circle cx="164" cy="58" r="2.6"/></g>

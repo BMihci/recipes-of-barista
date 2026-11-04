@@ -11,6 +11,8 @@
         const APO = 0.5 / Math.tan(Math.PI / FACES);      // yüz merkezinin eksene uzaklığı (yüz yüksekliği = 1)
         const DRUM_Z = 0.36 - APO;                         // tambur ekseni (ön yüz z≈0.36)
         const VMAX = 19;                                   // rad/sn (≈3 tur/sn)
+        let bulbIM = null, bulbTmp = null;
+        const fps = { n: 0, sum: 0, prev: 0, windows: 0 };   // otomatik hafif mod için kare süresi ölçümü   // ampuller tek çizimde (InstancedMesh)
         let bulbs = [], drums = [], winFlash = 0, lastFrame = 0, lastRender = 0, frameMats = null, frameH = 0;
         /* Görünüm değişince çerçeve renklerini sahneyi yeniden kurmadan güncelle */
         function applyFrameSkin() {
@@ -377,7 +379,7 @@
                     return;
                 }
                 renderer.setClearColor(0x000000, 0);
-                renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+                renderer.setPixelRatio(typeof lowFx === 'function' && lowFx() ? 1 : Math.min(window.devicePixelRatio || 1, 2));
                 if (THREE.sRGBEncoding !== undefined) renderer.outputEncoding = THREE.sRGBEncoding;
                 container.innerHTML = '';
                 container.appendChild(renderer.domElement);
@@ -546,8 +548,22 @@
                 return [-sx, hy];
             };
             for (let i = 0; i < count; i++) pts.push(at(perim * i / count));
-            const bulbGeo = new THREE.SphereGeometry(0.065, 14, 14);
-            pts.forEach((p, i) => {
+            const bulbGeo = new THREE.SphereGeometry(0.065, 12, 10);
+            bulbIM = null;
+            if (THREE.InstancedMesh && THREE.Matrix4) {
+                // performans: ~60 ampul tek çizim çağrısında; renk = gövde + parlama (örnek başına)
+                const m = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 });
+                m.onBeforeCompile = s => { s.fragmentShader = s.fragmentShader.replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n#ifdef USE_INSTANCING_COLOR\ntotalEmissiveRadiance = vColor * 0.85;\n#endif'); };
+                bulbIM = new THREE.InstancedMesh(bulbGeo, m, pts.length);
+                const M4 = new THREE.Matrix4(); bulbTmp = new THREE.Color();
+                pts.forEach((p, i) => {
+                    M4.makeTranslation(p[0], p[1], 0.69); bulbIM.setMatrixAt(i, M4);
+                    const c = palette[i % palette.length];
+                    bulbs.push({ material: { color: srgb(c), emissive: srgb(c), emissiveIntensity: 0.8 } });
+                    bulbIM.setColorAt(i, srgb(c));
+                });
+                scene.add(bulbIM);
+            } else pts.forEach((p, i) => {
                 const c = palette[i % palette.length];
                 const m = new THREE.MeshStandardMaterial({ color: srgb(c), emissive: srgb(c), emissiveIntensity: 0.8, roughness: 0.3 });
                 const b = new THREE.Mesh(bulbGeo, m);
@@ -614,6 +630,7 @@
                 let a = f.userData.k * STEP - d.phi;
                 a = Math.atan2(Math.sin(a), Math.cos(a));
                 const c = Math.cos(a);
+                f.visible = c > 0.5;   // pencere ±~4 satır: arkadaki yüzler çizilmez (çizim çağrısı ~%65 azalır)
                 // görünen 3 satır (±1 adım) tam parlak; pencereden çıkan yüzler hızla kararır (silindir derinliği)
                 const edge = Math.abs(a) - STEP * (RMID + 0.25);
                 const b = edge <= 0 ? 1.0 - 0.05 * Math.abs(a) / STEP : Math.max(0.08, 1.0 - edge * 3.2);
@@ -761,6 +778,16 @@
             if (rafId !== null) { cancelAnimationFrame(rafId); rafId = null; }
         }
 
+        function syncBulbs() {
+            if (!bulbIM || !bulbIM.instanceColor) return;
+            for (let i = 0; i < bulbs.length; i++) {
+                const m = bulbs[i].material;
+                const k = 0.75 * m.emissiveIntensity;
+                bulbTmp.setRGB(m.color.r * 0.35 + m.emissive.r * k, m.color.g * 0.35 + m.emissive.g * k, m.color.b * 0.35 + m.emissive.b * k);
+                bulbIM.setColorAt(i, bulbTmp);
+            }
+            bulbIM.instanceColor.needsUpdate = true;
+        }
         function animate3D() {
             rafId = null;
             if (!threeActive) return;
@@ -769,7 +796,13 @@
             const now = performance.now();
             // pil/işlemci tasarrufu: boştayken (dönüş, kazanç, heyecan yokken) ~15 kare/sn yeter
             const busy = drums.some(d => d.mode !== 'idle') || winningMeshRefs.length > 0 || now - winFlash < 1600 || teasePlanes.some(p => p.visible) || Lever.q.length > 0 || now < rainbowUntil;
-            if (document.hidden || (!busy && now - lastRender < 66)) return;
+            // hikâye oynarken (sinema açık) slot sahnesi görünmez: hiç çizme
+            if (document.hidden || document.body.classList.contains('cine-open') || (!busy && now - lastRender < 95)) return;   // boşta ~10 kare/sn
+            if (busy && fps.windows < 4 && typeof autoLowFx === 'function' && !Settings.fxUser && !lowFx()) {
+                const gap = now - fps.prev; fps.prev = now;
+                if (gap > 0 && gap < 250) { fps.sum += gap; fps.n++; }
+                if (fps.n >= 150) { fps.windows++; if (fps.sum / fps.n > 45) autoLowFx(); fps.n = 0; fps.sum = 0; }
+            }
             lastRender = now;
             const dt = lastFrame ? Math.min(0.05, (now - lastFrame) / 1000) : 0.016;
             lastFrame = now;
@@ -810,6 +843,7 @@
                     b.material.color.setHSL(h, 1, 0.55); b.material.emissive.setHSL(h, 1, 0.5);
                     b.material.emissiveIntensity = 0.9 + 0.8 * Math.abs(Math.sin(now * 0.012 + i * 0.4));
                 });
+                syncBulbs();
                 if (renderer && scene && camera) renderer.render(scene, camera);
                 return;
             } else if (rainbowOn) { rainbowOn = false; applyFrameSkin(); }
@@ -818,6 +852,6 @@
                 const w = Math.sin(now * speed - i * 0.55);
                 b.material.emissiveIntensity = flashing ? (Math.floor(now / 110 + i) % 2 ? 1.6 : 0.25) : 0.35 + 0.9 * Math.max(0, w);
             });
-
+            syncBulbs();
             if (renderer && scene && camera) renderer.render(scene, camera);
         }

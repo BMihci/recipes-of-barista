@@ -18,6 +18,12 @@
             }
             if (audioCtx.state === 'suspended') audioCtx.resume();
         }
+        /* pil/CPU: oyun arka plana geçince ses motorunu uyut, dönünce uyandır */
+        document.addEventListener('visibilitychange', () => {
+            if (!audioCtx) return;
+            if (document.hidden) { if (audioCtx.state === 'running') audioCtx.suspend(); }
+            else if (!isMuted && audioCtx.state === 'suspended') audioCtx.resume();
+        });
         function busOut(kind) { initAudio(); return kind === 'music' ? musBus : sfxBus; }
         function applyVolumes() {
             if (!audioCtx) return;
@@ -289,7 +295,11 @@
                 eraSong(n, fast) {   // bölüme özel dönem şarkısı (önbellekli)
                     const e = Engine.eraOf(n); if (!e) return null;
                     const name = (fast ? 'erab' : 'era') + n;
-                    if (!SONGS[name]) SONGS[name] = compose(e.key, n, fast);
+                    if (!SONGS[name]) {
+                        // bellek: eski bölümlerin dönem şarkılarını at (çalan şarkıya dokunma)
+                        for (const k in SONGS) if (/^erab?\d+$/.test(k) && k !== song && k.replace(/^erab?/, '') !== String(n)) delete SONGS[k];
+                        SONGS[name] = compose(e.key, n, fast);
+                    }
                     return name;
                 },
                 _sched(name, bars) { let tt = 0.05; for (let b = 0; b < bars; b++) tt = scheduleBar(SONGS[name], b, tt); return tt; }

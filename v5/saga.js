@@ -22,8 +22,8 @@
                     viking: { name: 'Viking Çağı', buff: 'Yağma Seferi', buffD: 'Her free spin turu +2 spin' },
                     rome: { name: 'Roma İmparatorluğu', buff: 'Zafer Alayı', buffD: 'Tüm kazançlar (free spin dahil) +%30' },
                     ottoman: { name: 'Osmanlı İmparatorluğu', buff: 'Kahvehane Muhabbeti', buffD: 'Genişleyen sembol +%30 öder, hat tamamlama şansı +%2' },
-                    victorian: { name: 'Viktorya İngilteresi', buff: 'Buhar Gücü', buffD: 'Kaybeden her spinde bahsinin %40’ı geri döner' },
-                    france: { name: 'Aydınlanma Çağı Fransa', buff: 'Procope Salonu', buffD: 'Yüksek semboller (Bearista, MaviKuş, Fırıncı Ayı, Portafiltre) +%80 öder' },
+                    victorian: { name: 'Viktorya İngilteresi', buff: 'Buhar Gücü', buffD: 'Kaybeden her spinde bahsinin %20’si geri döner' },
+                    france: { name: 'Aydınlanma Çağı Fransa', buff: 'Procope Salonu', buffD: 'Yüksek semboller (Bearista, MaviKuş, Fırıncı Ayı, Portafiltre) +%50 öder' },
                     italy: { name: 'Rönesans İtalya', buff: 'Usta İşi', buffD: 'Kahve sembolleri (V60, Espresso, AeroPress, Altın Çekirdek, Kruvasan) +%70 öder' },
                     jazz: { name: 'Caz Çağı New York', buff: 'Swing Ritmi', buffD: 'Free spin’de Dede çarpanları %35 daha sık' }
                 },
@@ -101,13 +101,13 @@
                             { cap: '1880. Londra. Sis, gaz lambaları ve buharlı makineler.', sfx: 'ÇUF ÇUF!' },
                             { bub: ['barista', 'Herkes çay içiyor… Onlara kahveyi sevdireceğiz!'] },
                             { cap: 'Dede buharlı bir espresso makinesi icat etti!', bub: ['dede', 'Buhar basıncı tamam, makaralar tıkır tıkır!'] },
-                            { cap: 'DÖNEM GÜCÜ: BUHAR GÜCÜ — kaybeden spinde bahsin %40’ı geri', sfx: 'FIŞŞŞ!' }
+                            { cap: 'DÖNEM GÜCÜ: BUHAR GÜCÜ — kaybeden spinde bahsin %20’si geri', sfx: 'FIŞŞŞ!' }
                         ] },
                         france: { title: 'SAYI #13 · AYDINLANMA ÇAĞI FRANSA', panels: [
                             { cap: '1780. Paris. Café Procope’ta fikirler kaynıyor.', sfx: 'VOİLÀ!' },
                             { bub: ['cozybear', 'Gökyüzünde bir balon var! İçinde koyun, ördek ve horoz!'] },
                             { cap: 'Salonun ünlüleri en iyi kahveyi yapana ödül verecek.', bub: ['barista', 'Ünlü misafirlere ünlü fincanlar!'] },
-                            { cap: 'DÖNEM GÜCÜ: PROCOPE SALONU — yüksek semboller +%80', sfx: 'BRAVO!' }
+                            { cap: 'DÖNEM GÜCÜ: PROCOPE SALONU — yüksek semboller +%50', sfx: 'BRAVO!' }
                         ] },
                         italy: { title: 'SAYI #14 · RÖNESANS İTALYA', panels: [
                             { cap: '1500. Floransa. Atölyelerde boya ve mermer tozu.', sfx: 'ŞIPP!' },
@@ -139,8 +139,8 @@
                     viking: { name: 'Viking Age', buff: 'Raiding Voyage', buffD: 'Every free spin round +2 spins' },
                     rome: { name: 'Roman Empire', buff: 'Triumphal Parade', buffD: 'All wins (free spins included) +30%' },
                     ottoman: { name: 'Ottoman Empire', buff: 'Coffeehouse Chat', buffD: 'Expanding symbol pays +30%, line completion chance +2%' },
-                    victorian: { name: 'Victorian England', buff: 'Steam Power', buffD: '40% of your bet comes back on every losing spin' },
-                    france: { name: 'Enlightenment France', buff: 'Procope Salon', buffD: 'High symbols (Bearista, BlueBird, Baker Bear, Portafilter) pay +80%' },
+                    victorian: { name: 'Victorian England', buff: 'Steam Power', buffD: '20% of your bet comes back on every losing spin' },
+                    france: { name: 'Enlightenment France', buff: 'Procope Salon', buffD: 'High symbols (Bearista, BlueBird, Baker Bear, Portafilter) pay +50%' },
                     italy: { name: 'Renaissance Italy', buff: 'Master’s Touch', buffD: 'Coffee symbols (V60, Espresso, AeroPress, Golden Bean, Croissant) pay +70%' },
                     jazz: { name: 'Jazz Age New York', buff: 'Swing Rhythm', buffD: 'Grandpa’s multipliers 35% more often in free spins' }
                 },
@@ -217,13 +217,13 @@
                             { cap: '1880. London. Fog, gas lamps and steam engines.', sfx: 'CHOO CHOO!' },
                             { bub: ['barista', 'Everyone drinks tea… we’ll make them love coffee!'] },
                             { cap: 'Grandpa invented a steam-powered espresso machine!', bub: ['dede', 'Steam pressure is up, the reels are ticking!'] },
-                            { cap: 'ERA POWER: STEAM POWER — 40% of your bet back on losing spins', sfx: 'HISSSS!' }
+                            { cap: 'ERA POWER: STEAM POWER — 20% of your bet back on losing spins', sfx: 'HISSSS!' }
                         ] },
                         france: { title: 'ISSUE #13 · ENLIGHTENMENT FRANCE', panels: [
                             { cap: '1780. Paris. Ideas are brewing at Café Procope.', sfx: 'VOILÀ!' },
                             { bub: ['cozybear', 'There’s a balloon in the sky! With a sheep, a duck and a rooster!'] },
                             { cap: 'The salon’s celebrities will reward the best coffee.', bub: ['barista', 'Famous cups for famous guests!'] },
-                            { cap: 'ERA POWER: PROCOPE SALON — high symbols +80%', sfx: 'BRAVO!' }
+                            { cap: 'ERA POWER: PROCOPE SALON — high symbols +50%', sfx: 'BRAVO!' }
                         ] },
                         italy: { title: 'ISSUE #14 · RENAISSANCE ITALY', panels: [
                             { cap: '1500. Florence. Paint and marble dust in every workshop.', sfx: 'SPLAT!' },
@@ -260,3 +260,29 @@
                 }
             });
         });
+
+        /* Atölye › Dönem yükseltmeleri: adlar ve açıklamalar */
+        (function () {
+            const N = {
+                tr: { egypt: ['Nil Papirüsü', 'Firavun Fincanı'], greece: ['Zeus’un Mührü', 'Agora Fincanı'], viking: ['Uzun Gemi Küreği', 'Boynuz Kupa'], rome: ['Lejyon Kartalı', 'Sezar Kadehi'], ottoman: ['Kahvehane Peşkiri', 'Zarflı Fincan'],
+                      victorian: ['Buhar Kazanı', 'Kraliyet Fincanı'], france: ['Salon Davetiyesi', 'Sèvres Fincanı'], italy: ['Usta Fırçası', 'Medici Kadehi'], jazz: ['Swing Plağı', 'Broadway Fincanı'] },
+                en: { egypt: ['Nile Papyrus', 'Pharaoh’s Cup'], greece: ['Seal of Zeus', 'Agora Cup'], viking: ['Longship Oar', 'Drinking Horn'], rome: ['Legion Eagle', 'Caesar’s Goblet'], ottoman: ['Coffeehouse Towel', 'Zarf Cup'],
+                      victorian: ['Steam Boiler', 'Royal Cup'], france: ['Salon Invitation', 'Sèvres Cup'], italy: ['Master’s Brush', 'Medici Goblet'], jazz: ['Swing Record', 'Broadway Cup'] }
+            };
+            const D = {
+                tr: { book: l => `Reçete Kitabı şansı +%${3 * l}`, orb: l => `Dede çarpanları +%${6 * l} daha sık`, fs: l => `Her free spin turu +${l} spin`, expand: l => `Genişleyen sembol +%${5 * l} öder`, assist: l => `Hat tamamlama şansı +%${l}`,
+                      cash: l => `Kaybeden spinde bahsin %${5 * l}’i geri`, high: l => `Yüksek semboller +%${5 * l}`, low: l => `Kahve sembolleri +%${5 * l}`, fsorb: l => `Free spin’de çarpanlar +%${6 * l} daha sık`, pay: l => `Tüm kazançlar +%${2 * l}` },
+                en: { book: l => `Recipe Book chance +${3 * l}%`, orb: l => `Grandpa’s multipliers ${6 * l}% more often`, fs: l => `Every free spin round +${l} spins`, expand: l => `Expanding symbol pays +${5 * l}%`, assist: l => `Line completion chance +${l}%`,
+                      cash: l => `${5 * l}% of your bet back on losing spins`, high: l => `High symbols +${5 * l}%`, low: l => `Coffee symbols +${5 * l}%`, fsorb: l => `Multipliers ${6 * l}% more often in free spins`, pay: l => `All wins +${2 * l}%` }
+            };
+            ['tr', 'en'].forEach(lg => {
+                const up = I18N[lg].up;
+                Engine.UPGRADES.filter(u => u.group === 'era').forEach(u => {
+                    const nm = N[lg][u.era][u.kind === 'pay' ? 1 : 0];
+                    up[u.id] = { n: nm, d: l => (l ? D[lg][u.kind](l) : (lg === 'en' ? 'Not bought yet' : 'Henüz alınmadı')) + ' · ' + SAGA_TXT[lg].era[u.era].name };
+                });
+                I18N[lg].shop.tabs.era = lg === 'en' ? 'Era' : 'Dönem';
+            });
+            Object.assign(SAGA_TXT.tr, { upInfo: 'Dönem yükseltmeleri kalıcıdır: her dönemde 2 yeni yükseltme gelir ve sonraki bütün bölümlerde de işe yarar.', upLock: '🔒 Dönem yükseltmeleri zaman makinesine binince (6. bölüm) açılır.' });
+            Object.assign(SAGA_TXT.en, { upInfo: 'Era upgrades are permanent: each era brings 2 new upgrades that keep working in every later chapter.', upLock: '🔒 Era upgrades unlock when you board the time machine (chapter 6).' });
+        })();

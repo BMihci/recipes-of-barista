@@ -65,8 +65,4 @@
                     { tag: 'THE END', narr: 'And a new page of the recipe book opened... You can keep spinning in free play if you like. ☕❤' }] }
             }
         };
-        const STORY_CTA = {
-            1: [() => enterStage(1)], 2: [() => enterStage(2)], 3: [() => enterStage(3)], 4: [() => enterStage(4)], 5: [() => enterStage(5)],
-            6: [() => openMap(), () => returnToMenu()]
-        };
 

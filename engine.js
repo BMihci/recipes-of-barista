@@ -97,11 +97,11 @@ const Engine = (function () {
        unlockAt: kasada bu kadar görülünce sonraki şube satın alınabilir; price: satın alma bedeli
        payScale: o aşamanın taban RTP'sini hedefe çeken kalibrasyon katsayısı (simülasyonla bulundu). */
     const CHAPTERS = {
-        1: { id: 1, key: 'cafe',    seed: 5000,    unlockAt: 100000,   price: 80000,    minBet: 10,    maxBet: 10000,   payScale: 0.6041, specials: false, boost: {}, phases: [0.5] },
-        2: { id: 2, key: 'matcha',  seed: 20000,   unlockAt: 500000,   price: 400000,   minBet: 100,   maxBet: 50000,   payScale: 0.3482,   specials: true,  boost: {}, phases: [0.5] },
-        3: { id: 3, key: 'bakery',  seed: 100000,  unlockAt: 2500000,  price: 2000000,  minBet: 500,   maxBet: 200000,  payScale: 0.3447,   specials: false,  boost: {}, phases: [0.5], oven: true },
-        4: { id: 4, key: 'harvest', seed: 500000,  unlockAt: 10000000, price: 8000000,  minBet: 1000,  maxBet: 1000000, payScale: 0.2367,   specials: false,  boost: {}, phases: [0.5], harvest: true },
-        5: { id: 5, key: 'castle',  seed: 2000000, unlockAt: 50000000, price: 50000000, minBet: 2000,  maxBet: 5000000, payScale: 0.073,   specials: false,  boost: { book: 1.5, barista: 1.5, girlfriend: 1.25 }, phases: [0.25, 0.5, 0.75], loyalty: true }
+        1: { id: 1, key: 'cafe',    seed: 5000,    unlockAt: 60000,    price: 48000,    minBet: 10,    maxBet: 10000,   payScale: 0.7581, specials: false, boost: {}, phases: [0.5] },
+        2: { id: 2, key: 'matcha',  seed: 20000,   unlockAt: 500000,   price: 400000,   minBet: 100,   maxBet: 50000,   payScale: 0.397,   specials: true,  boost: {}, phases: [0.5] },
+        3: { id: 3, key: 'bakery',  seed: 100000,  unlockAt: 2500000,  price: 2000000,  minBet: 500,   maxBet: 200000,  payScale: 0.4567,   specials: false,  boost: {}, phases: [0.5], oven: true },
+        4: { id: 4, key: 'harvest', seed: 500000,  unlockAt: 10000000, price: 8000000,  minBet: 1000,  maxBet: 1000000, payScale: 0.3167,   specials: false,  boost: {}, phases: [0.5], harvest: true },
+        5: { id: 5, key: 'castle',  seed: 2000000, unlockAt: 50000000, price: 50000000, minBet: 2000,  maxBet: 5000000, payScale: 0.1642,   specials: false,  boost: { book: 1.5, barista: 1.5, girlfriend: 1.25 }, phases: [0.25, 0.5, 0.75], loyalty: true }
     };
 
     /* ---------------- ZAMAN YOLCULUĞU SAGASI: 6–100. bölümler ----------------
@@ -116,15 +116,15 @@ const Engine = (function () {
         { key: 'viking',    from: 26, n: 10, buff: { fs: 2 } },                      // Yağma Seferi: her free spin turu +2 spin
         { key: 'rome',      from: 36, n: 10, buff: { pay: 1.3 } },                   // Zafer Alayı: tüm kazançlar +%30
         { key: 'ottoman',   from: 46, n: 15, buff: { expand: 1.3, assist: 0.02 } },  // Kahvehane Muhabbeti: genişleyen sembol +%30, kombo +%2
-        { key: 'victorian', from: 61, n: 10, buff: { cash: 0.4 } },                  // Buhar Gücü: kaybeden spinde bahsin %40'ı geri
-        { key: 'france',    from: 71, n: 10, buff: { high: 1.8 } },                  // Procope Salonu: yüksek semboller +%80
+        { key: 'victorian', from: 61, n: 10, buff: { cash: 0.2 } },                   // Buhar Gücü: kaybeden spinde bahsin %20'si geri
+        { key: 'france',    from: 71, n: 10, buff: { high: 1.5 } },                  // Procope Salonu: yüksek semboller +%50
         { key: 'italy',     from: 81, n: 10, buff: { low: 1.7 } },                   // Usta İşi: kahve sembolleri +%70
         { key: 'jazz',      from: 91, n: 10, buff: { fsOrb: 1.35 } }                 // Swing Ritmi: free spin'de çarpanlar %35 daha sık
     ];
     const SAGA_FIRST = 6, STAGE_COUNT = 100, SAGA_GROWTH = 1.075, SAGA_KEEP = 0.2;
     /* dönem başına ödeme ölçeği: Atölye yükseltmeleri tamamlandıkça oyun kolaylaşmasın diye simülasyonla ayarlandı (saga_tune.js) */
     /* bölüm başına ince ayar (Atölye'nin pahalı yükseltmeleri bazı bölümleri uzatıyordu): chapter_tune.js */
-    const SAGA_PS_CH = {"6":0.01956,"7":0.01953,"8":0.01949,"9":0.01944,"10":0.01939,"11":0.01856,"12":0.0177,"13":0.01691,"14":0.01594,"15":0.01503,"16":0.01477,"17":0.01457,"18":0.01401,"19":0.01353,"20":0.01307,"21":0.01263,"22":0.01198,"23":0.01141,"24":0.01096,"25":0.01048,"26":0.009731,"27":0.009201,"28":0.008626,"29":0.007972,"30":0.007401,"31":0.007037,"32":0.006586,"33":0.006355,"34":0.0062,"35":0.006049,"36":0.005934,"37":0.005634,"38":0.005348,"39":0.005094,"40":0.004825,"41":0.004579,"42":0.004554,"43":0.004528,"44":0.004449,"45":0.004378,"46":0.004272,"47":0.004177,"48":0.004051,"49":0.004009,"50":0.003932,"51":0.003849,"52":0.003725,"53":0.003634,"54":0.003495,"55":0.003392,"56":0.00332,"57":0.003286,"58":0.003232,"59":0.00322,"60":0.003182,"61":0.003182,"62":0.003168,"63":0.003175,"64":0.00319,"65":0.003243,"66":0.003246,"67":0.003264,"68":0.003264,"69":0.003252,"70":0.00324,"71":0.003209,"72":0.003175,"73":0.003158,"74":0.003147,"75":0.003137,"76":0.003134,"77":0.003134,"78":0.003095,"79":0.003095,"80":0.003095,"81":0.003137,"82":0.0032,"83":0.003304,"84":0.003325,"85":0.003346,"86":0.003346,"87":0.003326,"88":0.003267,"89":0.003228,"90":0.0032,"91":0.003173,"92":0.003146,"93":0.003152,"94":0.003158,"95":0.003153,"96":0.003147,"97":0.003139,"98":0.003139,"99":0.003138,"100":0.003137};
+    const SAGA_PS_CH = {"6":0.01216,"7":0.01206,"8":0.01165,"9":0.01111,"10":0.01071,"11":0.01006,"12":0.00946,"13":0.009062,"14":0.008658,"15":0.00811,"16":0.007462,"17":0.006599,"18":0.005875,"19":0.005193,"20":0.00469,"21":0.004417,"22":0.004101,"23":0.003801,"24":0.003481,"25":0.003179,"26":0.00286,"27":0.002705,"28":0.002551,"29":0.002427,"30":0.002311,"31":0.002202,"32":0.002079,"33":0.001944,"34":0.001837,"35":0.001735,"36":0.001628,"37":0.00154,"38":0.001447,"39":0.001344,"40":0.001252,"41":0.001189,"42":0.001134,"43":0.001104,"44":0.001092,"45":0.001062,"46":0.001008,"47":0.0009527,"48":0.0008968,"49":0.00084,"50":0.0007961,"51":0.0007737,"52":0.0007492,"53":0.0007279,"54":0.0007106,"55":0.0006989,"56":0.0006924,"57":0.000695,"58":0.0007007,"59":0.0007065,"60":0.0007123,"61":0.0007146,"62":0.0006962,"63":0.0006782,"64":0.000651,"65":0.0006342,"66":0.000609,"67":0.0005983,"68":0.000585,"69":0.0005806,"70":0.0005658,"71":0.0005595,"72":0.000555,"73":0.0005498,"74":0.0005446,"75":0.0005334,"76":0.0005226,"77":0.0005119,"78":0.0005047,"79":0.0004974,"80":0.0004809,"81":0.000465,"82":0.0004517,"83":0.0004365,"84":0.0004221,"85":0.0004221,"86":0.000424,"87":0.000424,"88":0.0004211,"89":0.0004182,"90":0.0004168,"91":0.0004135,"92":0.0004103,"93":0.0004106,"94":0.0004108,"95":0.0004104,"96":0.00041,"97":0.0004088,"98":0.0004096,"99":0.0004103,"100":0.0004099};
     const SAGA_PS = [0.09726, 0.07119, 0.05392, 0.01962, 0.0038, 0.00345, 0.00329, 0.00339, 0.0036];
     function eraOf(ch) { if (ch < SAGA_FIRST) return null; for (let i = ERAS.length - 1; i >= 0; i--) if (ch >= ERAS[i].from) return ERAS[i]; return null; }
     function eraIndex(ch) { const e = eraOf(ch); return e ? ERAS.indexOf(e) : -1; }
@@ -164,6 +164,15 @@ const Engine = (function () {
         { id: 'lx_stamp',   group: 'late', icon: 'stamp',        max: 5, baseCost: 3000000, growth: 1.9, unlock: 5 },
         { id: 'lx_reel6',   group: 'late', icon: 'espresso',     max: 1, baseCost: 25000000, growth: 1,  unlock: 5 }
     );
+    /* Dönem yükseltmeleri: her dönemde Atölye'ye o döneme özel 2 kalıcı yükseltme gelir (fiyatları dönemin ölçeğinde) */
+    const ERA_UP_KIND = { egypt: 'book', greece: 'orb', viking: 'fs', rome: 'expand', ottoman: 'assist', victorian: 'cash', france: 'high', italy: 'low', jazz: 'fsorb' };
+    const ERA_UP_ICON = { egypt: 'book', greece: 'goldenbean', viking: 'cozybear', rome: 'portafilter', ottoman: 'espresso', victorian: 'cake', france: 'barista', italy: 'croissant', jazz: 'bakingbear' };
+    ERAS.forEach(e => {
+        const late = ['victorian', 'france', 'italy', 'jazz'].indexOf(e.key) >= 0 ? 0.7 : 1;   // geç dönemler %30 ucuz (oyuncular yetişebilsin)
+        const base = Math.round(CHAPTERS[e.from].unlockAt * 0.05 * late / 1000) * 1000;
+        UPGRADES.push({ id: 'er_' + e.key, group: 'era', icon: ERA_UP_ICON[e.key], max: ERA_UP_KIND[e.key] === 'fs' ? 2 : 3, baseCost: base, growth: 1.8, unlock: e.from, era: e.key, kind: ERA_UP_KIND[e.key] });
+        UPGRADES.push({ id: 'ep_' + e.key, group: 'era', icon: 'goldenbean', max: 3, baseCost: Math.round(base * 1.3 / 1000) * 1000, growth: 1.8, unlock: e.from, era: e.key, kind: 'pay' });
+    });
     function upgradeCost(up, lvl) { return Math.round(up.baseCost * Math.pow(up.growth, lvl) / 10) * 10; }
 
     function effects(ups, extra) {
@@ -196,6 +205,22 @@ const Engine = (function () {
         e.orbMul = e.diff.orb;
         e.fsOrbMul = 1;
         SYMBOLS.forEach(s => { e.symMult[s.id] = 1 + 0.06 * L('sym_' + s.id); });
+        // acemi şansı: 1. şubede kombo (hat tamamlama) şansı biraz yüksek
+        if (extra && extra.chapter === 1) e.assist += 0.16;
+        if (extra && extra.potion) e.assist += 0.08;   // Zaman İksiri (Zaman Hazinesi ile alınır, birkaç spin sürer)
+        // dönem yükseltmeleri (kalıcı)
+        let payLv = 0;
+        ERAS.forEach(er => { payLv += L('ep_' + er.key); });
+        e.allPay = 1 + 0.02 * payLv;
+        e.bookMult *= 1 + 0.03 * L('er_egypt');
+        e.orbMul *= 1 + 0.06 * L('er_greece');
+        e.freeSpins += L('er_viking');
+        e.expandMul *= 1 + 0.05 * L('er_rome');
+        e.assist += 0.01 * L('er_ottoman');
+        e.cashback += 0.05 * L('er_victorian');
+        ['barista', 'girlfriend', 'baking_bear', 'portafilter'].forEach(id => { e.symMult[id] *= 1 + 0.05 * L('er_france'); });
+        ['v60', 'espresso', 'aeropress', 'golden_bean', 'croissant'].forEach(id => { e.symMult[id] *= 1 + 0.05 * L('er_italy'); });
+        e.fsOrbMul *= 1 + 0.06 * L('er_jazz');
         // dönem gücü (yalnızca o dönemin bölümlerinde)
         const era = extra && extra.chapter && !(extra && extra.noEra) ? eraOf(extra.chapter) : null;
         e.era = era ? era.key : null;
@@ -204,7 +229,7 @@ const Engine = (function () {
             if (B.book) e.bookMult *= B.book;
             if (B.orb) e.orbMul *= B.orb;
             if (B.fs) e.freeSpins += B.fs;
-            if (B.pay) e.allPay = B.pay;          // tüm kazançlar (hat + genişleyen + bonuslar)
+            if (B.pay) e.allPay *= B.pay;         // tüm kazançlar (hat + genişleyen + bonuslar)
             if (B.cash) e.cashback += B.cash;     // kaybeden spinde bahsin bir kısmı geri
             if (B.expand) e.expandMul *= B.expand;
             if (B.assist) e.assist += B.assist;
@@ -443,6 +468,33 @@ const Engine = (function () {
         };
     }
 
+    /* ---------------- SİPARİŞ FİŞLERİ: normal spinlerde kısa mini hedefler ----------------
+       Arayüz ve simülasyon aynı kuralı kullanır. Ödül: bahsin katı (tamamlandığı spindeki bahis). */
+    const ORDER_TYPES = [
+        { id: 'wins',   goal: 3, spins: 10, reward: 1.5 },   // 10 spinde 3 kazanç
+        { id: 'big',    goal: 1, spins: 12, reward: 2, x: 5 },// tek spinde bahsin 5 katı
+        { id: 'books',  goal: 1, spins: 14, reward: 2 },      // tek spinde 2+ Reçete Kitabı
+        { id: 'streak', goal: 2, spins: 10, reward: 1.5 }     // art arda 2 kazanç
+    ];
+    const ORDER_JAR = 2;   // 3 sipariş üst üste (arada kaçırmadan) = bahşiş kavanozu: bahsin 2 katı ek
+    function orderNew(rng, s) { const T = ORDER_TYPES[Math.floor(rng() * ORDER_TYPES.length)]; return { t: T.id, left: T.spins, prog: 0, goal: T.goal, cd: 0, s: s || 0 }; }
+    /* o: sipariş durumu (null = yok); info: { win, bet, scatter } — yalnızca normal (ücretsiz olmayan) spinlerde çağrılır.
+       Döner: { o, reward, done, failed } */
+    function orderStep(o, info, rng) {
+        if (!o) o = { cd: 2 };
+        if (o.cd > 0) { o.cd--; if (o.cd === 0) return { o: orderNew(rng, o.s), reward: 0, fresh: true }; return { o, reward: 0 }; }
+        const T = ORDER_TYPES.find(x => x.id === o.t);
+        const win = info.win > 0;
+        if (o.t === 'wins' && win) o.prog++;
+        if (o.t === 'big' && info.win >= T.x * info.bet) o.prog++;
+        if (o.t === 'books' && info.scatter >= 2) o.prog++;
+        if (o.t === 'streak') o.prog = win ? o.prog + 1 : 0;
+        o.left--;
+        if (o.prog >= o.goal) { const s = (o.s || 0) + 1, jar = s >= 3; return { o: { cd: 3, s: jar ? 0 : s }, reward: Math.round(T.reward * info.bet) + (jar ? Math.round(ORDER_JAR * info.bet) : 0), jar: jar ? Math.round(ORDER_JAR * info.bet) : 0, done: true, type: o.t }; }
+        if (o.left <= 0) return { o: { cd: 3, s: 0 }, reward: 0, failed: true, type: o.t };
+        return { o, reward: 0 };
+    }
+
     /* ---------------- Simülasyon yardımcıları (Node) ----------------
        Tek "spin turu": normal spin + tetiklenirse tüm free spin / pasta yağmuru zinciri. */
     function playRound(st, rng) {
@@ -497,6 +549,7 @@ const Engine = (function () {
         const res = evaluate(cv0.grid, base);
         won += res.total + res.cashback;
         st.streak = res.total > 0 ? 0 : (st.streak || 0) + 1;
+        if (st.orders !== false) { const os = orderStep(st.order, { win: res.total, bet: st.bet, scatter: res.scatter }, rng); st.order = os.o; won += os.reward; }
         addStamps(res.stamps);
         let rain = addOven(res.cupcakes);
         if (res.scatter >= 3) {
@@ -529,7 +582,7 @@ const Engine = (function () {
         ROWS, LINES, CELL, setExpandScale: v => { EXPAND_SCALE = v; }, PAYLINES, PAYLINES6, LADDER, SPECIAL_REELS, BASE_SCATTER, BASE_FREE_SPINS, MAX_TIER, TIER_PAY, TIER_SCATTER, EXPAND_K,
         SYMBOLS, BOOK, NORMALS, SPECIALS, CHAPTERS, STAGE_COUNT, UPGRADES,
         STAMP_RATE, STAMPS_PER_CARD, LATTE_MAX, OVEN_FULL, OVEN_SPINS, BAG_PAY,
-        ORB_TABLE, DIFFS, diffOf, ERAS, eraOf, eraIndex, SAGA_PS_CH, SAGA_FIRST, SAGA_GROWTH, SAGA_KEEP, SAGA_PS, rollOrbs, convertMatcha, MATCHA_WAR, ZAFER_MULT, luckFor, LUCK_MAX, lines, upgradeCost, effects, ladderIndex, tierOf, betOptions,
+        ORB_TABLE, ORDER_TYPES, orderNew, orderStep, DIFFS, diffOf, ERAS, eraOf, eraIndex, SAGA_PS_CH, SAGA_FIRST, SAGA_GROWTH, SAGA_KEEP, SAGA_PS, rollOrbs, convertMatcha, MATCHA_WAR, ZAFER_MULT, luckFor, LUCK_MAX, lines, upgradeCost, effects, ladderIndex, tierOf, betOptions,
         isWild, pickSymbol, genGrid, expandGrid, expandMin, countScatter, stampCount, evaluate, playRound
     };
 })();

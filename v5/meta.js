@@ -202,9 +202,11 @@
            ===================================================== */
         function ustaActive() { return !!(Game.save && Game.save.finished); }
         /* Saga skoru: ulaşılan bölüm (bitirince 101) × 1 milyar + Zaman Hazinesi (milyon çekirdek cinsinden) */
-        function sagaTreasure(sv) { return (sv.treasure || 0) + (sv.finished ? (sv.peak || 0) : 0); }
+        function sagaTreasure(sv) { return (sv.treasureTotal !== undefined ? sv.treasureTotal : (sv.treasure || 0)) + (sv.finished ? (sv.peak || 0) : 0); }
+        /* Zaman Hazinesi: cüzdan (harcanabilir) + toplam (skor için, harcayınca azalmaz) */
+        function addTreasure(v) { const sv = Game.save; if (!sv || !(v > 0)) return; sv.treasure = (sv.treasure || 0) + v; sv.treasureTotal = (sv.treasureTotal !== undefined ? sv.treasureTotal : (sv.treasure - v)) + v; }
         function sagaScore(sv) { if (!sv || sv.tainted) return 0; return (sv.finished ? 101 : (sv.stage || 1)) * 1e9 + Math.min(999999999, Math.floor(sagaTreasure(sv) / 1e6)); }
-        function sagaScoreText(s) { const ch = Math.floor(s / 1e9), tr = (s % 1e9) * 1e6; return (ch > 100 ? '🏆 ' + ST().chWord + ' 100 ✓' : ST().chWord + ' ' + ch) + (tr >= 1e6 ? ' · 🏺 ' + fmt(tr) : ''); }
+        function sagaScoreText(s) { const ch = Math.floor(s / 1e9), tr = (s % 1e9) * 1e6; return (ch > 100 ? '🏆 ' + ST().chWord + ' 100 ✓' : ST().chWord + ' ' + ch) + (tr >= 1e6 ? ' · ' + ICON.chest(14) + ' ' + fmt(tr) : ''); }
         function sagaScoreUpdate() {
             if (!Profile.sagaV) { Profile.sagaV = 1; Profile.best = 0; Profile.bestName = ''; }
             let best = 0, name = '';
@@ -308,7 +310,9 @@
             if (d.last === t) return { claimed: true, streak: d.streak };
             return { claimed: false, streak: d.last === dayStr(-1) ? d.streak + 1 : 1 };
         }
-        function dailyAmount(dayIdx) { return DAILY_X[dayIdx] * rewardUnit(); }
+        /* v6.2: günlük ödül bulunduğun bölümün başlangıç tutarına göre (1. gün %5 … 7. gün %50) */
+        const DAILY_P = [0.05, 0.075, 0.1, 0.15, 0.2, 0.3, 0.5];
+        function dailyAmount(dayIdx) { return Math.max(DAILY_X[dayIdx] * rewardUnit(), Math.round(giftAmt() * DAILY_P[dayIdx] / 1000) * 1000); }
         function claimDaily() {
             if (!Game.save) return;
             const st = dailyState();
@@ -347,7 +351,7 @@
             if (!$('modal-hub')) return;
             $('hub-title').textContent = H.title;
             const tabs = $('hub-tabs'); tabs.innerHTML = '';
-            ['daily', 'badges', 'album', 'looks', 'quests', 'top'].forEach(id => {
+            ['daily', 'badges', 'album', 'looks', 'comics', 'quests', 'top'].forEach(id => {
                 const b = document.createElement('button');
                 b.className = 'tab' + (id === hubTab ? ' on' : '');
                 b.textContent = H.tabs[id];
@@ -357,7 +361,7 @@
                 tabs.appendChild(b);
             });
             const body = $('hub-body');
-            body.innerHTML = ({ daily: hubDaily, badges: hubBadges, album: hubAlbum, looks: hubLooks, quests: hubQuests, top: hubTop })[hubTab]();
+            body.innerHTML = ({ daily: hubDaily, badges: hubBadges, album: hubAlbum, looks: hubLooks, comics: hubComics, quests: hubQuests, top: hubTop })[hubTab]();
             body.scrollTop = 0;
         }
         function hubDaily() {
@@ -675,6 +679,7 @@
                 <div class="set-row"><span>${S.motion}</span><button class="tg ${Settings.motion ? 'on' : ''}" onclick="toggleMotion()">${tog(Settings.motion)}</button></div>
                 <div class="set-links">
                     <button class="btn btn-soft btn-block" onclick="closeModal('modal-settings');showNews(true)">${S.whatsNew}</button>
+                    <button class="btn btn-soft btn-block" onclick="openHistory()">${CUR_LANG() === 'en' ? '📜 Version history' : '📜 Sürüm geçmişi'}</button>
                     <button class="btn btn-soft btn-block" onclick="closeModal('modal-settings');openProfile()">${S.account}</button>
                     <button class="btn btn-soft btn-block" onclick="closeModal('modal-settings');openBackup()">${S.backup}</button>
                     ${document.body.dataset.mode === 'game' && gameState.chapter === 1 ? `<button class="btn btn-soft btn-block" onclick="closeModal('modal-settings');showTutorial()">${S.tut}</button>` : ''}
@@ -704,11 +709,21 @@
         function updateTurboUI() { const b = $('turbo-btn'); if (b) b.classList.toggle('on', turboOn()); document.body.classList.toggle('turbo', turboOn()); }
         function toggleLowFx() {
             Settings.fx = lowFx() ? 'full' : 'low';
+            Settings.fxUser = true;   // oyuncu kendisi seçti: otomatik geçiş artık karışmaz
             saveSettings();
             document.body.classList.toggle('lowfx', lowFx());
             if (renderer) renderer.setPixelRatio(lowFx() ? 1 : Math.min(window.devicePixelRatio || 1, 2));
             if (typeof onWindowResize === 'function') onWindowResize();
             refreshSettingsUI();
+        }
+        /* Otomatik hafif mod: dönüş/kutlama sırasında kare hızı uzun süre ~22 FPS altında kalırsa bir kez geçilir */
+        function autoLowFx() {
+            if (lowFx() || Settings.fxUser) return;
+            Settings.fx = 'low'; Settings.fxAuto = true; saveSettings();
+            document.body.classList.add('lowfx');
+            if (renderer) renderer.setPixelRatio(1);
+            if (typeof onWindowResize === 'function') onWindowResize();
+            if (document.body.dataset.mode === 'game') setTimeout(() => setMessage(L().set.fxAuto), 1500);
         }
         function resetAll() {
             const S = L().set;

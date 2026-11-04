@@ -2,6 +2,24 @@
 
 V7 (“Filtre Kahve”) öncesi sürümler. Her sürüm bir git etiketiyle (tag) işaretlidir.
 
+## 6.2.0 — Flat White (Flat White)
+_2026-11-04_
+
+- 📚 Hikâyeler artık Marvel tarzı çizgi roman sayfası: paneller, altyazı kutuları, konuşma balonları, ses efektleri ve mürekkep çizgili 3D kareler.
+- 🗞 Zaman makinesi, her dönem girişi ve final için tam sayfa çizgi roman kapakları.
+- 📚 Kupa Odası › Çizgi Roman: açtığın sayıları istediğin zaman yeniden oku.
+- 🧾 Sipariş fişleri: normal spinlerde küçük hedefler; 3 sipariş üst üste = bahşiş kavanozu.
+- ⏳ Atölye’de “Dönem” sekmesi; son dönemlerin yükseltmeleri %30 ucuzladı.
+- 💰 Zaman Hazinesi harcanabiliyor: Zaman Bekçisi seti, altın dönem fincanları, Hazine Sandığı ve Zaman İksiri.
+- 🎁 Günlük ödül, video ve 6 saatlik hediye artık bulunduğun bölüme göre büyüyor.
+- 🌱 Kasaba şubeleri (1–5) kısaldı ve daha dengeli.
+- 💚 Beta testerlara özel görünüm seti (test kodu ile).
+- 🎃 Cadılar Bayramı etkinliği sona erdi; görünümler artık satılmıyor (sahip olanlar giymeye devam eder).
+- 🎨 Saga haritası ve rozetlerde emoji yerine oyuna özel çizimler.
+- ⚡ Daha hızlı ve hafif: çizim yükü ~%65 azaldı, telefon zorlanırsa hafif mod kendiliğinden açılıyor.
+- 🐞 Saga’nın yarısındaki çökme, hikâye açılırken makara takılması ve 6. makara bildirimi düzeltildi.
+- 📜 Ayarlar › Sürüm geçmişi.
+
 ## 6.1.0 — Espresso Romano (Espresso Romano)
 _2026-11-03_
 
