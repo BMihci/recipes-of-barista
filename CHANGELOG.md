@@ -1,6 +1,6 @@
 # Sürüm geçmişi
 
-V7 (“Filtre Kahve”) öncesi sürümler. Her sürüm bir git etiketiyle (tag) işaretlidir.
+V7 (“Filtre Kahve”) öncesi sürümler. Her sürüm `surum/<sürüm>` adlı bir dalda (ör. `surum/v6.2.0`) ve main geçmişinde ayrı bir commit olarak durur.
 
 ## 6.2.0 — Flat White (Flat White)
 _2026-11-04_

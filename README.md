@@ -8,7 +8,7 @@ Slot makinesi mekanikleriyle ilerleyen kısa ve sevimli bir kahve macerası. Tek
 `recipes_of_barista_3d_deluxe.html` dosyasını indirip tarayıcıda aç. Tüm görseller, yazı tipleri ve three.js dosyanın içindedir; internet olmadan da çalışır (bulut kaydı ve sıralama hariç).
 
 ## Diğer sürümler
-Tüm V7 öncesi sürümler etiketlidir: `v4.0`, `v5.3`, `v5.4`, `v5.5.1`, `v6.1.0`, `v6.2.0`. GitHub'da **Tags** veya **Releases** sekmesinden istediğin sürümün HTML dosyasını alabilirsin. Değişiklikler: [CHANGELOG.md](CHANGELOG.md).
+Her V7 öncesi sürüm kendi dalında durur: `surum/v4.0`, `surum/v5.3`, `surum/v5.4`, `surum/v5.5.1`, `surum/v6.1.0`, `surum/v6.2.0`. GitHub'da dal seçicisinden (main yazan menü) sürümü seç ve `recipes_of_barista_3d_deluxe.html` dosyasını indir. `main` dalının geçmişinde de her sürüm ayrı bir commit olarak görünür. Değişiklikler: [CHANGELOG.md](CHANGELOG.md).
 
 ## Kaynaktan derleme
 ```
