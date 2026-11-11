@@ -77,6 +77,13 @@
             google() {
                 this.busy = true; this.ui();
                 this.load().then(() => {
+                    // Android (Capacitor): WebView'de açılır pencere çalışmaz → yerel Google girişi, kimlik jetonu Firebase'e verilir
+                    const FA = typeof Platform !== 'undefined' && Platform.plugin('FirebaseAuthentication');
+                    if (FA) return FA.signInWithGoogle({ skipNativeAuth: true }).then(r => {
+                        const tok = r && r.credential && r.credential.idToken;
+                        if (!tok) throw { code: 'auth/popup-closed-by-user' };
+                        return this.auth.signInWithCredential(firebase.auth.GoogleAuthProvider.credential(tok));
+                    });
                     const p = new firebase.auth.GoogleAuthProvider();
                     return this.auth.signInWithPopup(p).catch(e => {
                         if (e && (e.code === 'auth/popup-blocked' || e.code === 'auth/cancelled-popup-request')) return this.auth.signInWithRedirect(p);
@@ -96,7 +103,7 @@
             },
             logout() {
                 if (!this.auth) return;
-                this.push().catch(() => {}).then(() => this.auth.signOut());
+                this.push().catch(() => {}).then(() => { const FA = typeof Platform !== 'undefined' && Platform.plugin('FirebaseAuthentication'); if (FA) FA.signOut().catch(() => {}); return this.auth.signOut(); });
             },
             onUser(u) {
                 this.user = u || null;
@@ -165,12 +172,13 @@
                 try {
                     clearTimeout(this.timer);
                     await this.db.collection('leaderboard').doc(uid).delete().catch(() => {});
+                    if (typeof Invite !== 'undefined') { await this.db.collection('invites').doc(Invite.code()).delete().catch(() => {}); await this.db.collection('redemptions').doc(uid).delete().catch(() => {}); }
                     await this.db.collection('users').doc(uid).delete();
                     await this.user.delete();
                     Settings.cloud = false; saveSettings();
-                    showDialog('cozybear', CUR_LANG() === 'en' ? 'BlueBird' : 'MaviKuş', P.delDone);
+                    showDialog('cozybear', castName('cozybear'), P.delDone);
                 } catch (e) {
-                    if (e && e.code === 'auth/requires-recent-login') showDialog('cozybear', CUR_LANG() === 'en' ? 'BlueBird' : 'MaviKuş', P.relogin);
+                    if (e && e.code === 'auth/requires-recent-login') showDialog('cozybear', castName('cozybear'), P.relogin);
                     else this.fail(e);
                 }
                 renderProfileChip();

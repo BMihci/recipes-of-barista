@@ -1,3 +1,4 @@
+import os
 import re
 SRC = 'template_v4_final.html'
 t = open(SRC, encoding='utf-8').read()
@@ -28,7 +29,10 @@ t = t[:b0] + open('v5/body.html', encoding='utf-8').read() + '\n' + t[b1:]
 # ---------- betikler ----------
 j0 = t.index("        /* =====================================================\n           OYUN VERİSİ")
 j1 = t.index("    </script>\n</body>")
-parts = ''.join(open('v5/' + f, encoding='utf-8').read().rstrip('\n') + '\n\n' for f in ['i18n.js', 'i18n_meta.js', 'data.js', 'meta.js', 'saga.js', 'icons.js', 'cosm.js', 'notify.js', 'cloud.js', '3d.js', 'story_head.js', 'story_body.js', 'cinema.js', 'saga_flow.js', 'extras.js', 'main.js', 'dede_svg.js', 'dede.js'])
+# v7: dil paketleri (v5/lang/*.json) tek nesnede birleşir
+import glob as _g, json as _j
+open('v5/lang_packs.js', 'w', encoding='utf-8').write('        const LANG_PACKS = {};\n' + ''.join(open(f, encoding='utf-8').read().rstrip('\n') + '\n' for f in sorted(_g.glob('v5/lang/*.js'))))
+parts = ''.join(open('v5/' + f, encoding='utf-8').read().rstrip('\n') + '\n\n' for f in ['i18n.js', 'i18n_meta.js', 'data.js', 'meta.js', 'saga.js', 'icons.js', 'cosm.js', 'notify.js', 'platform.js', 'cloud.js', '3d.js', 'story_head.js', 'story_body.js', 'cinema.js', 'saga_flow.js', 'extras.js', 'px_txt.js', 'lang_packs.js', 'i18n_x.js', 'v7.js', 'main.js', 'dede_svg.js', 'dede.js'])
 boot = """        /* =====================================================
            KLAVYE (PC): Boşluk = Spin
            ===================================================== */
@@ -57,7 +61,10 @@ boot = """        /* =====================================================
         Dede.mount();
         applyA11y();
         applyTheme();
-        setTimeout(() => showNews(false), 900);
+        initNativeShell();
+        Ads.init(); Billing.init();
+        applyStaticI18n();
+        legalCheck(() => setTimeout(() => showNews(false), 600));
         if (Settings.notif) Notify.plan();
         setInterval(() => { if (typeof checkDailyGift === 'function') checkDailyGift(); }, 30000);
         renderMenu();

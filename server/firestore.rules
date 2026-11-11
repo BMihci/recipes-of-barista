@@ -1,0 +1,67 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Oyuncu kaydı: yalnızca sahibi okur/yazar
+    match /users/{uid} {
+      allow read, delete: if request.auth != null && request.auth.uid == uid;
+      allow create, update: if request.auth != null && request.auth.uid == uid
+                            && request.resource.data.data is string
+                            && request.resource.data.data.size() < 900000;
+    }
+
+    // ---- Skor tablosu: sahte skorlara karşı kurallar ----
+    function okScore(v) { return v is number && v >= 0 && v <= 500000000000; }
+    // tek seferde en fazla 50 kat + 3 milyar artış (v6 Saga skoru: bölüm × 1 milyar)
+    function grows(f) {
+      return resource == null || !(f in resource.data)
+             || request.resource.data.get(f, 0) <= resource.data[f] * 50 + 3000000000;
+    }
+    // en az 20 saniyede bir yazılabilir (sunucu saatine göre)
+    function notTooFast() {
+      return resource == null || !(resource.data.updatedAt is timestamp)
+             || request.time > resource.data.updatedAt + duration.value(20, 's');
+    }
+    match /leaderboard/{uid} {
+      allow read: if true;
+      allow delete: if request.auth != null && request.auth.uid == uid;
+      allow create, update: if request.auth != null && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['nick', 'avatar', 'best', 'bestStory', 'bestGambler', 'spins', 'updatedAt'])
+        && request.resource.data.nick is string && request.resource.data.nick.size() <= 16
+        && request.resource.data.avatar is string && request.resource.data.avatar.size() < 12000
+        && okScore(request.resource.data.best)
+        && okScore(request.resource.data.get('bestStory', 0))
+        && okScore(request.resource.data.get('bestGambler', 0))
+        && grows('best') && grows('bestStory') && grows('bestGambler')
+        && request.resource.data.updatedAt == request.time
+        && notTooFast();
+    }
+
+    // ---- Arkadaş daveti (v7.0) — Blaze/Functions gerekmez, yalnızca kurallar ----
+    // invites/{kod}: kodun sahibi. Kod biçimi RB + 6 karakter; bir kez oluşturulur, değiştirilemez.
+    match /invites/{code} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+        && code.matches('^RB[A-Z2-9]{6}$')
+        && request.resource.data.keys().hasOnly(['uid', 'at'])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.at == request.time;
+      allow update: if false;
+      allow delete: if request.auth != null && resource.data.uid == request.auth.uid;
+    }
+    // redemptions/{uid}: her hesap ömründe tek bir kod kullanabilir, kendi kodunu kullanamaz.
+    match /redemptions/{uid} {
+      allow read: if request.auth != null
+        && (request.auth.uid == uid || resource.data.inviter == request.auth.uid);
+      allow create: if request.auth != null && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['code', 'inviter', 'at'])
+        && request.resource.data.code is string
+        && exists(/databases/$(database)/documents/invites/$(request.resource.data.code))
+        && get(/databases/$(database)/documents/invites/$(request.resource.data.code)).data.uid == request.resource.data.inviter
+        && request.resource.data.inviter != uid
+        && request.resource.data.at == request.time;
+      allow update: if false;
+      allow delete: if request.auth != null && request.auth.uid == uid;
+    }
+  }
+}

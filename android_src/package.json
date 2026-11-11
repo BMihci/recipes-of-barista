@@ -1,0 +1,29 @@
+{
+  "name": "recipes-of-barista",
+  "version": "7.0.0",
+  "private": true,
+  "description": "Recipes of Barista – 3D Deluxe · Android (Capacitor) kabuğu",
+  "author": "Limited Education",
+  "license": "UNLICENSED",
+  "scripts": {
+    "patch": "node scripts/patch-android.js",
+    "icons": "npx @capacitor/assets generate --android --iconBackgroundColor \"#FBEFD8\" --splashBackgroundColor \"#FBEFD8\"",
+    "sync": "node scripts/patch-android.js && npx cap sync android",
+    "open": "npx cap open android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.0.0",
+    "@capacitor/app": "^8.0.0",
+    "@capacitor/core": "^8.0.0",
+    "@capacitor/share": "^8.0.0",
+    "@capacitor-community/admob": "^8.2.0",
+    "@capacitor-firebase/authentication": "^8.0.0",
+    "cordova-plugin-purchase": "^13.12.0",
+    "firebase": "^12.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^8.0.0"
+  },
+  "engines": { "node": ">=22" }
+}

@@ -1,6 +1,6 @@
 // HTML içindeki satır içi <script> ve <style> bloklarını esbuild ile küçültür (üst düzey adlar korunur)
 const fs = require('fs');
-const esbuild = require('/opt/npm-tools/node_modules/esbuild');
+let esbuild; try { esbuild = require('esbuild'); } catch (e) { esbuild = require('/opt/npm-tools/node_modules/esbuild'); }   // npm i esbuild
 const [, , inp, out] = process.argv;
 let html = fs.readFileSync(inp, 'utf8');
 let js0 = 0, js1 = 0, css0 = 0, css1 = 0;

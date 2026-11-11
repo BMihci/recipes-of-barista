@@ -78,10 +78,10 @@
             const first = !Settings.seenVer && !SLOTS.some(Boolean);
             Settings.seenVer = APP_VERSION.num; saveSettings();
             if (first && !force) return;               // ilk kurulumda gösterme
-            const lang = CUR_LANG(), notes = APP_VERSION.notes[lang] || APP_VERSION.notes.tr;
-            $('nw-title').textContent = (lang === 'en' ? 'What’s new · v' : 'Yenilikler · v') + APP_VERSION.num;
-            $('nw-name').textContent = '“' + (APP_VERSION.name[lang] || APP_VERSION.name.tr) + '”';
+            const lang = CUR_LANG(), notes = APP_VERSION.notes[lang] || APP_VERSION.notes.en;
+            $('nw-title').textContent = UX('newsT') + ' · v' + APP_VERSION.num;
+            $('nw-name').textContent = '“' + (APP_VERSION.name[lang] || APP_VERSION.name.en) + '”';
             $('nw-list').innerHTML = notes.map(n => `<li>${n}</li>`).join('');
-            $('nw-ok').textContent = lang === 'en' ? 'LET’S PLAY ☕' : 'HADİ OYNAYALIM ☕';
+            $('nw-ok').textContent = UX('letsPlay');
             openModal('modal-news');
         }

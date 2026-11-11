@@ -1,0 +1,18 @@
+{
+  "appId": "com.limitededucation.recipesofbarista",
+  "appName": "Recipes of Barista",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": false,
+    "backgroundColor": "#FBEFD8"
+  },
+  "server": {
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "FirebaseAuthentication": {
+      "skipNativeAuth": true,
+      "providers": ["google.com"]
+    }
+  }
+}

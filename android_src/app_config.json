@@ -1,0 +1,11 @@
+{
+  "_aciklama": "AdMob ve sürüm ayarları. AdMob hesabını açınca iki kimliği kendi kimliklerinle değiştir, sonra 'npm run sync' çalıştır. Boş/test kimlikleri Google'ın resmi TEST reklamlarını gösterir.",
+  "admobAppId": "ca-app-pub-3940256099942544~3347511713",
+  "admobRewarded": "",
+  "_testAds": "Gerçek kimlik girilene kadar test reklamı otomatik açıktır. Kimlik girdikten sonra da test reklamı görmek istersen buraya \"testAds\": true ekle; yayında false/silinmiş olmalı.",
+  "versionCode": 70000,
+  "versionName": "7.0.0",
+  "minSdk": 24,
+  "targetSdk": 36,
+  "compileSdk": 36
+}

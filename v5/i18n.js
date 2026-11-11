@@ -1,13 +1,25 @@
         /* =====================================================
            DİL DESTEĞİ (TR / EN)
            ===================================================== */
-        /* 10 milyar ve üstü kısaltılır (Saga'nın son bölümleri): 26,9 Mr / 26.9B */
+        /* v7: 9 dil. Yeni oyuncuda cihaz dili seçilir; desteklenmeyen dilde İngilizce. */
+        const LANGS = ['tr', 'en', 'de', 'es', 'pt', 'he', 'ja', 'ko', 'zh'];
+        const LANG_NAMES = { tr: 'Türkçe', en: 'English', de: 'Deutsch', es: 'Español', pt: 'Português', he: 'עברית', ja: '日本語', ko: '한국어', zh: '中文' };
+        const RTL_LANGS = ['he'];
+        function detectLang() {
+            const list = (navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || 'en']).map(s => String(s).toLowerCase());
+            for (const s of list) { const b = s.split('-')[0] === 'iw' ? 'he' : s.split('-')[0]; if (LANGS.includes(b)) return b; }
+            return 'en';
+        }
+        const LOCALES = { tr: 'tr-TR', en: 'en-US', de: 'de-DE', es: 'es-ES', pt: 'pt-BR', he: 'he-IL', ja: 'ja-JP', ko: 'ko-KR', zh: 'zh-CN' };
+        /* büyük sayılar kısaltılır (Saga'nın son bölümleri): 26,9 Mr / 26.9B / 269億 … */
+        const BIG_UNITS = { tr: [[1e12, ' Tr'], [1e9, ' Mr']], en: [[1e12, 'T'], [1e9, 'B']], de: [[1e12, ' Bio.'], [1e9, ' Mrd.']], es: [[1e12, ' B'], [1e9, ' mil M']], pt: [[1e12, ' tri'], [1e9, ' bi']],
+                            he: [[1e12, 'T'], [1e9, 'B']], ja: [[1e12, '兆'], [1e8, '億']], ko: [[1e12, '조'], [1e8, '억']], zh: [[1e12, '万亿'], [1e8, '亿']] };
         const fmtN = n => {
-            const en = CUR_LANG() === 'en', a = Math.abs(n);
-            if (a >= 1e10) { const [d, s] = a >= 1e12 ? [1e12, en ? 'T' : ' Tr'] : [1e9, en ? 'B' : ' Mr']; return (Math.floor(n / d * 100) / 100).toLocaleString(en ? 'en-US' : 'tr-TR') + s; }
-            return Math.floor(n + 1e-9).toLocaleString(en ? 'en-US' : 'tr-TR');
+            const lg = CUR_LANG(), loc = LOCALES[lg] || 'en-US', a = Math.abs(n);
+            if (a >= 1e10) { const u = (BIG_UNITS[lg] || BIG_UNITS.en).find(([d]) => a >= d) || [1e9, 'B']; return (Math.floor(n / u[0] * 100) / 100).toLocaleString(loc) + u[1]; }
+            return Math.floor(n + 1e-9).toLocaleString(loc);
         };
-        const pctS = v => (CUR_LANG() === 'en' ? v + '%' : '%' + v);
+        const pctS = v => (CUR_LANG() === 'tr' ? '%' + v : CUR_LANG() === 'de' ? v + ' %' : v + '%');
         const I18N = {
             tr: {
                 htmlLang: 'tr', castleSign: 'ŞURUP KALESİ',
@@ -122,7 +134,7 @@
                         ['FREE SPIN SAYACI', 'Free spin ve Pasta Yağmuru sırasında kalan tur sayısını gösterir.'],
                         ['⚡ ÇARPAN ÇEKİRDEĞİ', 'Bazen makaraların üstüne şimşekle bir çarpan çekirdeği düşer (×2 – ×100). O spinde kazanç varsa kazancın çarpılır. Free spin’de çarpanlar birikir (en fazla ×25) ve sonraki her kazancı çarpar.'],
                         ['🎉 BÜYÜK KAZANÇ', 'Bahsinin 15 katı ve üstü kazançlarda Büyük, 40 katında Mega, 100 katında Epik kazanç gösterisi açılır. Dokununca hızlanır.'],
-                        ['🛒 MAĞAZA · HEDİYE', 'Oyuna girdiğin her 6 saatte bir kasana 1.000 çekirdek eklenir. Mağazadan istediğin zaman reklam izleyerek +1.000 çekirdek alabilirsin.']
+                        ['🛒 MAĞAZA · HEDİYE', 'Oyuna girdiğin her 6 saatte bir kasana bölümünün başlangıç tutarı kadar çekirdek eklenir. Mağazada dakikada bir ödüllü video izleyerek aynı miktarı hemen alabilirsin; Mağaza’da premium görünümler, Destekçi Paketi ve arkadaş daveti de var.']
                     ],
                     specialT: '🍵 Matcha → Kahve & 🥛 Pitcher (2. aşamadan itibaren)',
                     pitcher: (E) => `1., 3., 5. makarada.<br>Hatlarda diğer sembollerin yerine geçer.<br>Ekranda 3 tane = <b>Latte Art Bonusu: bahsin ${fx(E.latteMult)} katı</b>`,
@@ -257,7 +269,7 @@
                         ['FREE SPIN COUNTER', 'Shows the spins left during Free Spins and Cake Rain.'],
                         ['⚡ MULTIPLIER BEAN', 'Sometimes a multiplier bean strikes the reels with lightning (×2 – ×100). If that spin wins, the win is multiplied. In free spins multipliers add up (max ×25) and multiply every following win.'],
                         ['🎉 BIG WIN', 'Wins of 15× your bet show a Big Win, 40× Mega and 100× Epic celebration. Tap to speed it up.'],
-                        ['🛒 SHOP · GIFT', 'Every 6 hours you play, 1,000 beans are added to your bank. Watch an ad in the Shop any time for +1,000 beans.']
+                        ['🛒 SHOP · GIFT', 'Every 6 hours you play, beans equal to your chapter’s starting amount are added to your bank. Watch a rewarded video in the Shop (once a minute) to get the same amount right away; the Shop also has premium looks, the Supporter Pack and friend invites.']
                     ],
                     specialT: '🍵 Matcha → Coffee & 🥛 Pitcher (from stage 2)',
                     pitcher: (E) => `Reels 1, 3, 5.<br>Substitutes for other symbols on lines.<br>3 on screen = <b>Latte Art Bonus: ${fx(E.latteMult)}× bet</b>`,
@@ -280,10 +292,10 @@
                 finalDone: 'You saved the town! Keep playing freely as long as you like.'
             }
         };
-        function fx(v) { const s = (Math.round(v * 100) / 100).toString(); return CUR_LANG() === 'en' ? s : s.replace('.', ','); }
+        function fx(v) { const s = (Math.round(v * 100) / 100).toString(); return ['tr', 'de', 'es', 'pt'].includes(CUR_LANG()) ? s.replace('.', ',') : s; }
         let _lang = 'tr';
         function CUR_LANG() { return _lang; }
-        function L() { return I18N[_lang]; }
+        function L() { return I18N[_lang] || I18N.en; }
         function tf(str, vars) { return String(str).replace(/\{(\w+)\}/g, (m, k) => (vars && vars[k] !== undefined) ? vars[k] : m); }
         function symName(id) { return L().sym[id] || id; }
         function stageName(n) { return L().stage[n].name; }
@@ -293,7 +305,9 @@
         /* Statik metinler: data-i18n="yol.anahtar" (textContent) / data-i18n-html (innerHTML) */
         function getPath(o, path) { return path.split('.').reduce((a, k) => (a ? a[k] : undefined), o); }
         function applyStaticI18n() {
-            document.documentElement.lang = L().htmlLang;
+            document.documentElement.lang = CUR_LANG();
+            document.documentElement.dir = RTL_LANGS.includes(CUR_LANG()) ? 'rtl' : 'ltr';
+            document.body.dataset.lang = CUR_LANG();
             document.querySelectorAll('[data-i18n]').forEach(el => { const v = getPath(L(), el.dataset.i18n); if (typeof v === 'string') el.textContent = v; });
             document.querySelectorAll('[data-i18n-html]').forEach(el => { const v = getPath(L(), el.dataset.i18nHtml); if (typeof v === 'string') el.innerHTML = v; });
         }

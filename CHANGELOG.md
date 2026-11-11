@@ -1,6 +1,17 @@
 # Sürüm geçmişi
 
-V7 (“Filtre Kahve”) öncesi sürümler. Her sürüm `surum/<sürüm>` adlı bir dalda (ör. `surum/v6.2.0`) ve main geçmişinde ayrı bir commit olarak durur.
+Her sürüm `surum/<sürüm>` adlı bir dalda (ör. `surum/v6.2.0`) ve main geçmişinde ayrı bir commit olarak durur.
+
+## 7.0.0 — Filtre Kahve (Filter Coffee)
+_2026-11-10_
+
+- 9 dil: Türkçe, English, Deutsch, Español, Português, עברית (sağdan sola), 日本語, 한국어, 简体中文.
+- Ödüllü video (dakikada bir; Android'de AdMob + UMP izin formu). Gerçek kimlik girilene kadar test reklamı.
+- Premium görünümler (dönem setleri, Zaman Bekçisi, altın fincanlar, kol koleksiyonu) ve Destekçi Paketi — Google Play satın alma; yalnızca kozmetik.
+- Arkadaş daveti (RB-XXXXXX kodu, Firestore kurallarıyla korunur).
+- Gizlilik politikası, kullanıcı sözleşmesi, hesap silme sayfası, ilk açılışta 18+ yaş onayı.
+- Android (Capacitor 8, targetSdk 36) projesi ve Google Play mağaza belgeleri.
+- Düzeltme: telefonda premium kart adlarının alt alta dizilmesi.
 
 ## 6.2.0 — Flat White (Flat White)
 _2026-11-04_

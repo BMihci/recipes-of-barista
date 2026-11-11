@@ -65,7 +65,7 @@
             const ok = $('cf-ok');
             ok.textContent = opts.ok;
             ok.onclick = () => { closeModal('modal-confirm'); opts.onOk(); };
-            $('cf-cancel').textContent = CUR_LANG() === 'en' ? 'CANCEL' : 'VAZGEÇ';
+            $('cf-cancel').textContent = UX('cancel');
             playSynthNote(420, 0.08, 'triangle', 0.05);
             openModal('modal-confirm');
         }
@@ -109,7 +109,7 @@
                 const card = document.createElement('div');
                 card.className = 'slot-card' + (sv ? '' : ' empty');
                 const icon = sv ? (sv.finished ? `<img src="${ASSETS.sym.goldenbean}" alt="">` : sv.stage <= 5 ? `<img src="${ASSETS.sym[['espresso', 'matcha', 'cupcake', 'coffeebag', 'book'][sv.stage - 1]]}" alt="">` : eraIcon(eraKey(sv.stage), 30)) : '➕';
-                const date = sv ? new Date(sv.updated).toLocaleDateString(CUR_LANG() === 'en' ? 'en-US' : 'tr-TR') : '';
+                const date = sv ? new Date(sv.updated).toLocaleDateString(LOC()) : '';
                 card.innerHTML = `<div class="si">${icon}</div><div class="sb"><b>${sv ? slotLabel(i) : L().slots.empty}</b><small>${sv ? (sv.finished ? L().slots.fin + ' · ' : '') + slotSummary(sv) + ' · ' + date : ''}</small></div>`;
                 const acts = document.createElement('div');
                 acts.className = 'sa';
@@ -187,7 +187,7 @@
             $('df-cancel').textContent = L().name.cancel;
             openModal('modal-diff');
         }
-        function diffLabel(sv) { const k = sv && eraKey(sv.stage); return k ? eraName(k) : '☕ ' + (CUR_LANG() === 'en' ? 'Coffee Town' : 'Kahve Kasabası'); }
+        function diffLabel(sv) { const k = sv && eraKey(sv.stage); return k ? eraName(k) : '☕ ' + UX('coffeeTown'); }
         function beginNewSave(name) {
             Game.slot = pendingSlot;
             Game.save = newSave(name);
@@ -230,7 +230,7 @@
               <defs><filter id="mp-sh" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#3a2410" flood-opacity=".35"/></filter>
               ${artSymbols(Object.keys(ERA_DECO_ART).concat(...Object.values(ERA_DECO_ART)).filter((v, i, a) => a.indexOf(v) === i))}</defs>`;
             // bantlar: kasaba (1–5) + dönemler
-            const bands = [{ from: 1, to: 5, M: TOWN_META, name: CUR_LANG() === 'en' ? 'Coffee Town' : 'Kahve Kasabası', years: '' }]
+            const bands = [{ from: 1, to: 5, M: TOWN_META, name: UX('coffeeTown'), years: '' }]
                 .concat(Engine.ERAS.map(e => ({ from: e.from, to: e.from + e.n - 1, M: ERA_META[e.key], key: e.key, name: eraName(e.key), years: ERA_META[e.key].years[CUR_LANG()] })));
             bands.forEach((B, bi) => {
                 const y0 = B.to === 100 ? 0 : bandY(B.to + 1), y1 = B.from === 1 ? H : bandY(B.from), ground = B.M.ground || '#E9D4AE';
@@ -287,7 +287,7 @@
         }
         function openMap() {
             if (!Game.save) { switchScreen('screen-menu'); renderMenu(); return; }
-            if (gameState.isSpinning && document.body.dataset.mode === 'game') { setMessage(CUR_LANG() === 'en' ? 'Wait for the reels to stop ☕' : 'Makaralar dursun, sonra geç ☕'); return; }
+            if (gameState.isSpinning && document.body.dataset.mode === 'game') { setMessage(UX('waitReels')); return; }
             persist();
             applyStaticI18n();
             $('map-name').textContent = nickOf();
@@ -403,7 +403,7 @@
             const arts = { 1: ['barista', 'cozybear'], 2: ['matcha', 'pitcher'], 3: ['bakingbear', 'cupcake'], 4: ['coffeebag', 'cozybear'], 5: ['barista', 'stamp', 'cozybear'] }[n];
             arts.forEach(k => { const im = document.createElement('img'); im.src = ASSETS.sym[k]; im.alt = ''; art.appendChild(im); });
             const c = CHAPTERS[n];
-            $('ci-title').textContent = `${L().stageWord} ${n}: ${stageName(n).toLocaleUpperCase(CUR_LANG() === 'en' ? 'en-US' : 'tr-TR')}`;
+            $('ci-title').textContent = `${L().stageWord} ${n}: ${stageName(n).toLocaleUpperCase(LOC())}`;
             $('ci-text').innerHTML = tf(L().intro[n], { bal: fmt(gameState.balance), at: fmt(c.unlockAt), price: fmt(c.price), full: RUN_EFF.ovenFull, spins: RUN_EFF.ovenSpins });
             $('ci-ok').textContent = L().intro.btn;
             openModal('modal-chapter-intro');
@@ -458,7 +458,7 @@
         window.addEventListener('resize', () => positionTutorial());
 
         function returnToMenu() {
-            if (gameState.isSpinning && document.body.dataset.mode === 'game') { setMessage(CUR_LANG() === 'en' ? 'Wait for the reels to stop ☕' : 'Makaralar dursun, sonra geç ☕'); return; }
+            if (gameState.isSpinning && document.body.dataset.mode === 'game') { setMessage(UX('waitReels')); return; }
             nbClear();
             if (Game.save) persist();
             stopCasinoMusic();
@@ -620,7 +620,7 @@
                 t.title = tip;
                 t.textContent = got ? '✓' : '🎁';
                 t.setAttribute('aria-label', tip);
-                t.onclick = () => showDialog('cozybear', CUR_LANG() === 'en' ? 'BlueBird' : 'MaviKuş', tip);
+                t.onclick = () => showDialog('cozybear', castName('cozybear'), tip);
                 marks.appendChild(t);
             });
         }
@@ -670,7 +670,7 @@
                 confirmBox({ title: L().buy.tF, text: tf(L().buy.txtTM, { price: fmt(c.price), left }), art: ['barista', 'book', 'dede'], ok: L().buy.okTM, good: true, onOk: () => doBuy() });
             } else if (n < Engine.STAGE_COUNT) {
                 const nx = L().stage[n + 1];
-                confirmBox({ title: tf(L().buy.t, { short: nx.short.toLocaleUpperCase(CUR_LANG() === 'en' ? 'en-US' : 'tr-TR') }), text: tf(L().buy.txt, { place: nx.place, price: fmt(c.price), left }), art: ['barista', 'coffeebag', 'cozybear'], ok: L().buy.ok, good: true, onOk: () => doBuy() });
+                confirmBox({ title: tf(L().buy.t, { short: nx.short.toLocaleUpperCase(LOC()) }), text: tf(L().buy.txt, { place: nx.place, price: fmt(c.price), left }), art: ['barista', 'coffeebag', 'cozybear'], ok: L().buy.ok, good: true, onOk: () => doBuy() });
             } else {
                 confirmBox({ title: L().buy.tF, text: tf(L().buy.txtF, { price: fmt(c.price), left }), art: ['barista', 'book', 'cozybear'], ok: L().buy.okF, good: true, onOk: () => doBuy() });
             }
@@ -686,7 +686,7 @@
                 gameState.chapter = n + 1;
                 sv.stage = n + 1;
                 // zaman makinesi makineye 6. makarayı takar (Saga'nın matematiği 6 makaraya göre ayarlı)
-                if (n + 1 === Engine.SAGA_FIRST && !(sv.ups.lx_reel6 > 0)) { sv.ups.lx_reel6 = 1; setTimeout(() => achToast('espresso', L().up.lx_reel6.n, '⏳ ' + (CUR_LANG() === 'en' ? 'A gift from the time machine!' : 'Zaman makinesinden hediye!')), 3400); }
+                if (n + 1 === Engine.SAGA_FIRST && !(sv.ups.lx_reel6 > 0)) { sv.ups.lx_reel6 = 1; setTimeout(() => achToast('espresso', L().up.lx_reel6.n, '⏳ ' + UX('tmGift')), 3400); }
                 // zaman makinesi: kasa yeni bölüme en az `start`, en çok `carryMax` taşınır; fazlası Zaman Hazinesi'ne
                 // kasaya taşınan miktar sınırlı: şanslı bir seri sonraki bölümü (hikâyesi ve mekaniğiyle) atlatmasın; fazlası Zaman Hazinesi'ne
                 const cap = nx.saga ? nx.carryMax : Math.round(nx.unlockAt * 0.6);
@@ -811,7 +811,7 @@
                 gameState.phasesShown[i] = true;
                 const key = c.id + ':' + i;
                 const sl = !(L().phase[c.id] && L().phase[c.id][i]) && sagaLine(c.id);
-                const talk = (L().phase[c.id] && L().phase[c.id][i]) || (sl ? [sl[0], sl[1], (CUR_LANG() === 'en' ? 'Halfway there! ' : 'Yolun yarısı! ') + sl[2]] : ['barista', 'Bearista', '']);
+                const talk = (L().phase[c.id] && L().phase[c.id][i]) || (sl ? [sl[0], sl[1], UX('halfway') + sl[2]] : ['barista', 'Bearista', '']);
                 let extra = '';
                 if (!sv.phases[key]) {
                     sv.phases[key] = true;
@@ -1248,7 +1248,7 @@
                     updateAutoSpinButtonUI();
                     const b = $('buy-btn');
                     b.classList.remove('flash'); void b.offsetWidth; b.classList.add('flash');
-                    showDialog('cozybear', CUR_LANG() === 'en' ? 'BlueBird' : 'MaviKuş', $('buy-wrap').dataset.tip || '');
+                    showDialog('cozybear', castName('cozybear'), $('buy-wrap').dataset.tip || '');
                     [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => playSynthNote(f, 0.25, 'sine', 0.07), i * 120));
                     return;
                 }
@@ -1344,7 +1344,7 @@
         }
 
         /* ---------- HEDİYE EKONOMİSİ: 6 saatte bir ücretsiz hediye · istediğin an reklam izle ---------- */
-        const GIFT_MS = 6 * 3600 * 1000, VIDEO_CD = 30 * 1000;
+        const GIFT_MS = 6 * 3600 * 1000, VIDEO_CD = 60 * 1000;   // v7: gerçek ödüllü reklam — dakikada en fazla bir video
         // 1.000 çekirdek; Final'de en düşük bahis 2.000 olduğu için hediye en az bir spin'e yetecek kadardır
         /* video ve 6 saatlik hediye: bulunduğun bölümün BAŞLANGIÇ tutarı kadar
            (ör. 100.000'e ulaşıp 80.000'e yeni bölümü açınca başlangıç 20.000'dir) */
@@ -1375,7 +1375,7 @@
             sv.lastGift = Date.now();
             persist();
             refreshBank();
-            showDialog('cozybear', CUR_LANG() === 'en' ? 'BlueBird' : 'MaviKuş', tf(L().gift.got, { v: fmt(v) }));
+            showDialog('cozybear', castName('cozybear'), tf(L().gift.got, { v: fmt(v) }));
             if (typeof Notify !== 'undefined') Notify.plan();
             if ($('modal-bust').classList.contains('open') && gameState.balance >= CHAPTERS[gameState.chapter].minBet) closeBust();
         }
@@ -1415,8 +1415,14 @@
         }
         function closeBust() { clearInterval(bustTimer); bustTimer = null; closeModal('modal-bust'); }
         /* Şimdilik gerçek reklam yok: her basışta anında ödül (30 sn bekleme ile). Reklam SDK'sı gelince burası onu çağıracak. */
+        let videoBusy = false;
         function watchVideo() {
-            if (!Game.save || videoLeft() > 0) return;
+            if (!Game.save || videoLeft() > 0 || videoBusy) return;
+            videoBusy = true;
+            Ads.rewarded().then(ok => { videoBusy = false; if (ok) grantVideo(); if (document.body.dataset.mode === 'game' && !isMuted) startCasinoMusic(); }).catch(() => { videoBusy = false; });
+        }
+        function grantVideo() {
+            if (!Game.save) return;
             const v = giftAmt();
             gameState.balance += v;
             Game.save.videos = (Game.save.videos || 0) + 1;
@@ -1445,12 +1451,14 @@
             const S = L().store, vl = videoLeft(), gl = giftLeft();
             $('sto-title').textContent = S.title;
             $('sto-bank').innerHTML = `${beanIc()} ${fmt(gameState.balance)}`;
-            const soon = S.soon.map(([ic, n, d]) => `<div class="st-card soon"><span class="si">${ic}</span><div class="sb"><b>${n}</b><small>${d}</small></div><span class="st-tag">${S.soonTag}</span></div>`).join('');
+            const soon = S.soon.slice(3).map(([ic, n, d]) => `<div class="st-card soon"><span class="si">${ic}</span><div class="sb"><b>${n}</b><small>${d}</small></div><span class="st-tag">${S.soonTag}</span></div>`).join('');
             $('sto-list').innerHTML = `
                 <div class="st-card hot"><span class="si">🎬</span><div class="sb"><b>${S.video}</b><small>${tf(S.videoTxt, { v: fmt(giftAmt()) })}</small></div>
                   <button class="btn btn-sm btn-green" ${vl > 0 ? 'disabled' : ''} onclick="watchVideo()">${vl > 0 ? tf(S.wait, { t: Math.ceil(vl / 1000) }) : '+' + fmt(giftAmt())}</button></div>
                 <div class="st-card"><span class="si">⏰</span><div class="sb"><b>${S.free}</b><small>${tf(S.freeTxt, { v: fmt(giftAmt()) })}</small></div>
                   <span class="st-tag t2">${gl > 0 ? fmtTime(gl) : S.ready}</span></div>
+                <div class="st-card hot inv-card"><span class="si">🤝</span><div class="sb"><b>${PX().invT}</b><small>${PX().invCard}</small></div><button class="btn btn-sm btn-green" onclick="openInvite()">${PX().invShare}</button></div>
+                ${storePremium()}
                 ${storeTreasure()}
                 ${storeEra()}
                 ${storeLevers()}

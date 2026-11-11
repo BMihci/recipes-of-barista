@@ -203,6 +203,14 @@
             const treOwn = COSM.frame.concat(COSM.cap, COSM.cup).filter(it => it.tre).map(it => [COSM.frame.includes(it) ? 'frame' : COSM.cap.includes(it) ? 'cap' : 'cup', it.id]).filter(([k, id]) => cosmUnlocked(k, id));
             if (treOwn.length) h += `<div class="cz-set tre"><div class="cz-sh"><span class="cz-ic">${ICON.chest(30)}</span><b>${ST().treasure}</b><small>${C.treOwn}</small></div>
                   <div class="cz-row">${treOwn.map(([k, id]) => czPiece(k, id, true)).join('')}</div></div>`;
+            // v7: Destekçi seti ve Dost seti
+            const so = SUP_LOOKS.every(([k, id]) => cosmUnlocked(k, id)), X = PX();
+            h += `<div class="cz-set sup ${so ? '' : 'locked'}"><div class="cz-sh"><span class="cz-ic">💖</span><b>${X.supSet}</b><small>${so ? C.ready : '🔒 ' + X.supLock}</small>
+                    ${so ? `<button class="btn btn-sm" onclick="Profile.cosm=Object.assign({},Profile.cosm||{},{frame:'destekci',cap:'destekci',cup:'destekci'});saveProfile();applyCosm();renderHub()">${C.wearSet}</button>` : (Game.save ? `<button class="btn btn-sm btn-green" onclick="closeModal('modal-hub');openStore()">💎</button>` : '')}</div>
+                  <div class="cz-row">${SUP_LOOKS.map(([k, id]) => czPiece(k, id, cosmUnlocked(k, id))).join('')}</div></div>`;
+            h += `<div class="cz-set dost"><div class="cz-sh"><span class="cz-ic">🤝</span><b>${X.dostSet}</b><small>${X.dostLock}</small>
+                    <button class="btn btn-sm btn-green" onclick="closeModal('modal-hub');openInvite()">${X.invShare}</button></div>
+                  <div class="cz-row">${DOST_LOOKS.map(([k, id]) => czPiece(k, id, cosmUnlocked(k, id))).join('')}</div></div>`;
             // Beta tester seti
             const bo = betaOwned(), ball = bo && BETA_LOOKS.every(([k, id]) => cosmEquipped(k) === id);
             h += `<div class="cz-set beta ${bo ? '' : 'locked'} ${ball ? 'on' : ''}"><div class="cz-sh"><span class="cz-ic">${ICON.beta(30)}</span><b>${C.betaSet}</b><small>${bo ? (ball ? C.worn : C.ready) : '🔒 ' + C.betaLock}</small>
@@ -366,7 +374,7 @@
                 document.body.appendChild(d);
             } else if (!on && d) d.remove();
             const ft = document.querySelector('footer.foot');
-            if (ft && typeof APP_VERSION !== 'undefined') ft.textContent = `Recipes of Barista — 3D Deluxe · v${APP_VERSION.num} “${APP_VERSION.name[CUR_LANG()] || APP_VERSION.name.tr}”`;
+            if (ft && typeof APP_VERSION !== 'undefined') ft.textContent = `Recipes of Barista — 3D Deluxe · v${APP_VERSION.num} “${APP_VERSION.name[CUR_LANG()] || APP_VERSION.name.en}”`;
             const b = $('menu-event');
             if (b) { b.classList.toggle('hidden', !on); b.innerHTML = on ? L().ev.banner : ''; }
         }

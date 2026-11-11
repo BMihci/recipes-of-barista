@@ -323,7 +323,7 @@
             if (idx === 6) { Game.save.dedeGift = true; }
             setTimeout(() => Notify.offer(), 2500);
             [523, 659, 784, 1047, 1319].forEach((f, i) => setTimeout(() => playSynthNote(f, 0.22, 'sine', 0.06), i * 110));
-            setTimeout(() => showDialog(idx === 6 ? 'dede' : 'cozybear', idx === 6 ? L().dede.name : (CUR_LANG() === 'en' ? 'BlueBird' : 'MaviKuş'), tf(idx === 6 ? L().daily.got7 : L().daily.got, { v: fmt(v) })), 300);
+            setTimeout(() => showDialog(idx === 6 ? 'dede' : 'cozybear', idx === 6 ? L().dede.name : castName('cozybear'), tf(idx === 6 ? L().daily.got7 : L().daily.got, { v: fmt(v) })), 300);
             persist(); saveProfile(); checkBadges();
             renderHub();
         }
@@ -389,7 +389,7 @@
             BADGES.forEach(b => {
                 const got = Profile.badges[b.id];
                 const [nm, ds] = B.list[b.id];
-                const date = got ? new Date(got).toLocaleDateString(CUR_LANG() === 'en' ? 'en-US' : 'tr-TR') : '';
+                const date = got ? new Date(got).toLocaleDateString(LOC()) : '';
                 h += `<div class="bdg ${got ? 'got' : ''}" title="${escapeHtml(ds)}"><div class="bi"><img src="${ASSETS.sym[b.ic]}" alt=""></div><b>${escapeHtml(nm)}</b><small>${escapeHtml(ds)}</small>${got ? `<em>${tf(B.when, { d: date })}</em>` : `<em class="r">🔒 ${B.locked}</em>`}</div>`;
             });
             return h + '</div>';
@@ -500,14 +500,14 @@
             if (!Cloud.available()) h = `<p class="hub-note">${P.nocfg}</p>`;
             else if (Cloud.user) {
                 const e = Cloud.user.email || Cloud.user.displayName || 'Google';
-                h = `<p class="pf-ok">${tf(P.signedAs, { e: escapeHtml(e) })}</p><p class="hub-note">${tf(P.lastSync, { t: Cloud.lastSync ? new Date(Cloud.lastSync).toLocaleString(CUR_LANG() === 'en' ? 'en-US' : 'tr-TR') : P.never })}</p>
+                h = `<p class="pf-ok">${tf(P.signedAs, { e: escapeHtml(e) })}</p><p class="hub-note">${tf(P.lastSync, { t: Cloud.lastSync ? new Date(Cloud.lastSync).toLocaleString(LOC()) : P.never })}</p>
                      <div class="row"><button class="btn btn-sm" onclick="Cloud.syncNow()">${P.syncNow}</button><button class="btn btn-sm btn-soft" onclick="Cloud.logout()">${P.out}</button></div>
                      <button class="linkbtn" onclick="Cloud.askDelete()">${P.del}</button>`;
             } else if (!navigator.onLine) h = `<p class="hub-note">${P.offline}</p>`;
             else {
                 h = `<p class="hub-info">${P.accInfo}</p>
                      <button class="btn btn-block btn-google" onclick="Cloud.google()"><span class="g">G</span> ${P.google}</button>
-                     <div class="pf-or">— ${CUR_LANG() === 'en' ? 'or' : 'ya da'} —</div>
+                     <div class="pf-or">— ${UX('or')} —</div>
                      <input id="pf-mail" type="email" autocomplete="email" placeholder="${P.email}">
                      <input id="pf-pass" type="password" autocomplete="current-password" placeholder="${P.pass}">
                      <div class="row"><button class="btn btn-sm" onclick="Cloud.emailLogin(false)">${P.login}</button><button class="btn btn-sm btn-soft" onclick="Cloud.emailLogin(true)">${P.register}</button></div>
@@ -663,7 +663,7 @@
             $('set-title').textContent = S.title;
             const tog = (on) => on ? S.on : S.off;
             $('set-body').innerHTML = `
-                <div class="set-row"><span>${S.lang}</span><div class="seg"><button class="${_lang === 'tr' ? 'on' : ''}" onclick="setLang('tr')">Türkçe</button><button class="${_lang === 'en' ? 'on' : ''}" onclick="setLang('en')">English</button></div></div>
+                <div class="set-row"><span>${S.lang}</span>${langPicker()}</div>
                 <div class="set-row"><span>${S.mute}</span><button class="tg ${isMuted ? '' : 'on'}" onclick="toggleMute()">${tog(!isMuted)}</button></div>
                 <div class="set-row"><span>${S.music}</span><input type="range" min="0" max="100" value="${Math.round(Settings.musVol * 100)}" oninput="setVol('musVol', this.value)"></div>
                 <div class="set-row"><span>${S.sfx}</span><input type="range" min="0" max="100" value="${Math.round(Settings.sfxVol * 100)}" oninput="setVol('sfxVol', this.value)" onchange="playSynthNote(880,0.1)"></div>
@@ -679,14 +679,15 @@
                 <div class="set-row"><span>${S.motion}</span><button class="tg ${Settings.motion ? 'on' : ''}" onclick="toggleMotion()">${tog(Settings.motion)}</button></div>
                 <div class="set-links">
                     <button class="btn btn-soft btn-block" onclick="closeModal('modal-settings');showNews(true)">${S.whatsNew}</button>
-                    <button class="btn btn-soft btn-block" onclick="openHistory()">${CUR_LANG() === 'en' ? '📜 Version history' : '📜 Sürüm geçmişi'}</button>
+                    <button class="btn btn-soft btn-block" onclick="openHistory()">📜 ${UX('verHist')}</button>
                     <button class="btn btn-soft btn-block" onclick="closeModal('modal-settings');openProfile()">${S.account}</button>
                     <button class="btn btn-soft btn-block" onclick="closeModal('modal-settings');openBackup()">${S.backup}</button>
                     ${document.body.dataset.mode === 'game' && gameState.chapter === 1 ? `<button class="btn btn-soft btn-block" onclick="closeModal('modal-settings');showTutorial()">${S.tut}</button>` : ''}
                     ${PWA.canInstall() ? `<button class="btn btn-green btn-block" onclick="PWA.install()">${S.install}</button>` : (PWA.installed() ? `<p class="hub-ok">${S.installed}</p>` : '')}
                     <button class="btn btn-block btn-danger" onclick="resetAll()">${S.reset}</button>
                 </div>
-                <p class="set-ver" onclick="cheatTap()">${S.offline} · ${S.ver} ${APP_VERSION.num} “${APP_VERSION.name[CUR_LANG()] || APP_VERSION.name.tr}”</p>`;
+                ${legalLinks()}
+                <p class="set-ver" onclick="cheatTap()">${S.offline} · ${S.ver} ${APP_VERSION.num} “${APP_VERSION.name[CUR_LANG()] || APP_VERSION.name.en}”</p>`;
             $('set-close').textContent = S.close;
         }
         function setVol(k, v) { Settings[k] = Math.max(0, Math.min(1, v / 100)); saveSettings(); applyVolumes(); }
@@ -757,7 +758,7 @@
         const PWA = {
             evt: null,
             init() {
-                const web = /^https?:/.test(location.protocol);
+                const web = /^https?:/.test(location.protocol) && !(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());   // uygulamada PWA/servis çalışanı yok
                 if (web) {
                     if (!document.querySelector('link[rel=apple-touch-icon]')) { const l = document.createElement('link'); l.rel = 'apple-touch-icon'; l.href = 'apple-touch-icon.png'; document.head.appendChild(l); }
                     if (!document.querySelector('link[rel=manifest]')) { const l = document.createElement('link'); l.rel = 'manifest'; l.href = 'manifest.webmanifest'; document.head.appendChild(l); }

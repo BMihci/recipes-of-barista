@@ -7,7 +7,7 @@
             en: { title: 'Order', wins: '{n} wins in {s} spins', big: '{x}× your bet in one spin', books: '2 Recipe Books in one spin', streak: '{n} wins in a row',
                   left: '{n} spins', streak3: '🧾🧾🧾 3 orders in a row! Tip jar +{v}', streakT: 'Streak', potion: 'Potion', done: '📋 Order complete! +{v}', fail: 'Order missed, a new one is coming…', next: 'New order soon…', reward: 'Reward: {r}× bet' }
         };
-        const OT = () => ORDER_TXT[CUR_LANG()] || ORDER_TXT.tr;
+        const OT = () => ORDER_TXT[CUR_LANG()] || ORDER_TXT.en;
         function orderText(o) {
             const T = Engine.ORDER_TYPES.find(x => x.id === o.t), X = OT();
             return tf(X[o.t], { n: T.goal, s: T.spins, x: T.x });
@@ -50,11 +50,11 @@
            ===================================================== */
         function openHistory() {
             const H = (APP_VERSION.history || []), lg = CUR_LANG();
-            const T = lg === 'en' ? { t: '📜 Version history', ok: 'CLOSE' } : { t: '📜 Sürüm geçmişi', ok: 'KAPAT' };
+            const T = { t: '📜 ' + UX('verHist'), ok: UX('close') };
             let h = '';
             H.forEach(v => {
-                h += `<div class="vh-item"><div class="vh-head"><b>v${escapeHtml(v.num)}</b><span>“${escapeHtml((v.name && (v.name[lg] || v.name.tr)) || '')}”</span>${v.date ? `<small>${escapeHtml(v.date)}</small>` : ''}</div>
-                      <ul>${(v.notes[lg] || v.notes.tr).map(n => `<li>${n}</li>`).join('')}</ul></div>`;
+                h += `<div class="vh-item"><div class="vh-head"><b>v${escapeHtml(v.num)}</b><span>“${escapeHtml((v.name && (v.name[lg] || v.name.en)) || '')}”</span>${v.date ? `<small>${escapeHtml(v.date)}</small>` : ''}</div>
+                      <ul>${(v.notes[lg] || v.notes.en).map(n => `<li>${n}</li>`).join('')}</ul></div>`;
             });
             $('nw-title').textContent = T.t; $('nw-name').textContent = '';
             $('nw-list').innerHTML = `<div class="vh-list">${h}</div>`;
@@ -71,7 +71,7 @@
             en: { info: 'Every issue you’ve unlocked is here. Tap a cover to read it again.', lockS: 'Reach branch {n}', lockTm: 'Save the town', lockEra: 'Reach chapter {n}', lockFin: 'Finish the saga', busy: 'Wait for the reels to stop ☕', read: 'READ' }
         };
         function comicIssues() {
-            const sv = Game.save, st = (sv && sv.stage) || 1, fin = !!(sv && sv.finished), CT = COMIC_TXT[CUR_LANG()] || COMIC_TXT.tr;
+            const sv = Game.save, st = (sv && sv.stage) || 1, fin = !!(sv && sv.finished), CT = COMIC_TXT[CUR_LANG()] || COMIC_TXT.en;
             const town = ['barista', 'matcha', 'cupcake', 'coffeebag', 'stamp'];
             const out = [1, 2, 3, 4, 5].map(n => ({ id: 's' + n, open: fin || st >= n, art: `<img src="${ASSETS.sym[town[n - 1]]}" alt="">`, col: ['#E07A5F', '#7DB46C', '#FF9FBF', '#E8B84A', '#8E44D6'][n - 1], lock: tf(CT.lockS, { n }) }));
             out.push({ id: 'tm', open: fin || st >= Engine.SAGA_FIRST, art: ICON.hourglass(54), col: '#6B4FB5', lock: CT.lockTm });
@@ -81,7 +81,7 @@
         }
         function hubComics() {
             if (!Game.save) return `<p class="hub-note">${L().hub.needSave}</p>`;
-            const CT = COMIC_TXT[CUR_LANG()] || COMIC_TXT.tr;
+            const CT = COMIC_TXT[CUR_LANG()] || COMIC_TXT.en;
             return `<p class="hub-info">${CT.info}</p><div class="cx-grid">` + comicIssues().map(c => {
                 if (!c.open) return `<div class="cx locked"><span class="cx-no">?</span><span class="cx-art">${ICON.chest(40)}</span><small>🔒 ${c.lock}</small></div>`;
                 const sc = cinemaScript(c.id) || {}, iss = String(sc.issue || '').split('·')[0].trim();
@@ -89,7 +89,7 @@
             }).join('') + '</div>';
         }
         function readComic(id) {
-            if (gameState.isSpinning) { setMessage((COMIC_TXT[CUR_LANG()] || COMIC_TXT.tr).busy); return; }
+            if (gameState.isSpinning) { setMessage((COMIC_TXT[CUR_LANG()] || COMIC_TXT.en).busy); return; }
             closeModal('modal-hub');
             const inGame = document.body.dataset.mode === 'game';
             if (inGame) { stopCasinoMusic(); stopBonusMusic(); }

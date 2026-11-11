@@ -3,3 +3,5 @@ build_cache/
 template.html
 firebase_config.json
 node_modules/
+v5/lang_packs.js
+__pycache__/

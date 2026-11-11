@@ -25,7 +25,7 @@
             const art = $('ci-art');
             art.innerHTML = `<span class="era-badge" style="--c:${EM.col};--c2:${EM.col2}">${eraIcon(k, 40)}</span>`;
             ['barista', 'cozybear'].forEach(s => { const im = document.createElement('img'); im.src = ASSETS.sym[s]; im.alt = ''; art.appendChild(im); });
-            $('ci-title').textContent = `${ST().chWord} ${n}: ${stageName(n).toLocaleUpperCase(CUR_LANG() === 'en' ? 'en-US' : 'tr-TR')}`;
+            $('ci-title').textContent = `${ST().chWord} ${n}: ${stageName(n).toLocaleUpperCase(LOC())}`;
             $('ci-text').innerHTML = tf(L().intro.saga, { era: eraName(k), years: EM.years[CUR_LANG()], buff: T.buff, buffD: T.buffD, at: fmt(c.unlockAt), price: fmt(c.price), bal: fmt(gameState.balance), left: Engine.STAGE_COUNT - n });
             $('ci-ok').textContent = L().intro.btn;
             openModal('modal-chapter-intro');

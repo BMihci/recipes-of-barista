@@ -1,25 +1,21 @@
 # Recipes of Barista – 3D Deluxe
 
-Slot makinesi mekanikleriyle ilerleyen kısa ve sevimli bir kahve macerası. Tek dosya HTML oyun (Three.js r128).
+Slot makinesi mekanikleriyle ilerleyen kısa ve sevimli bir kahve macerası. Tek dosya HTML oyun (Three.js r128) · Geliştirici: Limited Education
 
-**Bu commit: sürüm 6.2.0** · Geliştirici: Limited Education
+**Bu commit: sürüm 7.0.0 “Filtre Kahve”** — 9 dil, ödüllü video, kozmetik mağaza, arkadaş daveti, Google Play'e hazır Android projesi.
 
 ## Oynamak
-`recipes_of_barista_3d_deluxe.html` dosyasını indirip tarayıcıda aç. Tüm görseller, yazı tipleri ve three.js dosyanın içindedir; internet olmadan da çalışır (bulut kaydı ve sıralama hariç).
+`recipes_of_barista_3d_deluxe.html` dosyasını indirip tarayıcıda aç. Tüm görseller, yazı tipleri ve three.js dosyanın içindedir; internet olmadan da çalışır (bulut kaydı, sıralama ve davet hariç).
 
 ## Diğer sürümler
-Her V7 öncesi sürüm kendi dalında durur: `surum/v4.0`, `surum/v5.3`, `surum/v5.4`, `surum/v5.5.1`, `surum/v6.1.0`, `surum/v6.2.0`. GitHub'da dal seçicisinden (main yazan menü) sürümü seç ve `recipes_of_barista_3d_deluxe.html` dosyasını indir. `main` dalının geçmişinde de her sürüm ayrı bir commit olarak görünür. Değişiklikler: [CHANGELOG.md](CHANGELOG.md).
+Her sürüm kendi dalında durur: `surum/v4.0`, `surum/v5.3`, `surum/v5.4`, `surum/v5.5.1`, `surum/v6.1.0`, `surum/v6.2.0`, `surum/v7.0.0`. Dal menüsünden sürümü seçip HTML dosyasını indirebilirsin. Değişiklikler: [CHANGELOG.md](CHANGELOG.md).
 
 ## Kaynaktan derleme
 ```
-python3 v5/assemble5.py      # v5/ kaynaklarını template.html'de birleştirir
-python3 build.py             # görselleri/fontları gömer, küçültür → out/recipes_of_barista_3d_deluxe.html
+python3 v5/assemble5.py
+python3 build.py
 ```
-Gerekenler: Python 3 + Pillow, Node.js + esbuild (`minify.js` içindeki esbuild yolunu kendi kurulumuna göre düzenle). Bulut kaydı için kök klasöre `firebase_config.json` koyulur (depoda yok; yoksa bulut özellikleri kapalı derlenir).
+Gerekenler: Python 3 + Pillow, Node.js + esbuild (`npm i esbuild`). Çıktılar `out/` klasörüne: oyun, web (Netlify) paketi, Android projesi, Play Store belgeleri. Ayrıntı: [CLAUDE.md](CLAUDE.md).
 
-| Klasör/dosya | İçerik |
-|---|---|
-| `v5/` | Oyun kaynakları (arayüz, 3D sahne, hikâye, mağaza, ses…) |
-| `engine.js` | Slot motoru ve oyun matematiği |
-| `template_v4_final.html` | Temel HTML iskeleti |
-| `sym/`, `bg_*.jpg`, `fonts/` | Görseller ve yazı tipleri |
+## Android / Google Play
+`android_src/PLAY_STORE_REHBERI.md` — hesap açmaktan yayına kadar adım adım.

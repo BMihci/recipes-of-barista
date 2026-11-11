@@ -19,9 +19,9 @@
         function lsGet(k, def) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : def; } catch (e) { return def; } }
         function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
 
-        const Settings = Object.assign({ lang: 'tr', last: null, muted: false }, lsGet(SET_KEY, {}));
+        const Settings = Object.assign({ lang: detectLang(), last: null, muted: false }, lsGet(SET_KEY, {}));
         function saveSettings() { lsSet(SET_KEY, Settings); }
-        _lang = I18N[Settings.lang] ? Settings.lang : 'tr';
+        _lang = LANGS.includes(Settings.lang) ? Settings.lang : 'en';
 
         let SLOTS = lsGet(SLOT_KEY, []);
         if (!Array.isArray(SLOTS)) SLOTS = [];

@@ -1,159 +1,284 @@
 {
- "num": "6.2.0",
- "name": {
-  "tr": "Flat White",
-  "en": "Flat White"
- },
- "notes": {
-  "tr": [
-   "📚 Hikâyeler artık Marvel tarzı çizgi roman sayfası: paneller, altyazı kutuları, konuşma balonları, ses efektleri ve mürekkep çizgili 3D kareler.",
-   "🗞 Zaman makinesi, her dönem girişi ve final için tam sayfa çizgi roman kapakları.",
-   "📚 Kupa Odası › Çizgi Roman: açtığın sayıları istediğin zaman yeniden oku.",
-   "🧾 Sipariş fişleri: normal spinlerde küçük hedefler; 3 sipariş üst üste = bahşiş kavanozu.",
-   "⏳ Atölye’de “Dönem” sekmesi; son dönemlerin yükseltmeleri %30 ucuzladı.",
-   "💰 Zaman Hazinesi harcanabiliyor: Zaman Bekçisi seti, altın dönem fincanları, Hazine Sandığı ve Zaman İksiri.",
-   "🎁 Günlük ödül, video ve 6 saatlik hediye artık bulunduğun bölüme göre büyüyor.",
-   "🌱 Kasaba şubeleri (1–5) kısaldı ve daha dengeli.",
-   "💚 Beta testerlara özel görünüm seti (test kodu ile).",
-   "🎃 Cadılar Bayramı etkinliği sona erdi; görünümler artık satılmıyor (sahip olanlar giymeye devam eder).",
-   "🎨 Saga haritası ve rozetlerde emoji yerine oyuna özel çizimler.",
-   "⚡ Daha hızlı ve hafif: çizim yükü ~%65 azaldı, telefon zorlanırsa hafif mod kendiliğinden açılıyor.",
-   "🐞 Saga’nın yarısındaki çökme, hikâye açılırken makara takılması ve 6. makara bildirimi düzeltildi.",
-   "📜 Ayarlar › Sürüm geçmişi."
+  "num": "7.0.0",
+  "name": {
+    "tr": "Filtre Kahve",
+    "en": "Filter Coffee",
+    "de": "Filterkaffee",
+    "es": "Café de Filtro",
+    "pt": "Café Coado",
+    "he": "קפה פילטר",
+    "ja": "フィルターコーヒー",
+    "ko": "필터 커피",
+    "zh": "滤泡咖啡"
+  },
+  "codenames": [
+    "Americano",
+    "Balkabağı Latte",
+    "Cortado",
+    "Dalgona",
+    "Espresso Romano",
+    "Flat White",
+    "Gibraltar",
+    "Hazelnut Mocha",
+    "Irish Coffee",
+    "Java Chip",
+    "Kahve Dibek",
+    "Latte Macchiato",
+    "Mocha",
+    "Nitro Cold Brew",
+    "Ottoman Kahvesi",
+    "Piccolo",
+    "Ristretto",
+    "Salep Latte",
+    "Türk Kahvesi",
+    "Vienna",
+    "Yirgacheffe",
+    "Zencefilli Latte",
+    "Filtre Kahve"
   ],
-  "en": [
-   "📚 Stories are now Marvel-style comic pages: panels, caption boxes, speech balloons, sound effects and inked 3D art.",
-   "🗞 Full-page comic covers for the time machine, every era opening and the finale.",
-   "📚 Trophy Room › Comics: reread any issue you’ve unlocked.",
-   "🧾 Order tickets: small goals on normal spins; 3 orders in a row = tip jar.",
-   "⏳ New “Era” tab in the Workshop; late-era upgrades are 30% cheaper.",
-   "💰 The Time Treasure can be spent: Time Keeper set, golden era cups, Treasure Chest and Time Potion.",
-   "🎁 Daily reward, video and 6-hour gifts now scale with your chapter.",
-   "🌱 Town branches (1–5) are shorter and more even.",
-   "💚 A special look set for beta testers (with the test code).",
-   "🎃 The Halloween event has ended; its looks are no longer sold (owners can keep wearing them).",
-   "🎨 Custom drawings instead of emoji on the Saga map and badges.",
-   "⚡ Faster and lighter: ~65% less drawing work; light mode turns on by itself if your phone struggles.",
-   "🐞 Fixed the Saga halfway crash, reels sticking while a story opened, and the 6th-reel toast.",
-   "📜 Settings › Version history."
+  "notes": {
+    "tr": [
+      "🌍 9 dil: Türkçe, English, Deutsch, Español, Português, עברית (sağdan sola), 日本語, 한국어, 简体中文 — oyun cihazının dilinde açılır.",
+      "🎬 Ödüllü video: 1 dakikada bir izle, anında çekirdek kazan (Android'de Google AdMob).",
+      "💎 Premium görünümler: dönem setleri, Zaman Bekçisi seti, altın fincanlar ve kol koleksiyonu. Sadece görünüm, olasılıkları değiştirmez.",
+      "💖 Destekçi Paketi: reklamsız video ödülleri + özel Destekçi seti (çerçeve, taç, fincan).",
+      "🤝 Arkadaş daveti: kodunu paylaş; her arkadaş için çekirdek, 1/3/5 arkadaşta Dost seti.",
+      "📜 Gizlilik politikası, kullanıcı sözleşmesi, hesap silme sayfası ve ilk açılışta yaş onayı (18+).",
+      "🛡 Ayarlar › Hukuki ve Hesap: reklam gizlilik seçenekleri ve satın almaları geri yükleme.",
+      "📱 Google Play'e hazır Android sürümü."
+    ],
+    "en": [
+      "🌍 9 languages: Türkçe, English, Deutsch, Español, Português, עברית (right-to-left), 日本語, 한국어, 简体中文 — the game opens in your device language.",
+      "🎬 Rewarded video: watch once a minute for instant beans (Google AdMob on Android).",
+      "💎 Premium looks: era sets, the Time Keeper set, golden cups and the lever collection. Cosmetic only — odds never change.",
+      "💖 Supporter Pack: ad-free video rewards + an exclusive Supporter set (frame, crown, cup).",
+      "🤝 Friend invites: share your code; beans for every friend and the Friend set at 1/3/5 friends.",
+      "📜 Privacy policy, terms of use, account deletion page and an age check (18+) on first launch.",
+      "🛡 Settings › Legal & Account: ad privacy options and restore purchases.",
+      "📱 Android version ready for Google Play."
+    ],
+    "de": [
+      "🌍 9 Sprachen: Türkçe, English, Deutsch, Español, Português, עברית (rechts nach links), 日本語, 한국어, 简体中文 – das Spiel startet in deiner Gerätesprache.",
+      "🎬 Belohnungsvideo: einmal pro Minute ansehen, sofort Bohnen erhalten.",
+      "💎 Premium-Looks: Epochen-Sets, Zeitwächter-Set, goldene Tassen und Hebelsammlung. Nur kosmetisch – die Chancen ändern sich nie.",
+      "💖 Unterstützerpaket: Videobelohnungen ohne Werbung + exklusives Unterstützer-Set.",
+      "🤝 Freunde einladen: Code teilen; Bohnen für jeden Freund, Freundes-Set bei 1/3/5 Freunden.",
+      "📜 Datenschutz, Nutzungsbedingungen, Kontolöschung und Altersbestätigung (18+).",
+      "🛡 Einstellungen › Rechtliches & Konto: Werbe-Datenschutz und Käufe wiederherstellen."
+    ],
+    "es": [
+      "🌍 9 idiomas: Türkçe, English, Deutsch, Español, Português, עברית (de derecha a izquierda), 日本語, 한국어, 简体中文: el juego se abre en el idioma de tu dispositivo.",
+      "🎬 Vídeo con recompensa: míralo una vez por minuto y gana granos al instante.",
+      "💎 Looks premium: sets de época, set Guardián del Tiempo, tazas doradas y colección de palancas. Solo estéticos: nunca cambian las probabilidades.",
+      "💖 Pack de Apoyo: recompensas de vídeo sin anuncios + set exclusivo de Apoyo.",
+      "🤝 Invita a amigos: comparte tu código; granos por cada amigo y set Amistad con 1/3/5 amigos.",
+      "📜 Política de privacidad, términos de uso, eliminación de cuenta y verificación de edad (18+).",
+      "🛡 Ajustes › Legal y cuenta: privacidad de anuncios y restaurar compras."
+    ],
+    "pt": [
+      "🌍 9 idiomas: Türkçe, English, Deutsch, Español, Português, עברית (da direita para a esquerda), 日本語, 한국어, 简体中文 — o jogo abre no idioma do seu aparelho.",
+      "🎬 Vídeo com recompensa: assista uma vez por minuto e ganhe grãos na hora.",
+      "💎 Visuais premium: conjuntos de época, conjunto Guardião do Tempo, xícaras douradas e coleção de alavancas. Só cosméticos — as chances nunca mudam.",
+      "💖 Pacote Apoiador: recompensas de vídeo sem anúncios + conjunto exclusivo Apoiador.",
+      "🤝 Convide amigos: compartilhe seu código; grãos por amigo e conjunto Amizade com 1/3/5 amigos.",
+      "📜 Política de privacidade, termos de uso, exclusão de conta e verificação de idade (18+).",
+      "🛡 Configurações › Jurídico e conta: privacidade de anúncios e restaurar compras."
+    ],
+    "he": [
+      "🌍 ‏9 שפות: Türkçe, English, Deutsch, Español, Português, עברית (מימין לשמאל), 日本語, 한국어, 简体中文 — המשחק נפתח בשפת המכשיר.",
+      "🎬 סרטון פרס: צפו פעם בדקה וקבלו פולים מיד.",
+      "💎 מראות פרימיום: סטים של תקופות, סט שומר הזמן, ספלי זהב ואוסף ידיות. קוסמטי בלבד — הסיכויים לא משתנים.",
+      "💖 חבילת תומכים: פרסי וידאו בלי פרסומות + סט תומכים בלעדי.",
+      "🤝 הזמנת חברים: שתפו את הקוד; פולים על כל חבר וסט חברות ב-1/3/5 חברים.",
+      "📜 מדיניות פרטיות, תנאי שימוש, מחיקת חשבון ואימות גיל (18+).",
+      "🛡 הגדרות › משפטי וחשבון: פרטיות בפרסומות ושחזור רכישות."
+    ],
+    "ja": [
+      "🌍 9言語に対応：Türkçe、English、Deutsch、Español、Português、עברית（右から左）、日本語、한국어、简体中文。端末の言語で起動します。",
+      "🎬 リワード動画：1分に1回見るだけで、すぐに豆がもらえます。",
+      "💎 プレミアム見た目：時代セット、時の番人セット、黄金のカップ、レバーコレクション。見た目だけで、確率は変わりません。",
+      "💖 サポーターパック：広告なしで動画ごほうび＋限定サポーターセット。",
+      "🤝 友だち招待：コードをシェア。友だちごとに豆、1・3・5人でフレンドセット。",
+      "📜 プライバシーポリシー、利用規約、アカウント削除ページ、初回起動時の年齢確認（18歳以上）。",
+      "🛡 設定 › 規約とアカウント：広告のプライバシー設定と購入の復元。"
+    ],
+    "ko": [
+      "🌍 9개 언어: Türkçe, English, Deutsch, Español, Português, עברית(오른쪽에서 왼쪽), 日本語, 한국어, 简体中文 — 기기 언어로 실행돼요.",
+      "🎬 보상형 영상: 1분에 한 번 보고 바로 원두 받기.",
+      "💎 프리미엄 외형: 시대 세트, 시간의 수호자 세트, 황금 잔, 레버 컬렉션. 외형만 바뀌고 확률은 그대로예요.",
+      "💖 서포터 팩: 광고 없는 영상 보상 + 전용 서포터 세트.",
+      "🤝 친구 초대: 코드를 공유하면 친구마다 원두, 1/3/5명에서 우정 세트.",
+      "📜 개인정보 처리방침, 이용약관, 계정 삭제 페이지, 첫 실행 시 연령 확인(18+).",
+      "🛡 설정 › 약관 및 계정: 광고 개인정보 옵션과 구매 복원."
+    ],
+    "zh": [
+      "🌍 9种语言：Türkçe、English、Deutsch、Español、Português、עברית（从右到左）、日本語、한국어、简体中文——游戏会以设备语言启动。",
+      "🎬 激励视频：每分钟可看一次，立即获得咖啡豆。",
+      "💎 高级外观：时代套装、时光守护者套装、黄金杯和拉杆收藏。仅为外观，绝不改变概率。",
+      "💖 支持者礼包：无广告视频奖励 + 专属支持者套装。",
+      "🤝 邀请好友：分享你的邀请码；每位好友都有咖啡豆，1/3/5位好友解锁友谊套装。",
+      "📜 隐私政策、用户协议、账号删除页面，以及首次启动时的年龄确认（18+）。",
+      "🛡 设置 › 法律与账号：广告隐私选项和恢复购买。"
+    ]
+  },
+  "history": [
+    {
+      "num": "6.2.0",
+      "name": {
+        "tr": "Flat White",
+        "en": "Flat White"
+      },
+      "date": "Kasım 2026",
+      "notes": {
+        "tr": [
+          "📚 Hikâyeler artık Marvel tarzı çizgi roman sayfası: paneller, altyazı kutuları, konuşma balonları, ses efektleri ve mürekkep çizgili 3D kareler.",
+          "🗞 Zaman makinesi, her dönem girişi ve final için tam sayfa çizgi roman kapakları.",
+          "📚 Kupa Odası › Çizgi Roman: açtığın sayıları istediğin zaman yeniden oku.",
+          "🧾 Sipariş fişleri: normal spinlerde küçük hedefler; 3 sipariş üst üste = bahşiş kavanozu.",
+          "⏳ Atölye’de “Dönem” sekmesi; son dönemlerin yükseltmeleri %30 ucuzladı.",
+          "💰 Zaman Hazinesi harcanabiliyor: Zaman Bekçisi seti, altın dönem fincanları, Hazine Sandığı ve Zaman İksiri.",
+          "🎁 Günlük ödül, video ve 6 saatlik hediye artık bulunduğun bölüme göre büyüyor.",
+          "🌱 Kasaba şubeleri (1–5) kısaldı ve daha dengeli.",
+          "💚 Beta testerlara özel görünüm seti (test kodu ile).",
+          "🎃 Cadılar Bayramı etkinliği sona erdi; görünümler artık satılmıyor (sahip olanlar giymeye devam eder).",
+          "🎨 Saga haritası ve rozetlerde emoji yerine oyuna özel çizimler.",
+          "⚡ Daha hızlı ve hafif: çizim yükü ~%65 azaldı, telefon zorlanırsa hafif mod kendiliğinden açılıyor.",
+          "🐞 Saga’nın yarısındaki çökme, hikâye açılırken makara takılması ve 6. makara bildirimi düzeltildi.",
+          "📜 Ayarlar › Sürüm geçmişi."
+        ],
+        "en": [
+          "📚 Stories are now Marvel-style comic pages: panels, caption boxes, speech balloons, sound effects and inked 3D art.",
+          "🗞 Full-page comic covers for the time machine, every era opening and the finale.",
+          "📚 Trophy Room › Comics: reread any issue you’ve unlocked.",
+          "🧾 Order tickets: small goals on normal spins; 3 orders in a row = tip jar.",
+          "⏳ New “Era” tab in the Workshop; late-era upgrades are 30% cheaper.",
+          "💰 The Time Treasure can be spent: Time Keeper set, golden era cups, Treasure Chest and Time Potion.",
+          "🎁 Daily reward, video and 6-hour gifts now scale with your chapter.",
+          "🌱 Town branches (1–5) are shorter and more even.",
+          "💚 A special look set for beta testers (with the test code).",
+          "🎃 The Halloween event has ended; its looks are no longer sold (owners can keep wearing them).",
+          "🎨 Custom drawings instead of emoji on the Saga map and badges.",
+          "⚡ Faster and lighter: ~65% less drawing work; light mode turns on by itself if your phone struggles.",
+          "🐞 Fixed the Saga halfway crash, reels sticking while a story opened, and the 6th-reel toast.",
+          "📜 Settings › Version history."
+        ]
+      }
+    },
+    {
+      "num": "6.1.0",
+      "name": {
+        "tr": "Espresso Romano",
+        "en": "Espresso Romano"
+      },
+      "notes": {
+        "tr": [
+          "🎬 Hikâye baştan üretildi: sevimli 3D animasyonlu sinematik oynatıcı.",
+          "🎵 Antik Mısır’dan itibaren her döneme özel müzik ve 3D arka plan.",
+          "📱 Mobil ekran ve tasarım iyileştirmeleri; mağazada satın alma penceresi artık üstte açılıyor.",
+          "📖 Barista not defterinde “Bugünün özel reçetesi” tasarımlı kapak sayfası."
+        ],
+        "en": [
+          "🎬 Story remade from scratch: cute 3D animated cinematic player.",
+          "🎵 Era-specific music and 3D backdrops from Ancient Egypt onward.",
+          "📱 Mobile layout improvements; purchase pop-up now opens above the store.",
+          "📖 Designed “Today’s special recipe” cover page in the barista notebook."
+        ]
+      }
+    },
+    {
+      "num": "6.0.0",
+      "name": {
+        "tr": "Dalgona",
+        "en": "Dalgona"
+      },
+      "notes": {
+        "tr": [
+          "⏳ Zaman Makinesi ve 100 bölümlük tarihî Saga Haritası (Mısır, Yunan, Viking, Roma, Osmanlı, Viktorya, Fransa, İtalya, Caz Çağı).",
+          "✨ Her döneme özel geçici kazanma gücü.",
+          "🛍 Dönem mağazası: çağa özel çerçeve, şapka ve fincanlar.",
+          "⚖️ Zorluk seçimi kaldırıldı, yalnızca hikâye modu matematiği."
+        ],
+        "en": [
+          "⏳ Time Machine and a 100-chapter historical Saga Map (Egypt, Greece, Vikings, Rome, Ottoman, Victorian, France, Italy, Jazz Age).",
+          "✨ A temporary win power for each era.",
+          "🛍 Era store: era-themed frames, hats and cups.",
+          "⚖️ Difficulty choice removed; story-mode math only."
+        ]
+      }
+    },
+    {
+      "num": "5.5.1",
+      "name": {
+        "tr": "Cortado",
+        "en": "Cortado"
+      },
+      "notes": {
+        "tr": [
+          "📱 iPhone’da mağaza kapatma tuşuna erişilememesi düzeltildi; mobil boyutlandırma yenilendi.",
+          "🕹 Slot kolları mağazada görünür oldu."
+        ],
+        "en": [
+          "📱 Fixed the unreachable store close button on iPhone; refreshed mobile sizing.",
+          "🕹 Slot levers are now visible in the store."
+        ]
+      }
+    },
+    {
+      "num": "5.5.0",
+      "name": {
+        "tr": "Cortado",
+        "en": "Cortado"
+      },
+      "notes": {
+        "tr": [
+          "🎨 Görünümler: çerçeve, Dede şapkası ve fincan koleksiyonları.",
+          "🕹 3D slot kolu ve kol görünümleri.",
+          "🏆 Büyük ikramiye kutlaması."
+        ],
+        "en": [
+          "🎨 Looks: frame, Grandpa hat and cup collections.",
+          "🕹 3D slot lever and lever skins.",
+          "🏆 Jackpot celebration."
+        ]
+      }
+    },
+    {
+      "num": "5.4",
+      "name": {
+        "tr": "Balkabağı Latte",
+        "en": "Pumpkin Latte"
+      },
+      "notes": {
+        "tr": [
+          "🎃 Cadılar Bayramı etkinliği ve balkabağı görünümleri.",
+          "☁️ Bulut kaydı ve sıralama tablosu.",
+          "🔔 Hediye bildirimleri ve 6 saatlik hediye."
+        ],
+        "en": [
+          "🎃 Halloween event and pumpkin looks.",
+          "☁️ Cloud save and leaderboard.",
+          "🔔 Gift notifications and the 6-hour gift."
+        ]
+      }
+    },
+    {
+      "num": "≤5.3",
+      "name": {
+        "tr": "Americano",
+        "en": "Americano"
+      },
+      "notes": {
+        "tr": [
+          "☕ Kasaba hikâyesi: 5 şube, SyruppoLab’a karşı mücadele.",
+          "📖 Reçete Kitabı, free spin, genişleyen sembol ve Kahve Dede çarpanları.",
+          "🛠 Atölye geliştirmeleri, görevler, rozetler ve albüm."
+        ],
+        "en": [
+          "☕ Town story: 5 branches, the fight against SyruppoLab.",
+          "📖 Recipe Book, free spins, expanding symbol and Grandpa Brew multipliers.",
+          "🛠 Workshop upgrades, quests, badges and album."
+        ]
+      }
+    }
   ]
- },
- "history": [
-  {
-   "num": "6.1.0",
-   "name": {
-    "tr": "Espresso Romano",
-    "en": "Espresso Romano"
-   },
-   "notes": {
-    "tr": [
-     "🎬 Hikâye baştan üretildi: sevimli 3D animasyonlu sinematik oynatıcı.",
-     "🎵 Antik Mısır’dan itibaren her döneme özel müzik ve 3D arka plan.",
-     "📱 Mobil ekran ve tasarım iyileştirmeleri; mağazada satın alma penceresi artık üstte açılıyor.",
-     "📖 Barista not defterinde “Bugünün özel reçetesi” tasarımlı kapak sayfası."
-    ],
-    "en": [
-     "🎬 Story remade from scratch: cute 3D animated cinematic player.",
-     "🎵 Era-specific music and 3D backdrops from Ancient Egypt onward.",
-     "📱 Mobile layout improvements; purchase pop-up now opens above the store.",
-     "📖 Designed “Today’s special recipe” cover page in the barista notebook."
-    ]
-   }
-  },
-  {
-   "num": "6.0.0",
-   "name": {
-    "tr": "Dalgona",
-    "en": "Dalgona"
-   },
-   "notes": {
-    "tr": [
-     "⏳ Zaman Makinesi ve 100 bölümlük tarihî Saga Haritası (Mısır, Yunan, Viking, Roma, Osmanlı, Viktorya, Fransa, İtalya, Caz Çağı).",
-     "✨ Her döneme özel geçici kazanma gücü.",
-     "🛍 Dönem mağazası: çağa özel çerçeve, şapka ve fincanlar.",
-     "⚖️ Zorluk seçimi kaldırıldı, yalnızca hikâye modu matematiği."
-    ],
-    "en": [
-     "⏳ Time Machine and a 100-chapter historical Saga Map (Egypt, Greece, Vikings, Rome, Ottoman, Victorian, France, Italy, Jazz Age).",
-     "✨ A temporary win power for each era.",
-     "🛍 Era store: era-themed frames, hats and cups.",
-     "⚖️ Difficulty choice removed; story-mode math only."
-    ]
-   }
-  },
-  {
-   "num": "5.5.1",
-   "name": {
-    "tr": "Cortado",
-    "en": "Cortado"
-   },
-   "notes": {
-    "tr": [
-     "📱 iPhone’da mağaza kapatma tuşuna erişilememesi düzeltildi; mobil boyutlandırma yenilendi.",
-     "🕹 Slot kolları mağazada görünür oldu."
-    ],
-    "en": [
-     "📱 Fixed the unreachable store close button on iPhone; refreshed mobile sizing.",
-     "🕹 Slot levers are now visible in the store."
-    ]
-   }
-  },
-  {
-   "num": "5.5.0",
-   "name": {
-    "tr": "Cortado",
-    "en": "Cortado"
-   },
-   "notes": {
-    "tr": [
-     "🎨 Görünümler: çerçeve, Dede şapkası ve fincan koleksiyonları.",
-     "🕹 3D slot kolu ve kol görünümleri.",
-     "🏆 Büyük ikramiye kutlaması."
-    ],
-    "en": [
-     "🎨 Looks: frame, Grandpa hat and cup collections.",
-     "🕹 3D slot lever and lever skins.",
-     "🏆 Jackpot celebration."
-    ]
-   }
-  },
-  {
-   "num": "5.4",
-   "name": {
-    "tr": "Balkabağı Latte",
-    "en": "Pumpkin Latte"
-   },
-   "notes": {
-    "tr": [
-     "🎃 Cadılar Bayramı etkinliği ve balkabağı görünümleri.",
-     "☁️ Bulut kaydı ve sıralama tablosu.",
-     "🔔 Hediye bildirimleri ve 6 saatlik hediye."
-    ],
-    "en": [
-     "🎃 Halloween event and pumpkin looks.",
-     "☁️ Cloud save and leaderboard.",
-     "🔔 Gift notifications and the 6-hour gift."
-    ]
-   }
-  },
-  {
-   "num": "≤5.3",
-   "name": {
-    "tr": "Americano",
-    "en": "Americano"
-   },
-   "notes": {
-    "tr": [
-     "☕ Kasaba hikâyesi: 5 şube, SyruppoLab’a karşı mücadele.",
-     "📖 Reçete Kitabı, free spin, genişleyen sembol ve Kahve Dede çarpanları.",
-     "🛠 Atölye geliştirmeleri, görevler, rozetler ve albüm."
-    ],
-    "en": [
-     "☕ Town story: 5 branches, the fight against SyruppoLab.",
-     "📖 Recipe Book, free spins, expanding symbol and Grandpa Brew multipliers.",
-     "🛠 Workshop upgrades, quests, badges and album."
-    ]
-   }
-  }
- ]
 }
